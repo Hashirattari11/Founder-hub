@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Rocket, Eye, EyeOff, Pencil, BarChart3, Trash2, Loader2 } from 'lucide-react'
+import { Rocket, Eye, EyeOff, Pencil, BarChart3, Trash2, Loader2, Handshake } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { getMyStartups, updateStartup, deleteStartup } from '../../lib/startups'
 import { Avatar } from '../../components/Avatar'
@@ -134,6 +134,12 @@ export default function MyStartups() {
                       className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
                     >
                       <BarChart3 className="h-3.5 w-3.5" /> Analytics
+                    </Link>
+                    <Link
+                      to={`/startups/${startup.id}/investors`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
+                    >
+                      <Handshake className="h-3.5 w-3.5" /> Find Investors
                     </Link>
                   </>
                 )}

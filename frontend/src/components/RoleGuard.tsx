@@ -37,3 +37,12 @@ export function FounderGuard({ children }: { children: ReactNode }) {
     </RoleGuard>
   )
 }
+
+/** Investor-only route guard. */
+export function InvestorGuard({ children }: { children: ReactNode }) {
+  return (
+    <RoleGuard roles={['investor']} redirectTo="/dashboard">
+      {children}
+    </RoleGuard>
+  )
+}

@@ -26,7 +26,7 @@ interface Candidate {
 
 type ConnState = { status: 'none' } | { status: 'requested' } | { status: 'pending' } | { status: 'accepted' }
 
-export function PeopleToConnect({ user }: { user: Profile }) {
+export function PeopleToConnect({ user, limit = 3 }: { user: Profile; limit?: number }) {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [states, setStates] = useState<Record<string, ConnState>>({})
   const [loading, setLoading] = useState(true)
@@ -34,7 +34,7 @@ export function PeopleToConnect({ user }: { user: Profile }) {
 
   useEffect(() => {
     let active = true
-    getPeopleToConnect(user, 3)
+    getPeopleToConnect(user, limit)
       .then((data) => {
         if (!active) return
         setCandidates(data)

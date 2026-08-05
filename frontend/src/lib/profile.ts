@@ -18,6 +18,13 @@ export interface ProfileUpdate {
   portfolio_url?: string | null
   twitter_url?: string | null
   is_open_to_work?: boolean | null
+  investment_range_min?: number | null
+  investment_range_max?: number | null
+  investment_stage?: string[] | null
+  portfolio_companies?: string[] | null
+  notification_preferences?: Record<string, boolean> | null
+  preferred_ai_provider?: string | null
+  preferred_ai_model?: string | null
 }
 
 export async function getProfileByUsername(username: string) {

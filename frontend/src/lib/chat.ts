@@ -3,6 +3,12 @@ import { api } from './api'
 import type { Chat, ChatMessage, ChatMessageType, ChatProfile, MessageReaction, Profile, RepliedMessage } from '../types'
 
 export const CHAT_PROFILE_FIELDS = 'id, full_name, username, avatar_url, role, is_online, last_seen'
+
+/** Unique channel name per subscription call — avoids "cannot add callbacks after subscribe()"
+ * when two components subscribe to the same logical stream on one page. */
+function uniqueChannel(base: string): string {
+  return `${base}-${Math.random().toString(36).slice(2, 8)}`
+}
 export const REPLY_FIELDS =
   'id, content, type, sender_id, file_url, file_name, is_deleted, is_forwarded, sender:profiles!messages_sender_id_fkey(full_name, avatar_url)'
 export const MESSAGE_FIELDS = `*, sender:profiles!messages_sender_id_fkey(full_name, avatar_url), reactions:message_reactions(*)`
@@ -285,7 +291,7 @@ export function subscribeToChatMessages(
   onUpdate?: (msg: ChatMessage) => void,
 ): () => void {
   const channel = supabase
-    .channel(`chat-${chatId}`)
+    .channel(uniqueChannel(`chat-${chatId}`))
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
@@ -313,7 +319,7 @@ export function subscribeToTyping(
   onChange: (typing: boolean) => void,
 ): () => void {
   const channel = supabase
-    .channel(`typing-${chatId}`)
+    .channel(uniqueChannel(`typing-${chatId}`))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'typing_status' }, (payload) => {
       const row = (payload.new ?? payload.old) as
         | { user_id: string; chat_id: string; is_typing: boolean }
@@ -416,7 +422,7 @@ export async function getUnreadCounts(chatIds: string[], userId: string): Promis
 /** Subscribe to chat changes so the list stays fresh. Returns an unsubscribe fn. */
 export function subscribeToChats(userId: string, onChange: () => void): () => void {
   const channel = supabase
-    .channel(`chat-list-${userId}`)
+    .channel(uniqueChannel(`chat-list-${userId}`))
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'chats', filter: `participant_1=eq.${userId}` },

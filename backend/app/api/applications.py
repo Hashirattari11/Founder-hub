@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.auth import get_user_client, get_user_id
-from app.core.supabase import service_supabase, supabase
+from app.core.supabase import service_supabase
 from app.core.email import email_for_application, email_for_status_update
+from app.core.users import user_email, user_full_name
 from app.schemas.application import ApplicationIn, ApplicationOut, StatusUpdateIn
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
@@ -38,11 +39,11 @@ def notify_founder(startup_id: str, applicant_name: str, role: str, applicant_id
         print(f"[notifications] failed to notify founder: {exc}")
 
     # Email founder (Resend)
-    founder = service_supabase.table("profiles").select("email, full_name").eq("id", founder_id).limit(1).execute()
-    if founder.data and founder.data[0].get("email"):
+    founder_email = user_email(founder_id)
+    if founder_email:
         email_for_application(
-            founder.data[0]["email"],
-            founder.data[0].get("full_name") or "there",
+            founder_email,
+            user_full_name(founder_id) or "there",
             startup_name,
             applicant_name,
             role,
@@ -195,17 +196,11 @@ async def update_application_status(
         print(f"[notifications] failed to notify applicant: {exc}")
 
     # Email applicant (Resend)
-    applicant = (
-        service_supabase.table("profiles")
-        .select("email, full_name")
-        .eq("id", applicant_id)
-        .limit(1)
-        .execute()
-    )
-    if applicant.data and applicant.data[0].get("email"):
+    applicant_email = user_email(applicant_id)
+    if applicant_email:
         email_for_status_update(
-            applicant.data[0]["email"],
-            applicant.data[0].get("full_name") or "there",
+            applicant_email,
+            user_full_name(applicant_id) or "there",
             startup_name,
             role,
             payload.status,

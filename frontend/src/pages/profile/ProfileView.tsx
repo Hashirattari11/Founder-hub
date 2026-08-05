@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ArrowLeft, MapPin, Rocket, Globe, UserPlus, UserCheck, MessageCircle, Loader2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Rocket, Globe, UserPlus, UserCheck, MessageCircle, CalendarDays, Loader2 } from 'lucide-react'
 import { getProfileByUsername } from '../../lib/profile'
 import { getMyStartups } from '../../lib/startups'
 import { getConnectionState, sendConnectionRequest, acceptConnectionRequest } from '../../lib/connections'
+import { FollowButton } from '../../components/FollowButton'
 import { useSession } from '../../context/AuthContext'
 import { Avatar } from '../../components/Avatar'
 import { ROLE_LABELS } from '../../types'
@@ -102,8 +103,9 @@ export default function ProfileView() {
 
       <div className="container-x -mt-16 pb-16">
         <button
+          type="button"
           onClick={() => navigate(user ? '/dashboard' : '/')}
-          className="mb-8 inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary dark:text-gray-400"
+          className="relative z-10 mb-8 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-gray-600 transition-colors hover:text-primary dark:text-gray-400"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -198,6 +200,14 @@ export default function ProfileView() {
                 <MessageCircle className="h-4 w-4" />
                 Message
               </button>
+              <button
+                onClick={() => navigate(`/meetings?with=${profile.id}`)}
+                className="btn-ghost flex-1 sm:flex-none"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Schedule Meeting
+              </button>
+              <FollowButton targetId={profile.id} targetType="user" className="flex-1 sm:flex-none" />
             </div>
           )}
           {isOwnProfile && (

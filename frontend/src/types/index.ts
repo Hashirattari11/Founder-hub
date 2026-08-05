@@ -19,6 +19,14 @@ export interface Profile {
   twitter_url: string | null
   is_open_to_work: boolean | null
   investor_interests: string[] | null
+  investment_range_min: number | null
+  investment_range_max: number | null
+  investment_stage: string[] | null
+  portfolio_companies: string[] | null
+  notification_preferences: Record<string, boolean> | null
+  preferred_ai_provider: string | null
+  preferred_ai_model: string | null
+  is_admin: boolean | null
   connections_count: number | null
   created_at: string
   updated_at: string
@@ -196,6 +204,52 @@ export interface Startup {
   > | null
 }
 
+export type PostType = 'update' | 'milestone' | 'question' | 'hiring' | 'funding' | 'launch'
+
+export interface Post {
+  id: string
+  author_id: string
+  startup_id: string | null
+  content: string
+  media_urls: string[] | null
+  post_type: PostType | null
+  hashtags: string[] | null
+  is_pinned: boolean
+  repost_of: string | null
+  views_count: number
+  likes_count: number
+  comments_count: number
+  reposts_count: number
+  created_at: string
+  updated_at: string
+  profiles?: Pick<
+    Profile,
+    'id' | 'full_name' | 'avatar_url' | 'username' | 'role' | 'city'
+  > | null
+  startups?: Pick<Startup, 'id' | 'name' | 'tagline' | 'industry'> | null
+  reposted_from?: Post | null
+}
+
+export interface PostComment {
+  id: string
+  post_id: string
+  author_id: string
+  content: string
+  parent_comment_id: string | null
+  likes_count: number
+  created_at: string
+  profiles?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'username'> | null
+}
+
+export interface Hashtag {
+  id: string
+  name: string
+  posts_count: number
+  created_at: string
+}
+
+export type FeedType = 'for_you' | 'following' | 'trending' | 'stories' | 'saved'
+
 export type ApplicationStatus =
   | 'pending'
   | 'shortlisted'
@@ -216,11 +270,126 @@ export interface Application {
   profiles?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'skills' | 'city'> | null
 }
 
+export type JobType =
+  | 'full_time'
+  | 'part_time'
+  | 'remote'
+  | 'internship'
+  | 'contract'
+  | 'freelance'
+
+export type JobExperienceLevel = 'entry' | 'mid' | 'senior' | 'lead'
+
+export type JobApplicationStatus =
+  | 'pending'
+  | 'reviewing'
+  | 'shortlisted'
+  | 'interview'
+  | 'accepted'
+  | 'rejected'
+
+export interface Job {
+  id: string
+  startup_id: string | null
+  posted_by: string
+  title: string
+  description: string
+  requirements: string[] | null
+  nice_to_have: string[] | null
+  job_type: JobType | null
+  location: string | null
+  is_remote: boolean
+  salary_min: number | null
+  salary_max: number | null
+  salary_currency: string | null
+  equity_offered: number | null
+  experience_level: JobExperienceLevel | null
+  skills_required: string[] | null
+  industry: string | null
+  application_deadline: string | null
+  is_active: boolean
+  views_count: number
+  applications_count: number
+  created_at: string
+  startups?: Pick<Startup, 'id' | 'name' | 'tagline' | 'industry'> | null
+  profiles?: Pick<Profile, 'full_name' | 'avatar_url'> | null
+  matchScore?: number
+}
+
+export interface JobApplication {
+  id: string
+  job_id: string
+  applicant_id: string
+  cover_letter: string | null
+  resume_url: string | null
+  portfolio_url: string | null
+  expected_salary: number | null
+  availability: string | null
+  status: JobApplicationStatus
+  notes: string | null
+  created_at: string
+  jobs?: Pick<Job, 'id' | 'title' | 'job_type' | 'location' | 'is_remote' | 'created_at' | 'startup_id'> & {
+    startups?: Pick<Startup, 'id' | 'name' | 'tagline' | 'industry'> | null
+  } | null
+  profiles?: Pick<
+    Profile,
+    'id' | 'full_name' | 'avatar_url' | 'role' | 'city' | 'skills' | 'experience_years' | 'bio' | 'portfolio_url'
+  > | null
+}
+
+export interface Resume {
+  id: string
+  user_id: string
+  title: string | null
+  content: Record<string, unknown> | null
+  pdf_url: string | null
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SavedJob {
+  user_id: string
+  job_id: string
+  created_at: string
+}
+
+export const JOB_TYPES: { id: JobType; label: string }[] = [
+  { id: 'full_time', label: 'Full Time' },
+  { id: 'part_time', label: 'Part Time' },
+  { id: 'remote', label: 'Remote' },
+  { id: 'internship', label: 'Internship' },
+  { id: 'contract', label: 'Contract' },
+  { id: 'freelance', label: 'Freelance' },
+]
+
+export const JOB_EXPERIENCE_LEVELS: { id: JobExperienceLevel; label: string }[] = [
+  { id: 'entry', label: 'Entry' },
+  { id: 'mid', label: 'Mid' },
+  { id: 'senior', label: 'Senior' },
+  { id: 'lead', label: 'Lead' },
+]
+
+export const JOB_STATUS_LABELS: Record<JobApplicationStatus, string> = {
+  pending: 'Pending',
+  reviewing: 'Reviewing',
+  shortlisted: 'Shortlisted',
+  interview: 'Interview',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+}
+
 export type NotificationType =
   | 'startup_match'
   | 'new_application'
   | 'status_update'
   | 'message'
+  | 'job_application'
+  | 'job_status_update'
+  | 'cofounder_request'
+  | 'cofounder_accepted'
+  | 'investor_request'
+  | 'investor_interested'
 
 export interface AppNotification {
   id: string
@@ -240,6 +409,99 @@ export interface ConnectionRow {
   receiver_id: string
   status: ConnectionStatus
   created_at: string
+}
+
+export type CoFounderCommitment = 'full_time' | 'part_time' | 'flexible'
+export type CoFounderLocation = 'same_city' | 'same_country' | 'remote_ok'
+export type CoFounderRequestStatus = 'pending' | 'accepted' | 'rejected'
+
+export interface CoFounderPreference {
+  id: string
+  user_id: string
+  looking_for_roles: string[] | null
+  industry_focus: string[] | null
+  commitment_level: CoFounderCommitment | null
+  equity_willing_to_give: number | null
+  startup_stage: string | null
+  location_preference: CoFounderLocation | null
+  description: string | null
+  is_looking: boolean
+  created_at?: string
+}
+
+export interface CoFounderMatch {
+  profile: Pick<
+    Profile,
+    'id' | 'full_name' | 'username' | 'avatar_url' | 'bio' | 'role' | 'skills' | 'city' | 'country' | 'experience_years'
+  >
+  preferences: CoFounderPreference | null
+  score: number
+  reasons: string[]
+  complementary_role?: string | null
+}
+
+export interface CoFounderMatchesResponse {
+  matches: CoFounderMatch[]
+  show_cofounder: boolean
+  user_role?: string | null
+  looking_for_roles?: string[] | null
+  tab_label?: string | null
+  description?: string | null
+  message?: string | null
+}
+
+export interface CoFounderRequest {
+  id: string
+  requester_id: string
+  target_id: string
+  match_score: number | null
+  message: string | null
+  status: CoFounderRequestStatus
+  created_at: string
+  requester?: Pick<Profile, 'id' | 'full_name' | 'username' | 'avatar_url' | 'bio' | 'role' | 'skills' | 'city'> | null
+  target?: Pick<Profile, 'id' | 'full_name' | 'username' | 'avatar_url' | 'bio' | 'role' | 'skills' | 'city'> | null
+}
+
+export type InvestorMatchStatus = 'pending' | 'viewed' | 'interested' | 'passed' | 'meeting_scheduled'
+
+export interface InvestorProfile {
+  id: string
+  user_id: string
+  investment_thesis: string | null
+  portfolio_companies: string[] | null
+  check_size_min: number | null
+  check_size_max: number | null
+  preferred_industries: string[] | null
+  preferred_stages: string[] | null
+  preferred_locations: string[] | null
+  value_add: string | null
+  total_investments: number | null
+  is_active: boolean
+  created_at?: string
+}
+
+export interface InvestorMatch {
+  id: string
+  startup_id: string
+  investor_id: string
+  founder_id: string
+  match_score: number | null
+  status: InvestorMatchStatus
+  message: string | null
+  created_at: string
+  reasons?: string[]
+  investor?: Pick<Profile, 'id' | 'full_name' | 'username' | 'avatar_url' | 'bio' | 'role' | 'skills' | 'city'> | null
+  investor_profile?: InvestorProfile | null
+}
+
+export interface InvestorMatchResult {
+  match_id: string | null
+  status: InvestorMatchStatus
+  score: number
+  reasons: string[]
+  investor: Pick<Profile, 'id' | 'full_name' | 'username' | 'avatar_url' | 'bio' | 'role' | 'skills' | 'city'> & {
+    investor_profiles?: InvestorProfile | null
+  }
 }
 
 export interface ChatProfile {
@@ -302,4 +564,151 @@ export interface ChatMessage {
   reply_to?: RepliedMessage | null
   sender?: Pick<Profile, 'full_name' | 'avatar_url'> | null
   reactions?: MessageReaction[] | null
+}
+
+// ---------------------------------------------------------------------------
+// Startup Data Room
+// ---------------------------------------------------------------------------
+
+export type DataRoomCategory =
+  | 'pitch_deck'
+  | 'financials'
+  | 'legal'
+  | 'cap_table'
+  | 'product'
+  | 'team'
+  | 'market_research'
+  | 'contracts'
+  | 'other'
+
+export interface DataRoom {
+  id: string
+  startup_id: string
+  founder_id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  require_nda: boolean
+  nda_text: string | null
+  created_at: string
+}
+
+export interface DataRoomDocument {
+  id: string
+  data_room_id: string
+  uploaded_by: string
+  category: DataRoomCategory
+  name: string
+  file_url: string
+  file_size: number | null
+  file_type: string | null
+  description: string | null
+  is_confidential: boolean
+  views_count: number
+  downloads_count: number
+  created_at: string
+}
+
+export interface DataRoomAccess {
+  id: string
+  data_room_id: string
+  user_id: string
+  granted_by: string
+  access_level: 'view' | 'download' | 'full'
+  nda_signed: boolean
+  nda_signed_at: string | null
+  expires_at: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface DataRoomAccessRequest {
+  id: string
+  data_room_id: string
+  requester_id: string
+  message: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  requester?: Pick<Profile, 'full_name' | 'avatar_url' | 'role'> | null
+}
+
+export interface DataRoomActivityItem {
+  id: string
+  document_id: string
+  user_id: string
+  action: 'viewed' | 'downloaded' | 'shared'
+  created_at: string
+  document?: { name: string } | null
+  user?: Pick<Profile, 'full_name' | 'avatar_url'> | null
+}
+
+export interface DataRoomResponse {
+  startup: Pick<Startup, 'id' | 'name' | 'founder_id' | 'tagline' | 'industry'>
+  can_manage: boolean
+  data_room: DataRoom | null
+  documents: DataRoomDocument[]
+  request_status: 'pending' | 'approved' | 'rejected' | null
+  categories: Record<string, string>
+  access?: DataRoomAccess | null
+  nda_required: boolean
+  nda_pending: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Cap Table
+// ---------------------------------------------------------------------------
+
+export type HolderType = 'founder' | 'investor' | 'employee' | 'advisor' | 'esop' | 'other'
+export type ShareClass = 'common' | 'preferred' | 'options' | 'warrants'
+export type RoundStatus = 'open' | 'closed' | 'cancelled'
+
+export interface CapTable {
+  id: string
+  startup_id: string
+  created_by: string
+  total_shares: number
+  currency: string
+  last_updated: string
+  created_at: string
+}
+
+export interface CapTableEntry {
+  id: string
+  cap_table_id: string
+  holder_name: string
+  holder_type: HolderType
+  holder_user_id: string | null
+  shares: number
+  share_class: ShareClass
+  investment_amount: number | null
+  investment_date: string | null
+  vesting_start: string | null
+  vesting_cliff_months: number | null
+  vesting_total_months: number | null
+  notes: string | null
+  created_at: string
+}
+
+export interface FundingRound {
+  id: string
+  startup_id: string
+  round_name: string
+  round_type: string
+  target_amount: number | null
+  raised_amount: number | null
+  pre_money_valuation: number | null
+  post_money_valuation: number | null
+  share_price: number | null
+  status: RoundStatus
+  open_date: string | null
+  close_date: string | null
+  created_at: string
+}
+
+export interface CapTableResponse {
+  startup: Pick<Startup, 'id' | 'name' | 'founder_id' | 'tagline' | 'industry'>
+  can_manage: boolean
+  cap_table: CapTable | null
+  entries: CapTableEntry[]
+  rounds: FundingRound[]
 }

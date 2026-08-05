@@ -51,6 +51,12 @@ export function Navbar({ onJoinWaitlist }: NavbarProps) {
               {link.label}
             </a>
           ))}
+          <Link
+            to="/community"
+            className="text-sm font-medium text-gray-600 transition-colors hover:text-primary dark:text-gray-300 dark:hover:text-white"
+          >
+            Community
+          </Link>
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -107,6 +113,13 @@ export function Navbar({ onJoinWaitlist }: NavbarProps) {
                   {link.label}
                 </a>
               ))}
+              <Link
+                to="/community"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-primary dark:text-gray-300 dark:hover:bg-dark-100 dark:hover:text-white"
+              >
+                Community
+              </Link>
               <Link
                 to="/login"
                 onClick={() => setMenuOpen(false)}

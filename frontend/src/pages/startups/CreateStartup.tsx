@@ -26,7 +26,7 @@ export default function CreateStartup() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
       <AppHeader title="Create a Startup" backTo="/dashboard" />
-      <main className="container-x py-8">
+      <main className="container-x pt-8 pb-24 lg:pb-8">
         <div className="mb-8">
           <h1 className="flex items-center gap-2 text-2xl font-extrabold sm:text-3xl">
             <Rocket className="h-7 w-7 text-primary" />

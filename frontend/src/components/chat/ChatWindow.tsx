@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import toast from 'react-hot-toast'
 import {
   ArrowLeft,
+  CalendarDays,
   CheckSquare,
   Copy,
   CornerUpRight,
@@ -76,10 +77,14 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   const displayOther = liveStatus && other ? { ...other, ...liveStatus } : other
 
   // Hide messages the current user deleted "for me".
-  const visibleMessages = useMemo(
-    () => messages.filter((m) => !(m.deleted_for ?? []).includes(userId)),
-    [messages, userId],
-  )
+  const visibleMessages = useMemo(() => {
+    const seen = new Set<string>()
+    return messages.filter((m) => {
+      if (seen.has(m.id)) return false
+      seen.add(m.id)
+      return !(m.deleted_for ?? []).includes(userId)
+    })
+  }, [messages, userId])
 
   const searchedMessages = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -550,6 +555,17 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
               </div>
             </button>
 
+            <button
+              type="button"
+              onClick={() => {
+                if (other?.id) window.location.href = `/meetings?with=${other.id}`
+              }}
+              aria-label="Schedule a meeting"
+              title="Schedule a meeting"
+              className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-300"
+            >
+              <CalendarDays className="h-5 w-5" />
+            </button>
             <button
               type="button"
               onClick={() => setSearchOpen(true)}

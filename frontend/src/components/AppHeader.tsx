@@ -5,13 +5,16 @@ import { Rocket, Menu, Settings, LogOut, User, ChevronLeft } from 'lucide-react'
 import { useSession } from '../context/AuthContext'
 import { Avatar } from './Avatar'
 import { NotificationBell } from './dashboard/NotificationBell'
+import { MessagesButton } from './MessagesButton'
+import { MobileBottomNav } from './MobileBottomNav'
 
 interface AppHeaderProps {
   title?: string
   backTo?: string
+  backLabel?: string
 }
 
-export function AppHeader({ title, backTo }: AppHeaderProps) {
+export function AppHeader({ title, backTo, backLabel }: AppHeaderProps) {
   const { profile, user, signOut } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
@@ -21,16 +24,20 @@ export function AppHeader({ title, backTo }: AppHeaderProps) {
     navigate('/login')
   }
 
+  const label = backLabel ?? (backTo === '/dashboard' ? 'Back to Dashboard' : 'Back')
+
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/80 backdrop-blur-xl dark:border-dark-300 dark:bg-dark/80">
+    <>
+      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/80 backdrop-blur-xl dark:border-dark-300 dark:bg-dark/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
         {backTo ? (
           <button
             onClick={() => navigate(backTo)}
-            aria-label="Back"
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
+            aria-label={label}
+            className="flex h-10 items-center gap-1 rounded-lg border border-gray-200 px-2 text-sm font-medium text-gray-600 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
           >
             <ChevronLeft className="h-5 w-5" />
+            <span className="hidden sm:inline">{label}</span>
           </button>
         ) : (
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2">
@@ -48,6 +55,7 @@ export function AppHeader({ title, backTo }: AppHeaderProps) {
         )}
 
         <div className="ml-auto flex items-center gap-3">
+          <MessagesButton />
           <NotificationBell />
 
           <div className="relative">
@@ -117,5 +125,7 @@ export function AppHeader({ title, backTo }: AppHeaderProps) {
         </div>
       </div>
     </header>
+      <MobileBottomNav />
+    </>
   )
 }

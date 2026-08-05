@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Rocket, UserPlus, Check, X, Star, MessageCircle, Inbox } from 'lucide-react'
+import { Bell, Rocket, UserPlus, Check, X, Star, MessageCircle, Inbox, Heart, Repeat, Handshake, Wallet, CalendarClock } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSession } from '../../context/AuthContext'
 import {
@@ -28,6 +28,18 @@ function NotificationIcon({ notification }: { notification: AppNotification }) {
   if (type === 'new_message') {
     return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent"><MessageCircle className="h-4 w-4" /></span>
   }
+  if (type === 'post_like') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500"><Heart className="h-4 w-4" /></span>
+  }
+  if (type === 'post_comment') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-purple-500"><MessageCircle className="h-4 w-4" /></span>
+  }
+  if (type === 'post_repost') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><Repeat className="h-4 w-4" /></span>
+  }
+  if (type === 'new_follower') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-blue-500"><UserPlus className="h-4 w-4" /></span>
+  }
   if (type === 'status_update') {
     const icon = status === 'accepted' ? <Check className="h-4 w-4" /> : status === 'rejected' ? <X className="h-4 w-4" /> : status === 'shortlisted' ? <Star className="h-4 w-4" /> : <Bell className="h-4 w-4" />
     const cls =
@@ -39,6 +51,18 @@ function NotificationIcon({ notification }: { notification: AppNotification }) {
             ? 'bg-amber-500/10 text-amber-500'
             : 'bg-gray-500/10 text-gray-500'
     return <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${cls}`}>{icon}</span>
+  }
+  if (type === 'cofounder_request') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-purple-500"><Handshake className="h-4 w-4" /></span>
+  }
+  if (type === 'cofounder_accepted') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-500"><Check className="h-4 w-4" /></span>
+  }
+  if (type === 'investor_request') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500"><Wallet className="h-4 w-4" /></span>
+  }
+  if (type === 'investor_interested') {
+    return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500"><CalendarClock className="h-4 w-4" /></span>
   }
   return <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-500/10 text-gray-500"><Bell className="h-4 w-4" /></span>
 }
@@ -56,7 +80,10 @@ export function NotificationBell() {
     getNotifications(user.id).then(setNotifications).catch(() => {})
     getUnreadCount(user.id).then(setUnread).catch(() => {})
     const unsubscribe = subscribeToNotifications(user.id, (n) => {
-      setNotifications((prev) => [n, ...prev].slice(0, 10))
+      setNotifications((prev) => {
+        if (prev.some((x) => x.id === n.id)) return prev
+        return [n, ...prev].slice(0, 10)
+      })
       setUnread((prev) => prev + 1)
     })
     return unsubscribe
@@ -88,6 +115,17 @@ export function NotificationBell() {
 
   const handleNavigate = (notification: AppNotification) => {
     setOpen(false)
+    const postId = notification.data?.post_id as string | undefined
+    if (
+      notification.type === 'post_like' ||
+      notification.type === 'post_comment' ||
+      notification.type === 'post_repost'
+    ) {
+      if (postId) {
+        navigate(`/community/post/${postId}`)
+        return
+      }
+    }
     const startupId = notification.data?.startup_id as string | undefined
     if (startupId) {
       navigate(`/startups/${startupId}`)
@@ -98,9 +136,26 @@ export function NotificationBell() {
       navigate(`/profile/${requesterUsername}`)
       return
     }
+    const followerId = notification.data?.follower_id as string | undefined
+    if (notification.type === 'new_follower' && followerId) {
+      navigate(`/profile/${followerId}`)
+      return
+    }
     const senderId = notification.data?.sender_id as string | undefined
     if (notification.type === 'new_message' && senderId) {
       navigate(`/messages?user=${senderId}`)
+      return
+    }
+    if (notification.type === 'cofounder_request' || notification.type === 'cofounder_accepted') {
+      navigate('/co-founder')
+      return
+    }
+    if (notification.type === 'investor_request') {
+      navigate('/investor/requests')
+      return
+    }
+    if (notification.type === 'investor_interested' && startupId) {
+      navigate(`/startups/${startupId}/investors`)
       return
     }
     navigate('/dashboard')

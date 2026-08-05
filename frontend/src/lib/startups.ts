@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { api } from './api'
-import { calcMatchScore, friendlyDbError } from './helpers'
+import { calcInvestorMatch, calcMatchScore, friendlyDbError } from './helpers'
 import type { Profile, Startup } from '../types'
 
 export interface StartupInsert {
@@ -241,9 +241,17 @@ export async function getRecentlyViewed(userId: string, limit = 3): Promise<Star
     .eq('viewer_id', userId)
     .eq('startups.is_published', true)
     .order('viewed_at', { ascending: false })
-    .limit(limit)
+    .limit(30)
   if (error) throw error
-  return (data ?? []).map((row: { startup_id: string; viewed_at: string; startups: unknown[] }) => row.startups as unknown as Startup)
+  const seen = new Set<string>()
+  const out: Startup[] = []
+  for (const row of data ?? []) {
+    if (!row.startup_id || seen.has(row.startup_id)) continue
+    seen.add(row.startup_id)
+    out.push(row.startups as unknown as Startup)
+    if (out.length >= limit) break
+  }
+  return out
 }
 
 export interface StartupViewRow {
@@ -302,8 +310,8 @@ export async function getSavedStartups(userId: string): Promise<Startup[]> {
 /** Trigger the AI matching pipeline for a published startup. */
 export async function notifyMatchedUsers(startupId: string): Promise<void> {
   try {
-    await api.post<{ notified_users: number }>(
-      `/api/startups/${startupId}/notify-matches`,
+    await api.post<{ notified: number }>(
+      `/api/notify-startup-published/${startupId}`,
       undefined,
       { auth: true },
     )
@@ -322,4 +330,20 @@ export async function getRecommendedStartups(
     .map((s) => ({ startup: s, score: calcMatchScore(profile, s) }))
     .sort((a, b) => b.score - a.score)
   return scored.slice(0, limit).map((s) => s.startup)
+}
+
+/** Investor-scored startup recommendations with live match scores. */
+export async function getInvestorRecommendations(
+  profile: Pick<
+    Profile,
+    'investor_interests' | 'investment_range_min' | 'investment_range_max' | 'investment_stage'
+  >,
+  limit = 6,
+): Promise<{ startup: Startup; score: number }[]> {
+  const { startups } = await exploreStartups({ page: 0, pageSize: 200 })
+  return startups
+    .map((s) => ({ startup: s, score: calcInvestorMatch(profile, s) }))
+    .filter((s) => s.score >= 30)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
 }

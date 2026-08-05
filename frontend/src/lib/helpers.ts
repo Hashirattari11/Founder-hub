@@ -100,9 +100,50 @@ export function calcMatchScore(
   return Math.min(score, 100)
 }
 
+/**
+ * Mirrors the backend investor matching algorithm. 0–100.
+ * - Industry overlap: 50
+ * - Funding midpoint inside investor range: 30
+ * - Stage match: 20
+ */
+export function calcInvestorMatch(
+  investor: Pick<
+    Profile,
+    'investor_interests' | 'investment_range_min' | 'investment_range_max' | 'investment_stage'
+  > | null,
+  startup: Pick<Startup, 'industry' | 'funding_needed' | 'stage'>,
+): number {
+  if (!investor) return 0
+  let score = 0
+
+  const interests = (investor.investor_interests ?? []).map((i) => i.toLowerCase())
+  const industry = (startup.industry ?? '').toLowerCase()
+  if (industry && interests.some((i) => industry.includes(i) || i.includes(industry))) score += 50
+
+  const midpoints: Record<string, number> = {
+    Bootstrapped: 0,
+    'Under $10K': 5,
+    '$10K-$50K': 30,
+    '$50K-$100K': 75,
+    '$100K-$500K': 300,
+    '$500K+': 750,
+  }
+  const midpoint = midpoints[startup.funding_needed ?? '']
+  if (midpoint !== undefined) {
+    const low = investor.investment_range_min ?? 0
+    const high = investor.investment_range_max ?? 1_000_000
+    if (midpoint >= low && midpoint <= high) score += 30
+  }
+
+  const stages = (investor.investment_stage ?? []).map((s) => s.toLowerCase())
+  const stage = (startup.stage ?? '').toLowerCase()
+  if (stage && stages.includes(stage)) score += 20
+
+  return Math.min(score, 100)
+}
+
 /** Skills of an applicant that overlap a startup's tech stack. */
-export function skillsMatchPercent(
-  applicantSkills: string[] | null | undefined,
+export function skillsMatchPercent(  applicantSkills: string[] | null | undefined,
   startupTech: string[] | null | undefined,
 ): number {
   if (!applicantSkills?.length || !startupTech?.length) return 0

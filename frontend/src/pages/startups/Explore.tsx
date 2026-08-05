@@ -223,7 +223,7 @@ export default function Explore() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
       <AppHeader title="Explore Startups" backTo="/dashboard" />
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 lg:pb-6">
         {/* Top bar: search + sort + mobile filter button */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">

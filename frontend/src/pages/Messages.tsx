@@ -99,7 +99,7 @@ export default function Messages() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
       <AppHeader title="Messages" backTo="/dashboard" />
-      <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-7xl px-0 sm:px-4 lg:px-6">
+      <div className="mx-auto flex h-[calc(100dvh-8rem)] max-w-7xl px-0 pb-24 sm:px-4 lg:h-[calc(100dvh-4rem)] lg:px-6 lg:pb-0">
         {/* Chat list */}
         <aside
           className={`${

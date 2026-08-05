@@ -137,8 +137,8 @@ export default function StartupAnalytics() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
-      <AppHeader title="Analytics" backTo="/dashboard/startups" />
-      <main className="container-x py-8">
+      <AppHeader title="Analytics" backTo="/dashboard/startups" backLabel="Back to My Startups" />
+      <main className="container-x pt-8 pb-24 lg:pb-8">
         <div className="mb-6">
           <h1 className="text-2xl font-extrabold sm:text-3xl">{startup.name}</h1>
           <p className="mt-1 text-sm text-gray-500">

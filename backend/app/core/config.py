@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     resend_api_key: str = ""
     resend_from_email: str = "FounderHub AI <onboarding@resend.dev>"
+    anthropic_api_key: str = ""
+    encryption_key: str = ""
+    frontend_url: str = "http://localhost:5173"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
     allowed_origins: str = (
         "http://localhost:5173,http://localhost:5174,http://localhost:3000,"
         "http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:3000,"

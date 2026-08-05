@@ -13,10 +13,12 @@ import {
   MessageCircle,
   Wrench,
   Rocket,
+  CalendarDays,
 } from 'lucide-react'
 import { AppHeader } from '../../components/AppHeader'
 import { Avatar } from '../../components/Avatar'
 import { ApplyModal } from '../../components/ApplyModal'
+import { FollowButton } from '../../components/FollowButton'
 import { SkeletonCard } from '../../components/dashboard/Skeleton'
 import { EmptyState } from '../../components/EmptyState'
 import { useSession } from '../../context/AuthContext'
@@ -81,8 +83,8 @@ export default function StartupDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark">
-        <AppHeader title="Startup" backTo="/explore" />
-        <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        <AppHeader title="Startup" backTo="/explore" backLabel="Back to Explore" />
+    <main className="mx-auto max-w-4xl px-4 pt-8 pb-24 sm:px-6 lg:pb-8">
           <SkeletonCard />
           <div className="mt-6 grid gap-6">
             <SkeletonCard />
@@ -96,8 +98,8 @@ export default function StartupDetail() {
   if (notFound || !startup) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark">
-        <AppHeader title="Startup" backTo="/explore" />
-        <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+        <AppHeader title="Startup" backTo="/explore" backLabel="Back to Explore" />
+        <main className="mx-auto max-w-4xl px-4 pt-12 pb-24 sm:px-6 lg:pb-12">
           <EmptyState
             icon={Rocket}
             title="Startup not found"
@@ -111,7 +113,7 @@ export default function StartupDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-dark lg:pb-0">
-      <AppHeader title={startup.name} backTo="/explore" />
+        <AppHeader title={startup.name} backTo="/explore" backLabel="Back to Explore" />
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         {/* Hero */}
@@ -165,6 +167,7 @@ export default function StartupDetail() {
               {savedIds[startup.id] ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
               {savedIds[startup.id] ? 'Saved' : 'Save'}
             </button>
+            <FollowButton targetId={startup.id} targetType="startup" />
           </div>
         </section>
 
@@ -274,14 +277,24 @@ export default function StartupDetail() {
                   </a>
                 )}
                 {!isOwnStartup && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/messages?user=${startup.founder_id}`)}
-                    className="btn-ghost mt-3"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Message
-                  </button>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/messages?user=${startup.founder_id}`)}
+                      className="btn-ghost"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Message
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/meetings?with=${startup.founder_id}`)}
+                      className="btn-ghost"
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                      Schedule Meeting
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -330,8 +343,23 @@ export default function StartupDetail() {
             <p className="text-xs text-gray-500">{startup.equity_offered ?? 0}% equity · {startup.remote_friendly ? 'Remote friendly' : 'On-site'}</p>
           </div>
           {isOwnStartup ? (
-            <Link to={`/startups/${startup.id}/edit`} className="btn-ghost">
-              Edit Startup
+            <>
+              <Link to={`/startups/${startup.id}/data-room`} className="btn-primary">
+                Manage Data Room
+              </Link>
+              <Link to={`/startups/${startup.id}/cap-table`} className="btn-ghost">
+                Cap Table
+              </Link>
+              <Link to={`/startups/${startup.id}/investors`} className="btn-ghost">
+                Find Investors
+              </Link>
+              <Link to={`/startups/${startup.id}/edit`} className="btn-ghost">
+                Edit Startup
+              </Link>
+            </>
+          ) : profile?.role === 'investor' ? (
+            <Link to={`/startups/${startup.id}/data-room`} className="btn-primary">
+              Request Data Room Access
             </Link>
           ) : applied ? (
             <button disabled className="btn-ghost opacity-50">

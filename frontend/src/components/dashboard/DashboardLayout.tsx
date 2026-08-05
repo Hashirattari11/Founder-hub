@@ -16,12 +16,23 @@ import {
   Compass,
   Bookmark,
   Layers,
+  Users,
+  Bell,
+  Mail,
+  Briefcase,
+  Video,
+  Sparkles,
+  Cpu,
+  Handshake,
+  Wallet,
 } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { useDashboardStore } from '../../store/dashboardStore'
 import { useUnreadChatsCount } from '../../hooks/useUnreadChatsCount'
 import { Avatar } from '../Avatar'
 import { NotificationBell } from './NotificationBell'
+import { MessagesButton } from '../MessagesButton'
+import { MobileBottomNav } from '../MobileBottomNav'
 import { ROLE_LABELS } from '../../types'
 import type { Role } from '../../types'
 
@@ -31,36 +42,66 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Post a Startup', to: '/startups/create', icon: Rocket },
     { label: 'My Startups', to: '/dashboard/startups', icon: Layers },
     { label: 'Applications', to: '/dashboard/applications', icon: FileText },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
+    { label: 'Post a Job', to: '/jobs/post', icon: Rocket },
+    { label: 'Manage Jobs', to: '/dashboard/manage-jobs', icon: FileText },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
     { label: 'Analytics', to: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Settings', to: '/settings/profile', icon: Settings },
+    { label: 'Community', to: '/community', icon: Users },
+    { label: 'Messages', to: '/messages', icon: MessageSquare },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
   ],
   developer: [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'My Applications', to: '/dashboard/my-applications', icon: FileText },
+    { label: 'My Job Applications', to: '/dashboard/job-applications', icon: FileText },
+    { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
+    { label: 'Community', to: '/community', icon: Users },
     { label: 'Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Settings', to: '/settings/profile', icon: Settings },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
   ],
   designer: [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'My Applications', to: '/dashboard/my-applications', icon: FileText },
+    { label: 'My Job Applications', to: '/dashboard/job-applications', icon: FileText },
+    { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
+    { label: 'Community', to: '/community', icon: Users },
     { label: 'Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Settings', to: '/settings/profile', icon: Settings },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
   ],
   marketer: [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'My Applications', to: '/dashboard/my-applications', icon: FileText },
+    { label: 'My Job Applications', to: '/dashboard/job-applications', icon: FileText },
+    { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
+    { label: 'Community', to: '/community', icon: Users },
     { label: 'Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Settings', to: '/settings/profile', icon: Settings },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
   ],
   investor: [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Investor Requests', to: '/investor/requests', icon: Handshake },
+    { label: 'Investor Profile', to: '/investor/profile/setup', icon: Wallet },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'Saved', to: '/dashboard/saved', icon: Bookmark },
+    { label: 'Community', to: '/community', icon: Users },
     { label: 'Messages', to: '/messages', icon: MessageSquare },
-    { label: 'Settings', to: '/settings/profile', icon: Settings },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
   ],
 }
 
@@ -107,6 +148,21 @@ function SidebarContent({
             )}
           </NavLink>
         ))}
+
+        <NavLink
+          to="/ai-studio"
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-200 dark:hover:text-white'
+            }`
+          }
+        >
+          <Sparkles className="h-5 w-5" />
+          <span className="flex-1 truncate">AI Studio</span>
+        </NavLink>
       </nav>
 
       <div className="border-t border-gray-200 p-4 dark:border-dark-300">
@@ -132,9 +188,6 @@ export function DashboardLayout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const navigate = useNavigate()
   const unreadCount = useUnreadChatsCount()
-
-  const role = (profile?.role?.toLowerCase() as Role) ?? 'founder'
-  const mobileLinks = (navByRole[role] ?? navByRole.founder).slice(0, 5)
 
   const handleSignOut = async () => {
     await signOut()
@@ -202,6 +255,7 @@ export function DashboardLayout() {
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              <MessagesButton />
               <NotificationBell />
 
               <div className="relative">
@@ -249,6 +303,48 @@ export function DashboardLayout() {
                         Settings
                       </button>
                       <button
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          navigate('/settings/notifications')
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                      >
+                        <Bell className="h-4 w-4" />
+                        Notification Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          navigate('/settings/ai')
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                      >
+                        <Cpu className="h-4 w-4" />
+                        AI Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          navigate('/settings/availability')
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                      >
+                        <Video className="h-4 w-4" />
+                        My Availability
+                      </button>
+                      {profile?.is_admin && (
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/admin/emails')
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                        >
+                          <Mail className="h-4 w-4" />
+                          Email Logs
+                        </button>
+                      )}
+                      <button
                         onClick={handleSignOut}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
                       >
@@ -269,33 +365,7 @@ export function DashboardLayout() {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur-xl lg:hidden dark:border-dark-300 dark:bg-dark/95">
-        <div className="flex items-stretch justify-around">
-          {mobileLinks.map((link) => (
-            <NavLink
-              key={link.to + link.label}
-              to={link.to}
-              className={({ isActive }) =>
-                `flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors ${
-                  isActive
-                    ? 'text-primary'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`
-              }
-            >
-              <div className="relative">
-                <link.icon className="h-5 w-5" />
-                {link.to === '/messages' && unreadCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full bg-primary px-1 text-[9px] font-bold leading-[14px] text-white">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </div>
-              <span className="truncate">{link.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      <MobileBottomNav />
     </div>
   )
 }

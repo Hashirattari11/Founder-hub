@@ -71,8 +71,8 @@ export default function EditStartup() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
-      <AppHeader title="Edit Startup" backTo="/dashboard/startups" />
-      <main className="container-x py-8">
+      <AppHeader title="Edit Startup" backTo="/dashboard/startups" backLabel="Back to My Startups" />
+      <main className="container-x pt-8 pb-24 lg:pb-8">
         <div className="mb-8">
           <h1 className="flex items-center gap-2 text-2xl font-extrabold sm:text-3xl">
             <Pencil className="h-7 w-7 text-primary" />
