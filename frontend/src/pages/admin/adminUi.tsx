@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Lock } from 'lucide-react'
 
 export function PageHeader({
   title,
@@ -142,6 +142,21 @@ export function ErrorBlock({ message }: { message: string }) {
       <p className="font-semibold text-red-600 dark:text-red-400">{message}</p>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
         This area is restricted to platform administrators.
+      </p>
+    </div>
+  )
+}
+
+export function AdminAccessDenied() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-10 text-center dark:border-red-500/30 dark:bg-red-500/10">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20">
+        <Lock className="h-5 w-5 text-red-500" />
+      </span>
+      <p className="text-base font-bold text-gray-900 dark:text-white">Admin access required</p>
+      <p className="max-w-sm text-sm text-gray-600 dark:text-gray-300">
+        This area is restricted to platform administrators. If you believe you should have access,
+        ask a super admin to grant you the administrator role.
       </p>
     </div>
   )

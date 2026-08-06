@@ -216,23 +216,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/admin/emails"
-                element={
-                  <ProtectedRoute>
-                    <EmailLogs />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/ai-studio"
-                element={
-                  <ProtectedRoute>
-                    <AIStudioAdmin />
-                  </ProtectedRoute>
-                }
-              />
-
               {/* Phase 17 — Enterprise Admin Console */}
               <Route
                 path="/admin"
@@ -259,6 +242,9 @@ function App() {
                 <Route path="security" element={<AdminSecurity />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
                 <Route path="startup-members" element={<AdminStartupMembers />} />
+                <Route path="equity" element={<CapTableAdmin />} />
+                <Route path="emails" element={<EmailLogs />} />
+                <Route path="ai-studio" element={<AIStudioAdmin />} />
               </Route>
 
               {/* Public app pages (logged-in) */}
@@ -355,14 +341,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <EquityDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/equity"
-                element={
-                  <ProtectedRoute>
-                    <CapTableAdmin />
                   </ProtectedRoute>
                 }
               />

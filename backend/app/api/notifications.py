@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from app.core.auth import get_user_id
 from app.core.email import send_email
+from app.core.security import is_admin_user_full
 from app.core.supabase import service_supabase
 from app.core.users import user_email
 from app.services.push_service import enqueue_push
@@ -142,14 +143,7 @@ async def notify_startup_published(
 @router.get("/admin/email-logs")
 async def admin_email_logs(user_id: str = Depends(get_user_id)):
     """Recent email_logs rows (admins only)."""
-    profile = (
-        service_supabase.table("profiles")
-        .select("is_admin")
-        .eq("id", user_id)
-        .limit(1)
-        .execute()
-    )
-    if not profile.data or not profile.data[0].get("is_admin"):
+    if not is_admin_user_full(user_id):
         raise HTTPException(status_code=403, detail="Admins only")
 
     rows = (

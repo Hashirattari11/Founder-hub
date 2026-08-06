@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8001'
+const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').trim() || 'http://localhost:8001'
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown

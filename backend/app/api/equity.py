@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from app.api.data_room import _access_valid, _get_access, _get_data_room_by_startup, _get_startup
 from app.core.auth import get_user_id
+from app.core.security import is_admin_user_full
 from app.core.supabase import service_supabase
 from app.services.pdf_writer import PAGE_W, PdfWriter
 
@@ -282,15 +283,10 @@ def _cap_of_round(round_id: str) -> dict | None:
 
 
 def _is_admin(user_id: str) -> bool:
+    """Admin check consistent with the rest of the platform: accepts is_admin,
+    the administrator role, and the env-configured super admin."""
     try:
-        profile = (
-            service_supabase.table("profiles")
-            .select("is_admin")
-            .eq("id", user_id)
-            .maybe_single()
-            .execute()
-        )
-        return bool(profile.data and profile.data.get("is_admin"))
+        return is_admin_user_full(user_id)
     except Exception:
         return False
 

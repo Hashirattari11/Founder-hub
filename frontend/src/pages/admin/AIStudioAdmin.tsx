@@ -10,14 +10,13 @@ import {
   RefreshCw,
   Save,
   Search,
-  ShieldAlert,
   Trash2,
   Users,
   Wrench,
   XCircle,
 } from 'lucide-react'
-import { AppHeader } from '../../components/AppHeader'
 import { StudioIcon } from '../../lib/studioIcons'
+import { AdminAccessDenied } from './adminUi'
 import {
   adminAnalytics,
   adminCreateTool,
@@ -932,17 +931,8 @@ export default function AIStudioAdmin() {
 
   if (profile && !isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-dark">
-        <AppHeader title="AI Studio Admin" backTo="/dashboard" backLabel="Back to Dashboard" />
-        <main className="mx-auto max-w-4xl px-4 pt-16 pb-24 sm:px-6 lg:pb-8">
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-500/30 dark:bg-red-500/10">
-            <ShieldAlert className="mx-auto h-10 w-10 text-red-500" />
-            <p className="mt-3 font-semibold text-red-600 dark:text-red-400">This page is for admins only.</p>
-            <p className="mt-1 text-sm text-red-500/80">
-              Ask an administrator to grant you access if you should be able to manage the AI Studio.
-            </p>
-          </div>
-        </main>
+      <div className="mx-auto max-w-2xl py-8">
+        <AdminAccessDenied />
       </div>
     )
   }
@@ -955,15 +945,13 @@ export default function AIStudioAdmin() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark">
-      <AppHeader title="AI Studio Admin" backTo="/dashboard" backLabel="Back to Dashboard" />
-      <main className="mx-auto max-w-5xl px-4 pt-8 pb-24 sm:px-6 lg:pb-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">AI Studio Admin</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage the data-driven AI Studio: tools, role access, user roles and usage analytics.
-          </p>
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">AI Studio Admin</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Manage the data-driven AI Studio: tools, role access, user roles and usage analytics.
+        </p>
+      </div>
 
         <div className="mb-6 flex flex-wrap gap-2">
           {tabs.map((t) => (
@@ -986,7 +974,6 @@ export default function AIStudioAdmin() {
         {tab === 'users' && <UsersTab />}
         {tab === 'analytics' && <AnalyticsTab />}
         {tab === 'usage' && <UsageTab />}
-      </main>
     </div>
   )
 }

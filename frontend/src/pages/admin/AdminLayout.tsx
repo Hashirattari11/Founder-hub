@@ -11,12 +11,15 @@ import {
   FileText,
   Flag,
   LayoutDashboard,
+  Mail,
   Menu,
   Rocket,
+  Scale,
   ScrollText,
   Settings,
   Shield,
   ShieldAlert,
+  Sparkles,
   UserCog,
   Users,
   Users2,
@@ -50,6 +53,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { label: 'Role Requests', to: '/admin/role-requests', icon: UserCog },
       { label: 'Reports', to: '/admin/reports', icon: Flag },
       { label: 'Startup Members', to: '/admin/startup-members', icon: Users2 },
+      { label: 'Equity / Cap Tables', to: '/admin/equity', icon: Scale },
     ],
   },
   {
@@ -59,6 +63,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { label: 'Health', to: '/admin/health', icon: Activity },
       { label: 'Audit Logs', to: '/admin/audit-logs', icon: ScrollText },
       { label: 'Notifications', to: '/admin/notifications', icon: Bell },
+      { label: 'Email Logs', to: '/admin/emails', icon: Mail },
     ],
   },
   {
@@ -66,6 +71,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'CMS', to: '/admin/cms', icon: FileText },
       { label: 'AI Management', to: '/admin/ai', icon: Cpu },
+      { label: 'AI Studio Tools', to: '/admin/ai-studio', icon: Sparkles },
     ],
   },
   {
