@@ -288,7 +288,8 @@ def _resolve_user_provider(user_id: str):
         return None
 
     row = key_result.data
-    return row["provider"], decrypt_api_key(row["api_key_encrypted"]), row.get("selected_model")
+    model = (profile or {}).get("preferred_ai_model") or row.get("selected_model")
+    return row["provider"], decrypt_api_key(row["api_key_encrypted"]), model
 
 
 def generate_text_sync(user_id: str, prompt: str, system: Optional[str] = None) -> str:

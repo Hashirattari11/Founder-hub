@@ -206,7 +206,10 @@ export default function AISettings() {
     if (!user) return
     setPreferredProvider(newProvider)
     try {
-      await updateProfile(user.id, { preferred_ai_provider: newProvider })
+      await updateProfile(user.id, {
+        preferred_ai_provider: newProvider,
+        preferred_ai_model: providerStates[newProvider as ProviderId]?.model || null,
+      })
       await refreshProfile()
       toast.success('Preference saved!')
     } catch {
@@ -215,6 +218,12 @@ export default function AISettings() {
   }
 
   const ownKeyEnabled = preferredProvider !== 'platform'
+
+  const preferredOwnProvider = (): string => {
+    if (preferredProvider !== 'platform') return preferredProvider
+    const connected = PROVIDER_IDS.find((p) => providerStates[p]?.saved)
+    return connected ?? 'anthropic'
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
@@ -268,7 +277,7 @@ export default function AISettings() {
                         type="radio"
                         name="provider_pref"
                         checked={active}
-                        onChange={() => savePreference(opt.id === 'platform' ? 'platform' : 'anthropic')}
+                        onChange={() => savePreference(opt.id === 'platform' ? 'platform' : preferredOwnProvider())}
                         className="mt-1 h-4 w-4 text-primary focus:ring-primary"
                       />
                       <div>
