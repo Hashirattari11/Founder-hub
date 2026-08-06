@@ -37,6 +37,42 @@ export async function getProfileByUsername(username: string) {
   return (data as Profile | null) ?? null
 }
 
+export interface PeopleSearchResult {
+  id: string
+  full_name: string | null
+  username: string | null
+  avatar_url: string | null
+  bio: string | null
+  role: Profile['role']
+  skills: string[] | null
+  city: string | null
+  country: string | null
+  is_open_to_work: boolean | null
+  created_at: string | null
+}
+
+/** Browse people by role (Investor / Developer / Marketer / Designer). */
+export async function searchProfilesByRole(role: Profile['role'], opts?: { query?: string; excludeUserId?: string }): Promise<PeopleSearchResult[]> {
+  let builder = supabase
+    .from('profiles')
+    .select('id, full_name, username, avatar_url, bio, role, skills, city, country, is_open_to_work, created_at')
+    .eq('role', role)
+  if (opts?.excludeUserId) builder = builder.neq('id', opts.excludeUserId)
+  const q = opts?.query?.trim()
+  if (q) {
+    const safe = q.replace(/[%,.]/g, ' ').trim()
+    if (safe.includes(',')) {
+      builder = builder.or(`full_name.ilike.%${safe}%,username.ilike.%${safe}%`)
+    } else if (safe) {
+      builder = builder.or(`full_name.ilike.%${safe}%,skills.cs.{${safe}},username.ilike.%${safe}%`)
+    }
+  }
+  builder = builder.order('created_at', { ascending: false }).limit(60)
+  const { data, error } = await builder
+  if (error) throw error
+  return (data as PeopleSearchResult[]) ?? []
+}
+
 export async function updateProfile(userId: string, updates: ProfileUpdate) {
   const { data, error } = await supabase
     .from('profiles')

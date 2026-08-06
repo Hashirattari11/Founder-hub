@@ -499,6 +499,11 @@ async def list_meetings(
 
     for m in meetings:
         m.pop("_at", None)
+        try:
+            m["participants"] = _fetch_participants(m["id"])
+            m["action_items"] = _fetch_action_items(m["id"])
+        except Exception:
+            pass
     return {"meetings": meetings}
 
 
@@ -517,8 +522,10 @@ async def get_meeting(meeting_id: str, user_id: str = Depends(get_user_id)):
     if not row.data:
         raise HTTPException(status_code=404, detail="Meeting not found")
     meeting = row.data[0]
-    if str(meeting["organizer_id"]) != str(user_id) and str(meeting["participant_id"] or "") != str(user_id):
+    if not _is_meeting_member(meeting, user_id):
         raise HTTPException(status_code=403, detail="Not your meeting")
+    meeting["participants"] = _fetch_participants(meeting_id)
+    meeting["action_items"] = _fetch_action_items(meeting_id)
     return {"meeting": meeting}
 
 
@@ -627,6 +634,434 @@ def _get_meeting_for_user(meeting_id: str, user_id: str) -> dict:
     if not row.data:
         raise HTTPException(status_code=404, detail="Meeting not found")
     meeting = row.data[0]
-    if str(meeting["organizer_id"]) != str(user_id) and str(meeting["participant_id"] or "") != str(user_id):
+    if not _is_meeting_member(meeting, user_id):
         raise HTTPException(status_code=403, detail="Not your meeting")
     return meeting
+
+
+def _is_meeting_member(meeting: dict, user_id: str) -> bool:
+    uid = str(user_id)
+    if str(meeting.get("organizer_id")) == uid or str(meeting.get("participant_id") or "") == uid:
+        return True
+    try:
+        rows = (
+            service_supabase.table("meeting_participants")
+            .select("user_id")
+            .eq("meeting_id", meeting["id"])
+            .eq("user_id", uid)
+            .limit(1)
+            .execute()
+        )
+        return bool(rows.data)
+    except Exception:
+        return False
+
+
+def _fetch_participants(meeting_id: str) -> list[dict]:
+    try:
+        rows = (
+            service_supabase.table("meeting_participants")
+            .select(
+                "*, profiles:profiles!meeting_participants_user_id_fkey(" + _profile_select() + ")"
+            )
+            .eq("meeting_id", meeting_id)
+            .order("created_at")
+            .execute()
+        )
+        return rows.data or []
+    except Exception:
+        return []
+
+
+def _fetch_action_items(meeting_id: str) -> list[dict]:
+    try:
+        rows = (
+            service_supabase.table("meeting_action_items")
+            .select("*, assignee:profiles!meeting_action_items_assignee_id_fkey(" + _profile_select() + ")")
+            .eq("meeting_id", meeting_id)
+            .order("created_at")
+            .execute()
+        )
+        return rows.data or []
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# AI Meeting Summary & Action Items (Phase 10)
+# ---------------------------------------------------------------------------
+
+class CreateMeetingFullIn(BaseModel):
+    title: str = Field(..., min_length=1, max_length=120)
+    description: str = ""
+    scheduled_at: str = Field(..., description="ISO 8601 timestamp")
+    duration_minutes: int = DEFAULT_DURATION_MINUTES
+    startup_id: Optional[str] = None
+    participant_ids: list[str] = Field(default_factory=list)
+    meeting_link: Optional[str] = None
+    transcript: str = ""
+    recording_url: Optional[str] = None
+
+
+@router.post("/meetings/create")
+async def create_meeting_full(payload: CreateMeetingFullIn, user_id: str = Depends(get_user_id)):
+    """Create a meeting with participants, startup link and AI-summary fields."""
+    try:
+        start_dt = datetime.fromisoformat(payload.scheduled_at.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="scheduled_at must be a valid ISO 8601 timestamp")
+    if start_dt.tzinfo is None:
+        start_dt = start_dt.replace(tzinfo=timezone.utc)
+
+    duration = payload.duration_minutes or DEFAULT_DURATION_MINUTES
+    if duration < 5 or duration > 240:
+        raise HTTPException(status_code=400, detail="Duration must be between 5 and 240 minutes")
+
+    participant_ids = [p for p in dict.fromkeys(payload.participant_ids) if str(p) != str(user_id)]
+    if len(participant_ids) > 1:
+        raise HTTPException(status_code=400, detail="Too many participants")
+
+    end_dt = start_dt + timedelta(minutes=duration)
+    google_link = create_google_meet_link(
+        summary=payload.title,
+        starts_at=start_dt.isoformat(),
+        ends_at=end_dt.isoformat(),
+        attendee_emails=[e for e in (user_email(user_id),) + tuple(user_email(p) for p in participant_ids) if e],
+    )
+
+    meeting_row = {
+        "organizer_id": user_id,
+        "participant_id": participant_ids[0] if participant_ids else None,
+        "created_by": user_id,
+        "startup_id": payload.startup_id or None,
+        "title": payload.title,
+        "description": payload.description,
+        "scheduled_at": start_dt.isoformat(),
+        "duration_minutes": duration,
+        "status": "scheduled",
+        "meet_link": payload.meeting_link or _built_in_meet_link(),
+        "google_meet_link": google_link,
+        "transcript": payload.transcript or "",
+        "recording_url": payload.recording_url or None,
+    }
+    created = service_supabase.table("meetings").insert(meeting_row).execute()
+    if not created.data:
+        raise HTTPException(status_code=500, detail="Could not create meeting")
+    meeting = created.data[0]
+
+    for pid in participant_ids:
+        service_supabase.table("meeting_participants").insert(
+            {"meeting_id": meeting["id"], "user_id": pid, "role": "participant"}
+        ).execute()
+        organizer_name = user_full_name(user_id) or "A FounderHub user"
+        _notify_user(
+            pid,
+            "meeting",
+            "You're invited to a meeting",
+            f"{organizer_name} invited you: {payload.title}",
+            {"meeting_id": meeting["id"], "scheduled_at": start_dt.isoformat()},
+        )
+        email = user_email(pid)
+        if email:
+            send_meeting_confirmation_email(email, user_full_name(pid) or "There", meeting, organizer_name)
+
+    return {"meeting": meeting, "participants": _fetch_participants(meeting["id"])}
+
+
+class EndMeetingIn(BaseModel):
+    transcript: str = ""
+    recording_url: Optional[str] = None
+
+
+@router.post("/meetings/end")
+async def end_meeting(meeting_id: str, payload: EndMeetingIn, user_id: str = Depends(get_user_id)):
+    """Mark a meeting as completed with the transcript and recording URL."""
+    meeting = _get_meeting_for_user(meeting_id, user_id)
+    now = datetime.now(timezone.utc).isoformat()
+    updates: dict = {
+        "status": "completed",
+        "ended_at": now,
+        "started_at": meeting.get("started_at") or meeting.get("scheduled_at") or now,
+        "transcript": payload.transcript or meeting.get("transcript") or "",
+        "recording_url": payload.recording_url or meeting.get("recording_url"),
+    }
+    result = service_supabase.table("meetings").update(updates).eq("id", meeting_id).execute()
+    updated = result.data[0] if result.data else {**meeting, **updates}
+    return {"meeting": updated}
+
+
+class GenerateSummaryIn(BaseModel):
+    meeting_id: str
+    transcript: Optional[str] = None
+    recording_url: Optional[str] = None
+
+
+@router.post("/meetings/generate-summary")
+async def generate_meeting_summary(
+    payload: GenerateSummaryIn,
+    user_id: str = Depends(get_user_id),
+):
+    """Generate an AI summary + action items for a meeting using the user's AI source."""
+    meeting = _get_meeting_for_user(payload.meeting_id, user_id)
+    from app.api.ai import generate_text_sync
+
+    transcript = (payload.transcript or meeting.get("transcript") or "").strip()
+    if not transcript:
+        raise HTTPException(status_code=400, detail="Add a transcript before generating a summary")
+
+    startup_name = ""
+    if meeting.get("startup_id"):
+        try:
+            startup_row = (
+                service_supabase.table("startups")
+                .select("name")
+                .eq("id", meeting["startup_id"])
+                .limit(1)
+                .execute()
+            )
+            startup_name = (startup_row.data[0] if startup_row.data else {}).get("name") or ""
+        except Exception:
+            pass
+
+    participants = _fetch_participants(payload.meeting_id)
+    participant_names = ", ".join(
+        (p.get("profiles") or {}).get("full_name") or "Member"
+        for p in participants
+    ) or user_full_name(meeting.get("participant_id")) or "Meeting participants"
+
+    prompt = (
+        "You are an executive meeting assistant. Read the meeting transcript below and produce "
+        "a concise, structured output in plain text using exactly these section headers:\n\n"
+        "# Summary\n"
+        "# Key Points\n"
+        "# Decisions\n"
+        "# Action Items\n"
+        "# Risks & Blockers\n"
+        "# Follow-up\n\n"
+        "Under Action Items, write one bullet per item in this exact format:\n"
+        "- [Assign to: Person Name] Task description. Due: YYYY-MM-DD\n"
+        "Assign each action item to a real participant when the transcript indicates a clear owner; "
+        "otherwise use the organizer. Use 'No due date' when unclear.\n\n"
+        f"Meeting title: {meeting.get('title') or 'Untitled meeting'}\n"
+        f"Startup: {startup_name or 'N/A'}\n"
+        f"Participants: {participant_names}\n"
+        f"Organizer: {user_full_name(user_id) or 'Organizer'}\n\n"
+        f"Transcript:\n{transcript[:24000]}"
+    )
+
+    try:
+        output = generate_text_sync(user_id, prompt)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    # Parse action items from the structured output.
+    action_items = _parse_action_items(output, payload.meeting_id, meeting)
+    inserted: list[dict] = []
+    for item in action_items:
+        row = {
+            "meeting_id": payload.meeting_id,
+            "description": item["description"],
+            "assignee_id": item.get("assignee_id"),
+            "due_date": item.get("due_date"),
+            "status": "pending",
+            "created_by": user_id,
+        }
+        try:
+            res = service_supabase.table("meeting_action_items").insert(row).execute()
+            if res.data:
+                inserted.append(res.data[0])
+                if item.get("assignee_id") and str(item["assignee_id"]) != str(user_id):
+                    _notify_user(
+                        item["assignee_id"],
+                        "action_item",
+                        "New action item assigned to you",
+                        f"From meeting '{meeting.get('title')}': {item['description']}",
+                        {"meeting_id": payload.meeting_id, "action_item_id": res.data[0]["id"]},
+                    )
+        except Exception as exc:
+            logger.warning("Failed to insert action item: %s", exc)
+
+    updates: dict = {
+        "ai_summary": {
+            "raw": output,
+            "transcript": transcript,
+            "action_items_count": len(inserted),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        },
+        "transcript": transcript,
+    }
+    if payload.recording_url:
+        updates["recording_url"] = payload.recording_url
+    result = service_supabase.table("meetings").update(updates).eq("id", payload.meeting_id).execute()
+    updated = result.data[0] if result.data else {**meeting, **updates}
+
+    return {
+        "meeting": updated,
+        "summary": output,
+        "action_items": inserted,
+        "participants": _fetch_participants(payload.meeting_id),
+    }
+
+
+def _parse_action_items(output: str, meeting_id: str, meeting: dict) -> list[dict]:
+    """Best-effort extraction of '- [Assign to: X] Task. Due: YYYY-MM-DD' bullets."""
+    lines = output.splitlines()
+    items: list[dict] = []
+    assignee_map: dict[str, str] = {}
+    try:
+        participants = (
+            service_supabase.table("meeting_participants")
+            .select("user_id, profiles:profiles!meeting_participants_user_id_fkey(full_name, username)")
+            .eq("meeting_id", meeting_id)
+            .execute()
+        )
+        for p in participants.data or []:
+            prof = p.get("profiles") or {}
+            name = prof.get("full_name") or prof.get("username") or ""
+            if name:
+                assignee_map[name.lower()] = p["user_id"]
+        # Include the organizer so they can be assigned too.
+        organizer_id = meeting.get("organizer_id")
+        if organizer_id:
+            assignee_map.setdefault("organizer", organizer_id)
+            try:
+                org_prof = (
+                    service_supabase.table("profiles")
+                    .select("full_name, username")
+                    .eq("id", organizer_id)
+                    .limit(1)
+                    .execute()
+                )
+                op = org_prof.data[0] if org_prof.data else {}
+                if op.get("full_name"):
+                    assignee_map.setdefault(op["full_name"].lower(), organizer_id)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith(("-", "*")):
+            continue
+        text = stripped[1:].strip()
+        assignee_id = None
+        due_date = None
+        assignee_match = re.search(r"\[Assign to:\s*([^\]]+)\]", text)
+        if assignee_match:
+            raw_name = assignee_match.group(1).strip()
+            text = text.replace(assignee_match.group(0), "").strip()
+            assignee_id = assignee_map.get(raw_name.lower()) or assignee_map.get(
+                raw_name.split()[0].lower() if raw_name else ""
+            )
+            if not assignee_id and meeting.get("organizer_id"):
+                assignee_id = meeting["organizer_id"]
+        due_match = re.search(r"Due:\s*(\d{4}-\d{2}-\d{2})", text)
+        if due_match:
+            due_date = due_match.group(1) + "T00:00:00+00:00"
+            text = text.replace(due_match.group(0), "").strip()
+        text = re.sub(r"[\u201c\u201d\"']+$", "", text).strip().rstrip(".")
+        if not text:
+            continue
+        items.append({"description": text[:500], "assignee_id": assignee_id, "due_date": due_date})
+    return items
+
+
+class ActionItemUpdateIn(BaseModel):
+    status: Optional[str] = None  # pending | in_progress | completed
+    description: Optional[str] = None
+    assignee_id: Optional[str] = None
+    due_date: Optional[str] = None
+
+
+@router.put("/action-item/{item_id}")
+async def update_action_item(
+    item_id: str,
+    payload: ActionItemUpdateIn,
+    user_id: str = Depends(get_user_id),
+):
+    """Update an action item (status, description, assignee, due date)."""
+    row = (
+        service_supabase.table("meeting_action_items")
+        .select("*")
+        .eq("id", item_id)
+        .limit(1)
+        .execute()
+    )
+    if not row.data:
+        raise HTTPException(status_code=404, detail="Action item not found")
+    item = row.data[0]
+
+    meeting = _get_meeting_for_user(item["meeting_id"], user_id)
+
+    updates: dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if payload.status is not None:
+        if payload.status not in ("pending", "in_progress", "completed"):
+            raise HTTPException(status_code=400, detail="Invalid status")
+        updates["status"] = payload.status
+    if payload.description is not None:
+        if not payload.description.strip():
+            raise HTTPException(status_code=400, detail="Description cannot be empty")
+        updates["description"] = payload.description.strip()
+    if payload.assignee_id is not None:
+        updates["assignee_id"] = payload.assignee_id or None
+    if payload.due_date is not None:
+        if payload.due_date.strip():
+            try:
+                datetime.fromisoformat(payload.due_date.replace("Z", "+00:00"))
+            except ValueError:
+                raise HTTPException(status_code=400, detail="due_date must be a valid ISO 8601 timestamp")
+        updates["due_date"] = payload.due_date.strip() or None
+
+    result = service_supabase.table("meeting_action_items").update(updates).eq("id", item_id).execute()
+    return {"action_item": result.data[0] if result.data else {**item, **updates}}
+
+
+class ActionItemCreateIn(BaseModel):
+    meeting_id: str
+    description: str = Field(..., min_length=1)
+    assignee_id: Optional[str] = None
+    due_date: Optional[str] = None
+    status: str = "pending"
+
+
+@router.post("/action-item")
+async def create_action_item(
+    payload: ActionItemCreateIn,
+    user_id: str = Depends(get_user_id),
+):
+    """Manually add an action item to a meeting."""
+    meeting = _get_meeting_for_user(payload.meeting_id, user_id)
+    if payload.status not in ("pending", "in_progress", "completed"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    row = {
+        "meeting_id": payload.meeting_id,
+        "description": payload.description.strip(),
+        "assignee_id": payload.assignee_id or None,
+        "due_date": payload.due_date or None,
+        "status": payload.status,
+        "created_by": user_id,
+    }
+    result = service_supabase.table("meeting_action_items").insert(row).execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Could not create action item")
+    item = result.data[0]
+    if payload.assignee_id and str(payload.assignee_id) != str(user_id):
+        _notify_user(
+            payload.assignee_id,
+            "action_item",
+            "New action item assigned to you",
+            f"From meeting '{meeting.get('title')}': {payload.description.strip()}",
+            {"meeting_id": payload.meeting_id, "action_item_id": item["id"]},
+        )
+    return {"action_item": item}
+
+
+@router.delete("/meeting/{meeting_id}")
+async def delete_meeting(meeting_id: str, user_id: str = Depends(get_user_id)):
+    """Delete a meeting (organizer only). Cascade removes participants + action items."""
+    meeting = _get_meeting_for_user(meeting_id, user_id)
+    if str(meeting["organizer_id"]) != str(user_id):
+        raise HTTPException(status_code=403, detail="Only the organizer can delete this meeting")
+    service_supabase.table("meetings").delete().eq("id", meeting_id).execute()
+    return {"deleted": True}

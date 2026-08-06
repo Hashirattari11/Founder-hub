@@ -249,7 +249,10 @@ export default function Meetings() {
                     </a>
                   )}
                   <CopyInviteButton link={m.meet_link} />
-                  <button onClick={() => setDetail(m)} className="btn-ghost px-4 py-2 text-xs">
+                  <button
+                    onClick={() => navigate(`/meetings/${m.id}`)}
+                    className="btn-ghost px-4 py-2 text-xs"
+                  >
                     Details
                   </button>
                 </div>

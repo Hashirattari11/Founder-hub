@@ -240,6 +240,40 @@ def _resolve_user_provider(user_id: str):
     return row["provider"], decrypt_api_key(row["api_key_encrypted"]), row.get("selected_model")
 
 
+def generate_text_sync(user_id: str, prompt: str, system: Optional[str] = None) -> str:
+    """Run a non-streaming generation against the user's preferred AI source.
+
+    Falls back to the platform Anthropic key. Returns the full text output.
+    Raises RuntimeError when no AI source is configured or the call fails.
+    """
+    resolved = None
+    if user_id:
+        resolved = _resolve_user_provider(user_id)
+
+    provider, api_key, model = None, None, None
+    if resolved:
+        provider, api_key, model = resolved
+        model = model or _default_model(provider)
+    elif settings.anthropic_api_key:
+        provider, api_key, model = "anthropic", settings.anthropic_api_key, PLATFORM_DEFAULT_MODEL
+
+    if not api_key or provider not in STREAM_FNS:
+        raise RuntimeError(
+            "Please select an AI model first. Open AI Settings, add your API key, "
+            "pick a model, and set it as your preferred AI source, then try again."
+        )
+
+    chunks: list[str] = []
+    stream_fn = STREAM_FNS[provider]
+    for chunk in stream_fn(api_key, model, prompt):
+        chunks.append(chunk)
+
+    text = "".join(chunks).strip()
+    if not text:
+        raise RuntimeError("The AI returned an empty response. Try again.")
+    return text
+
+
 def _default_model(provider: str) -> str:
     if provider == "anthropic":
         return PLATFORM_DEFAULT_MODEL

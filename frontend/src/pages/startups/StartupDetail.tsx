@@ -347,8 +347,8 @@ export default function StartupDetail() {
               <Link to={`/startups/${startup.id}/data-room`} className="btn-primary">
                 Manage Data Room
               </Link>
-              <Link to={`/startups/${startup.id}/cap-table`} className="btn-ghost">
-                Cap Table
+              <Link to={`/startups/${startup.id}/equity`} className="btn-ghost">
+                Equity & Cap Table
               </Link>
               <Link to={`/startups/${startup.id}/investors`} className="btn-ghost">
                 Find Investors

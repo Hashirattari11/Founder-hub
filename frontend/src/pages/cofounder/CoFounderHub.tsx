@@ -15,15 +15,17 @@ import {
   MessageSquare,
   Code2,
   Megaphone,
-  Brush,
-  Rocket,
+  Wallet,
+  Briefcase,
+  Palette,
+  MessageCircle,
 } from 'lucide-react'
 import { AppHeader } from '../../components/AppHeader'
 import { Avatar } from '../../components/Avatar'
 import { EmptyState } from '../../components/EmptyState'
 import { SkeletonCard } from '../../components/dashboard/Skeleton'
 import { useSession } from '../../context/AuthContext'
-import { ROLE_LABELS } from '../../types'
+import { ROLE_LABELS, type Role } from '../../types'
 import {
   getCoFounderMatches,
   getCoFounderPreferences,
@@ -34,61 +36,12 @@ import {
 import { timeAgo, capitalize } from '../../lib/helpers'
 import type { CoFounderMatch, CoFounderRequest } from '../../types'
 
-const ROLE_CONTENT: Record<
-  string,
-  { heading: string; subheading: string; lookingFor: string; emptyState: string }
-> = {
-  founder: {
-    heading: 'Find Your Co-Founder',
-    subheading: 'AI matches you with technical and growth co-founders',
-    lookingFor: 'Looking for: Developer, Designer, or Marketer',
-    emptyState: 'No matches yet. Complete your preferences to get matched.',
-  },
-  developer: {
-    heading: 'Find a Business Co-Founder',
-    subheading: 'AI matches you with founders and marketers who need your skills',
-    lookingFor: 'Looking for: Founder, Marketer, or Designer',
-    emptyState: 'No matches yet. Update your co-founder preferences.',
-  },
-  designer: {
-    heading: 'Find Your Co-Founder',
-    subheading: 'AI matches you with developers and founders who need design',
-    lookingFor: 'Looking for: Developer, Founder, or Marketer',
-    emptyState: 'No matches yet. Set your co-founder preferences first.',
-  },
-  marketer: {
-    heading: 'Find Your Co-Founder',
-    subheading: 'AI matches you with technical and product co-founders',
-    lookingFor: 'Looking for: Developer, Founder, or Designer',
-    emptyState: 'No matches yet. Complete your profile and preferences.',
-  },
-}
-
-const COMPLEMENTARY_BADGES: Record<
-  string,
-  { label: string; cls: string; icon: typeof Code2 }
-> = {
-  developer: {
-    label: 'Technical Co-Founder',
-    cls: 'bg-blue-500/20 text-blue-600 border border-blue-500/30 dark:text-blue-400',
-    icon: Code2,
-  },
-  marketer: {
-    label: 'Growth Co-Founder',
-    cls: 'bg-green-500/20 text-green-600 border border-green-500/30 dark:text-green-400',
-    icon: Megaphone,
-  },
-  designer: {
-    label: 'Design Co-Founder',
-    cls: 'bg-amber-500/20 text-amber-600 border border-amber-500/30 dark:text-amber-400',
-    icon: Brush,
-  },
-  founder: {
-    label: 'Business Co-Founder',
-    cls: 'bg-purple-500/20 text-purple-600 border border-purple-500/30 dark:text-purple-400',
-    icon: Rocket,
-  },
-}
+const ROLE_TABS: { key: Role; label: string; icon: typeof Briefcase }[] = [
+  { key: 'investor', label: 'Investors', icon: Wallet },
+  { key: 'developer', label: 'Developers', icon: Code2 },
+  { key: 'marketer', label: 'Marketers', icon: Megaphone },
+  { key: 'designer', label: 'Designers', icon: Palette },
+]
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -105,11 +58,10 @@ function ScoreBadge({ score }: { score: number }) {
 }
 
 export default function CoFounderHub() {
-  const { user, profile } = useSession()
+  const { user } = useSession()
   const navigate = useNavigate()
-  const role = (profile?.role ?? 'founder').toLowerCase()
-  const content = ROLE_CONTENT[role] ?? ROLE_CONTENT.founder
 
+  const [tab, setTab] = useState<Role>('developer')
   const [matches, setMatches] = useState<CoFounderMatch[]>([])
   const [received, setReceived] = useState<CoFounderRequest[]>([])
   const [sent, setSent] = useState<CoFounderRequest[]>([])
@@ -119,17 +71,11 @@ export default function CoFounderHub() {
   const [messageDraft, setMessageDraft] = useState<Record<string, string>>({})
   const [requestModal, setRequestModal] = useState<CoFounderMatch | null>(null)
 
-  useEffect(() => {
-    if (role === 'investor') {
-      navigate('/explore', { replace: true })
-    }
-  }, [role, navigate])
-
   const load = useCallback(async () => {
-    if (!user || role === 'investor') return
+    if (!user) return
     try {
       const [matchRes, reqRes, prefs] = await Promise.all([
-        getCoFounderMatches(user.id),
+        getCoFounderMatches(user.id, tab),
         getCoFounderRequests(user.id),
         getCoFounderPreferences(user.id),
       ])
@@ -142,15 +88,12 @@ export default function CoFounderHub() {
     } finally {
       setLoading(false)
     }
-  }, [user, role])
+  }, [user, tab])
 
   useEffect(() => {
+    setLoading(true)
     load()
   }, [load])
-
-  if (role === 'investor') {
-    return null
-  }
 
   const sendRequest = async (target: CoFounderMatch) => {
     const message = messageDraft[target.profile.id]?.trim()
@@ -188,7 +131,7 @@ export default function CoFounderHub() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
-      <AppHeader title={content.heading} backTo="/dashboard" backLabel="Back to Dashboard" />
+      <AppHeader title="Find Your Co-Founder" backTo="/dashboard" backLabel="Back to Dashboard" />
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-24 sm:px-6 lg:pb-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -196,9 +139,11 @@ export default function CoFounderHub() {
               <Handshake className="h-5 w-5" />
             </span>
             <div>
-              <h1 className="text-xl font-extrabold">{content.heading}</h1>
-              <p className="text-sm text-gray-500">{content.subheading}</p>
-              <p className="mt-0.5 text-xs font-semibold text-primary">{content.lookingFor}</p>
+              <h1 className="text-xl font-extrabold">Find Your Co-Founder</h1>
+              <p className="text-sm text-gray-500">
+                AI matches you with people who complement your skills and vision.
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-primary">Looking for: {ROLE_LABELS[tab]}s</p>
             </div>
           </div>
           <Link
@@ -208,6 +153,27 @@ export default function CoFounderHub() {
             <Sparkles className="h-4 w-4" />
             {hasPrefs ? 'Edit Preferences' : 'Set My Preferences'}
           </Link>
+        </div>
+
+        {/* Role tabs */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          {ROLE_TABS.map((t) => {
+            const Icon = t.icon
+            const active = tab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  active
+                    ? 'bg-primary text-white'
+                    : 'border border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary dark:border-dark-300 dark:bg-dark-100 dark:text-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" /> {t.label}
+              </button>
+            )
+          })}
         </div>
 
         {!hasPrefs && (
@@ -262,14 +228,15 @@ export default function CoFounderHub() {
           ) : matches.length === 0 ? (
             <EmptyState
               icon={Handshake}
-              title={hasPrefs ? 'No high-fit co-founders yet' : 'Set preferences to get matches'}
-              description={hasPrefs ? content.emptyState : 'Add what you are looking for and we will rank the best fits.'}
+              title={hasPrefs ? `No high-fit ${ROLE_LABELS[tab]}s yet` : 'Set preferences to get matches'}
+              description={hasPrefs ? `We will rank the best ${ROLE_LABELS[tab]}s for you as they join.` : 'Add what you are looking for and we will rank the best fits.'}
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {matches.map((m) => {
-                const badge = COMPLEMENTARY_BADGES[m.complementary_role ?? ''] ?? COMPLEMENTARY_BADGES.founder
-                const BadgeIcon = badge.icon
+                const badgeLabel = m.complementary_role
+                  ? `${ROLE_LABELS[m.complementary_role as Role] ?? m.complementary_role} Co-Founder`
+                  : 'Co-Founder'
                 return (
                   <div
                     key={m.profile.id}
@@ -295,11 +262,8 @@ export default function CoFounderHub() {
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-1.5">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.cls}`}
-                      >
-                        <BadgeIcon className="h-3 w-3" />
-                        {badge.label}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        {badgeLabel}
                       </span>
                       {(m.profile.skills ?? []).slice(0, 3).map((skill) => (
                         <span
@@ -333,6 +297,12 @@ export default function CoFounderHub() {
                         className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-dark"
                       >
                         <UserPlus className="h-3.5 w-3.5" /> Connect as Co-Founder
+                      </button>
+                      <button
+                        onClick={() => navigate(`/messages?user=${m.profile.id}`)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
+                      >
+                        <MessageCircle className="h-3 w-3" /> Message
                       </button>
                       <Link
                         to={`/profile/${m.profile.username}`}

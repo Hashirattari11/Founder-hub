@@ -1,5 +1,12 @@
 import { api } from './api'
-import type { AvailabilitySlot, Meeting, MeetingTimeSlot } from '../types/meetings'
+import type {
+  AvailabilitySlot,
+  Meeting,
+  MeetingActionItem,
+  MeetingParticipant,
+  MeetingSummaryResult,
+  MeetingTimeSlot,
+} from '../types/meetings'
 
 export interface SlotInput {
   day_of_week: number
@@ -74,6 +81,61 @@ export function updateMeeting(
 
 export function saveMeetingNotes(id: string, notes: string): Promise<{ meeting: Meeting }> {
   return api.post(`/api/meetings/${id}/notes`, { notes }, { auth: true })
+}
+
+export function createFullMeeting(payload: {
+  title: string
+  description?: string
+  scheduled_at: string
+  duration_minutes?: number
+  startup_id?: string | null
+  participant_ids?: string[]
+  meeting_link?: string | null
+  transcript?: string
+  recording_url?: string | null
+}): Promise<{ meeting: Meeting; participants: MeetingParticipant[] }> {
+  return api.post('/api/meetings/create', payload, { auth: true })
+}
+
+export function endMeeting(
+  id: string,
+  payload: { transcript?: string; recording_url?: string | null },
+): Promise<{ meeting: Meeting }> {
+  return api.post(`/api/meetings/end?meeting_id=${id}`, payload, { auth: true })
+}
+
+export function generateMeetingSummary(payload: {
+  meeting_id: string
+  transcript?: string
+  recording_url?: string | null
+}): Promise<MeetingSummaryResult> {
+  return api.post('/api/meetings/generate-summary', payload, { auth: true })
+}
+
+export function updateActionItem(
+  id: string,
+  payload: {
+    status?: string
+    description?: string
+    assignee_id?: string | null
+    due_date?: string | null
+  },
+): Promise<{ action_item: MeetingActionItem }> {
+  return api.put(`/api/action-item/${id}`, payload, { auth: true })
+}
+
+export function createActionItem(payload: {
+  meeting_id: string
+  description: string
+  assignee_id?: string | null
+  due_date?: string | null
+  status?: string
+}): Promise<{ action_item: MeetingActionItem }> {
+  return api.post('/api/action-item', payload, { auth: true })
+}
+
+export function deleteMeeting(id: string): Promise<{ deleted: boolean }> {
+  return api.delete(`/api/meeting/${id}`, { auth: true })
 }
 
 export function toLocalDateInput(d: Date): string {

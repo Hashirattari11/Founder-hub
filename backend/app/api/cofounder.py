@@ -20,33 +20,33 @@ PROFILE_FIELDS = (
 
 COMPLEMENTARY_ROLES: dict[str, dict] = {
     "founder": {
-        "looking_for": ["developer", "designer", "marketer"],
+        "looking_for": ["developer", "designer", "marketer", "investor"],
         "tab_label": "Find Co-Founder",
         "description": "Find a technical or growth co-founder",
     },
     "developer": {
-        "looking_for": ["founder", "marketer", "designer"],
+        "looking_for": ["founder", "marketer", "designer", "investor"],
         "tab_label": "Find Co-Founder",
         "description": "Find a business or marketing co-founder",
     },
     "designer": {
-        "looking_for": ["developer", "founder", "marketer"],
+        "looking_for": ["developer", "founder", "marketer", "investor"],
         "tab_label": "Find Co-Founder",
         "description": "Find a technical or business co-founder",
     },
     "marketer": {
-        "looking_for": ["developer", "founder", "designer"],
+        "looking_for": ["developer", "founder", "designer", "investor"],
         "tab_label": "Find Co-Founder",
         "description": "Find a technical or product co-founder",
     },
     "investor": {
-        "looking_for": [],
-        "tab_label": None,
-        "description": None,
+        "looking_for": ["founder", "developer", "designer", "marketer"],
+        "tab_label": "Find Co-Founder",
+        "description": "Find a founder or team to co-build with",
     },
 }
 
-MATCHABLE_ROLES = ["founder", "developer", "designer", "marketer"]
+MATCHABLE_ROLES = ["founder", "developer", "designer", "marketer", "investor"]
 
 VALID_COMMITMENTS = {"full_time", "part_time", "flexible"}
 VALID_LOCATIONS = {"same_city", "same_country", "remote_ok"}
@@ -237,7 +237,7 @@ async def get_preferences(user_id: str):
 
 
 @router.get("/matches/{user_id}")
-async def get_matches(user_id: str):
+async def get_matches(user_id: str, role: Optional[str] = None):
     try:
         result = (
             service_supabase.table("profiles")
@@ -254,16 +254,10 @@ async def get_matches(user_id: str):
 
     user_role = (user.get("role") or "founder").lower()
 
-    # Investors use Startup Discovery, not co-founder matching.
-    if user_role == "investor":
-        return {
-            "matches": [],
-            "show_cofounder": False,
-            "message": "Investors use the Startup Discovery feature instead",
-        }
-
     config = COMPLEMENTARY_ROLES.get(user_role, COMPLEMENTARY_ROLES["founder"])
     target_roles = config["looking_for"]
+    if role and role.lower() in MATCHABLE_ROLES:
+        target_roles = [role.lower()]
     user_prefs = _normalize_prefs(user.get("cofounder_preferences"))
 
     candidates = (

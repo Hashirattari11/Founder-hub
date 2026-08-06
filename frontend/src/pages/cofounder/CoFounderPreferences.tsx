@@ -59,6 +59,18 @@ const PREFERENCES_CONTENT: Record<
       'Manage legal and compliance',
     ],
   },
+  investor: {
+    title: 'Find Your Co-Founder',
+    subtitle: 'Tell us who you want to build with',
+    lookingForLabel: 'I am looking for a co-founder who is:',
+    lookingForOptions: [
+      'Founder with a strong business vision',
+      'Technical co-founder (builds the product)',
+      'Marketing co-founder (grows the user base)',
+      'Design co-founder (creates the experience)',
+      'Operations co-founder (runs the business)',
+    ],
+  },
 }
 
 const COMMITMENTS = [
@@ -124,13 +136,7 @@ export default function CoFounderPreferences() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (role === 'investor') {
-      navigate('/explore', { replace: true })
-    }
-  }, [role, navigate])
-
-  useEffect(() => {
-    if (!user || role === 'investor') return
+    if (!user) return
     let mounted = true
     getCoFounderPreferences(user.id)
       .then((prefs) => {
@@ -179,10 +185,6 @@ export default function CoFounderPreferences() {
     } finally {
       setSaving(false)
     }
-  }
-
-  if (role === 'investor') {
-    return null
   }
 
   if (loading) {

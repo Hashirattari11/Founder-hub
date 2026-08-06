@@ -24,8 +24,9 @@ export async function getCoFounderPreferences(userId: string): Promise<CoFounder
   return api.get<CoFounderPreference | null>(`/api/cofounder/preferences/${userId}`, { auth: true })
 }
 
-export async function getCoFounderMatches(userId: string): Promise<CoFounderMatchesResponse> {
-  return api.get(`/api/cofounder/matches/${userId}`, { auth: true })
+export async function getCoFounderMatches(userId: string, role?: string): Promise<CoFounderMatchesResponse> {
+  const query = role ? `?role=${encodeURIComponent(role)}` : ''
+  return api.get(`/api/cofounder/matches/${userId}${query}`, { auth: true })
 }
 
 export async function getCoFounderRequests(

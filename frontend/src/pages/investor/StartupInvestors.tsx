@@ -1,27 +1,36 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Building2,
   Handshake,
   Loader2,
   MessageSquare,
+  MessageCircle,
   Sparkles,
   UserPlus,
   Check,
   Wallet,
+  Briefcase,
+  Palette,
+  Megaphone,
+  MapPin,
 } from 'lucide-react'
 import { AppHeader } from '../../components/AppHeader'
 import { Avatar } from '../../components/Avatar'
+import { ConnectButton } from '../../components/ConnectButton'
+import { useSession } from '../../context/AuthContext'
 import { getStartupById } from '../../lib/startups'
 import { findInvestors, getStartupInvestorMatches, sendInvestorRequest } from '../../lib/investorMatch'
-import { ROLE_LABELS } from '../../types'
+import { searchProfilesByRole, type PeopleSearchResult } from '../../lib/profile'
+import { ROLE_LABELS, type Role } from '../../types'
 import { capitalize } from '../../lib/helpers'
 import type { InvestorMatch, InvestorMatchResult, Startup } from '../../types'
 
 interface DisplayMatch {
   investor_id: string
   name: string
+  username: string | null
   avatar_url: string | null
   role: string
   city: string | null
@@ -54,8 +63,19 @@ function formatCheckRange(min?: number | null, max?: number | null) {
   return `up to ${fmt(max!)}`
 }
 
+const ROLE_TABS: { key: Role; label: string; icon: typeof Briefcase }[] = [
+  { key: 'investor', label: 'Investors', icon: Wallet },
+  { key: 'developer', label: 'Developers', icon: Briefcase },
+  { key: 'marketer', label: 'Marketers', icon: Megaphone },
+  { key: 'designer', label: 'Designers', icon: Palette },
+]
+
 export default function StartupInvestors() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { user } = useSession()
+
+  const [tab, setTab] = useState<Role>('investor')
 
   const [startup, setStartup] = useState<Startup | null>(null)
   const [matches, setMatches] = useState<DisplayMatch[]>([])
@@ -64,6 +84,12 @@ export default function StartupInvestors() {
   const [requestTarget, setRequestTarget] = useState<DisplayMatch | null>(null)
   const [messageDraft, setMessageDraft] = useState('')
   const [sending, setSending] = useState(false)
+
+  const [people, setPeople] = useState<PeopleSearchResult[]>([])
+  const [peopleQuery, setPeopleQuery] = useState('')
+  const [loadingPeople, setLoadingPeople] = useState(false)
+
+  const isPeopleTab = tab !== 'investor'
 
   useEffect(() => {
     if (!id) return
@@ -86,6 +112,25 @@ export default function StartupInvestors() {
   useEffect(() => {
     loadMatches()
   }, [loadMatches])
+
+  useEffect(() => {
+    if (!isPeopleTab) return
+    let active = true
+    setLoadingPeople(true)
+    searchProfilesByRole(tab, { query: peopleQuery || undefined, excludeUserId: user?.id })
+      .then((list) => {
+        if (active) setPeople(list)
+      })
+      .catch(() => {
+        if (active) toast.error('Could not load people')
+      })
+      .finally(() => {
+        if (active) setLoadingPeople(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [tab, peopleQuery, isPeopleTab, user?.id])
 
   const runFind = async () => {
     if (!id) return
@@ -127,9 +172,13 @@ export default function StartupInvestors() {
     }
   }
 
+  const openChat = (userId: string) => {
+    navigate(`/messages?user=${userId}`)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
-      <AppHeader title="Find Investors" backTo={id ? `/startups/${id}` : '/dashboard'} backLabel="Back to Startup" />
+      <AppHeader title="Find People" backTo={id ? `/startups/${id}` : '/dashboard'} backLabel="Back to Startup" />
       <main className="mx-auto max-w-5xl px-4 pt-6 pb-24 sm:px-6 lg:pb-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -138,29 +187,56 @@ export default function StartupInvestors() {
             </span>
             <div>
               <h1 className="text-xl font-extrabold">
-                AI Investor Matching{startup ? ` — ${startup.name}` : ''}
+                {isPeopleTab ? `Find ${ROLE_LABELS[tab]}s` : `AI Investor Matching${startup ? ` — ${startup.name}` : ''}`}
               </h1>
               <p className="text-sm text-gray-500">
-                Investors ranked by industry fit, stage, check size and region.
+                {isPeopleTab
+                  ? `Browse ${ROLE_LABELS[tab]}s on FounderHub and connect or message them.`
+                  : 'Investors ranked by industry fit, stage, check size and region.'}
               </p>
             </div>
           </div>
-          <button onClick={runFind} disabled={finding || !startup} className="btn-primary disabled:opacity-60">
-            {finding ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Matching…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" /> {matches.length > 0 ? 'Re-run Match' : 'Find Investors'}
-              </>
-            )}
-          </button>
+          {!isPeopleTab && (
+            <button onClick={runFind} disabled={finding || !startup} className="btn-primary disabled:opacity-60">
+              {finding ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Matching…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" /> {matches.length > 0 ? 'Re-run Match' : 'Find Investors'}
+                </>
+              )}
+            </button>
+          )}
         </div>
 
-        {loadingStartup ? (
+        {/* Role tabs */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          {ROLE_TABS.map((t) => {
+            const Icon = t.icon
+            const active = tab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  active
+                    ? 'bg-primary text-white'
+                    : 'border border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary dark:border-dark-300 dark:bg-dark-100 dark:text-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" /> {t.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {!isPeopleTab && loadingStartup && (
           <div className="h-8 w-64 animate-pulse rounded-lg bg-gray-200 dark:bg-dark-200" />
-        ) : startup ? (
+        )}
+
+        {!isPeopleTab && !loadingStartup && startup && (
           <div className="mb-6 grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 sm:grid-cols-3 dark:border-dark-300 dark:bg-dark-100">
             <div className="flex items-center gap-2 text-sm">
               <Building2 className="h-4 w-4 text-primary" />
@@ -175,9 +251,18 @@ export default function StartupInvestors() {
               <span className="font-semibold">Asking {startup.funding_needed ?? 'N/A'}</span>
             </div>
           </div>
-        ) : null}
+        )}
 
-        {matches.length === 0 ? (
+        {isPeopleTab ? (
+          <PeopleBrowser
+            people={people}
+            loading={loadingPeople}
+            query={peopleQuery}
+            onQueryChange={setPeopleQuery}
+            onMessage={openChat}
+            selfId={user?.id}
+          />
+        ) : matches.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 p-12 text-center dark:border-dark-400">
             <Handshake className="h-10 w-10 text-gray-400" />
             <h2 className="mt-4 text-lg font-bold">No investor matches yet</h2>
@@ -208,10 +293,17 @@ export default function StartupInvestors() {
                   className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-300 dark:bg-dark-100"
                 >
                   <div className="flex items-start gap-4">
-                    <Avatar src={m.avatar_url} name={m.name} size="md" />
+                    <Link to={m.username ? `/profile/${m.username}` : '#'}>
+                      <Avatar src={m.avatar_url} name={m.name} size="md" />
+                    </Link>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate font-bold">{m.name}</span>
+                        <Link
+                          to={m.username ? `/profile/${m.username}` : '#'}
+                          className="truncate font-bold hover:text-primary"
+                        >
+                          {m.name}
+                        </Link>
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${scoreColor(m.score)}`}>
                           {m.score}% match
                         </span>
@@ -248,14 +340,23 @@ export default function StartupInvestors() {
                           <Wallet className="h-3 w-3" /> {m.checkLabel}
                         </span>
                       )}
-                      {contactable && (
+                      <div className="flex flex-wrap justify-end gap-2">
                         <button
-                          onClick={() => openRequestModal(m)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-dark"
+                          onClick={() => openChat(m.investor_id)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
                         >
-                          <UserPlus className="h-3.5 w-3.5" /> Send Intro
+                          <MessageCircle className="h-3.5 w-3.5" /> Message
                         </button>
-                      )}
+                        {contactable && (
+                          <button
+                            onClick={() => openRequestModal(m)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-dark"
+                          >
+                            <UserPlus className="h-3.5 w-3.5" /> Send Intro
+                          </button>
+                        )}
+                        <ConnectButton targetId={m.investor_id} targetName={m.name} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -314,12 +415,133 @@ export default function StartupInvestors() {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Role-based people browser (Developers / Marketers / Designers)
+// ---------------------------------------------------------------------------
+
+function PeopleBrowser({
+  people,
+  loading,
+  query,
+  onQueryChange,
+  onMessage,
+  selfId,
+}: {
+  people: PeopleSearchResult[]
+  loading: boolean
+  query: string
+  onQueryChange: (q: string) => void
+  onMessage: (userId: string) => void
+  selfId?: string
+}) {
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search by name or skill…"
+          className="w-full max-w-sm rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-dark-300 dark:bg-dark-100"
+        />
+      </div>
+
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-40 animate-pulse rounded-2xl bg-gray-200 dark:bg-dark-200" />
+          ))}
+        </div>
+      ) : people.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 p-12 text-center dark:border-dark-400">
+          <Handshake className="h-10 w-10 text-gray-400" />
+          <h2 className="mt-4 text-lg font-bold">No people found</h2>
+          <p className="mt-1 max-w-md text-sm text-gray-500">
+            {query ? `Nothing matches "${query}". Try a different name or skill.` : 'No profiles listed yet in this role.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {people.map((p) => (
+            <div
+              key={p.id}
+              className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-300 dark:bg-dark-100"
+            >
+              <div className="flex items-start gap-3">
+                <Link to={p.username ? `/profile/${p.username}` : '#'}>
+                  <Avatar src={p.avatar_url} name={p.full_name ?? 'Member'} size="md" />
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={p.username ? `/profile/${p.username}` : '#'}
+                    className="block truncate font-bold hover:text-primary"
+                  >
+                    {p.full_name ?? 'New Member'}
+                  </Link>
+                  {p.username && <p className="text-xs text-gray-400">@{p.username}</p>}
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {p.role && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        {ROLE_LABELS[p.role as keyof typeof ROLE_LABELS] ?? p.role}
+                      </span>
+                    )}
+                    {p.is_open_to_work && (
+                      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-[11px] font-medium text-green-600 dark:text-green-400">
+                        Open to work
+                      </span>
+                    )}
+                  </div>
+                  {p.city && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                      <MapPin className="h-3 w-3" /> {capitalize(p.city)}
+                      {p.country ? `, ${capitalize(p.country)}` : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {p.bio && <p className="mt-3 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{p.bio}</p>}
+
+              {p.skills && p.skills.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {p.skills.slice(0, 5).map((skill) => (
+                    <span
+                      key={skill}
+                      className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-dark-200 dark:text-gray-300"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {p.id !== selfId && (
+                  <>
+                    <button
+                      onClick={() => onMessage(p.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" /> Message
+                    </button>
+                    <ConnectButton targetId={p.id} targetName={p.full_name} />
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function toDisplay(m: InvestorMatch): DisplayMatch {
   const inv = m.investor
   const prof = m.investor_profile
   return {
     investor_id: m.investor_id,
     name: inv?.full_name ?? 'Investor',
+    username: inv?.username ?? null,
     avatar_url: inv?.avatar_url ?? null,
     role: inv?.role ?? '',
     city: inv?.city ?? null,
@@ -337,6 +559,7 @@ function toDisplayResult(m: InvestorMatchResult): DisplayMatch {
   return {
     investor_id: inv.id,
     name: inv.full_name ?? 'Investor',
+    username: inv.username ?? null,
     avatar_url: inv.avatar_url ?? null,
     role: inv.role ?? '',
     city: inv.city ?? null,

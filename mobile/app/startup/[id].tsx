@@ -175,6 +175,9 @@ export default function StartupDetail() {
         )}
 
         <View style={styles.actions}>
+          {isOwner && (
+            <Button title="Equity & Cap Table" variant="secondary" onPress={() => router.push(`/equity/${id}`)} style={styles.actionBtn} />
+          )}
           {!isOwner && !applied && (
             <Button title={applied ? 'Applied ✓' : 'Apply to Join'} onPress={() => setShowApply(true)} style={styles.actionBtn} />
           )}

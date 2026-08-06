@@ -25,6 +25,7 @@ import {
   Cpu,
   Handshake,
   Wallet,
+  Scale,
 } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { useDashboardStore } from '../../store/dashboardStore'
@@ -42,6 +43,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Post a Startup', to: '/startups/create', icon: Rocket },
     { label: 'My Startups', to: '/dashboard/startups', icon: Layers },
     { label: 'Applications', to: '/dashboard/applications', icon: FileText },
+    { label: 'Equity & Cap Table', to: '/dashboard/equity', icon: Scale },
     { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'Post a Job', to: '/jobs/post', icon: Rocket },
     { label: 'Manage Jobs', to: '/dashboard/manage-jobs', icon: FileText },
@@ -342,6 +344,18 @@ export function DashboardLayout() {
                         >
                           <Mail className="h-4 w-4" />
                           Email Logs
+                        </button>
+                      )}
+                      {profile?.is_admin && (
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/admin/equity')
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                        >
+                          <Scale className="h-4 w-4" />
+                          Cap Table Admin
                         </button>
                       )}
                       <button

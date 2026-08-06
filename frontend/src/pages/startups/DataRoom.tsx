@@ -404,9 +404,11 @@ export default function DataRoomPage() {
       </main>
 
       {/* Founder modals */}
+      {isOwner && (
+        <CreateRoomModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handleCreate} />
+      )}
       {isOwner && room && (
         <>
-          <CreateRoomModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handleCreate} />
           <UploadModal
             open={uploadOpen}
             onClose={() => setUploadOpen(false)}

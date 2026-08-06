@@ -32,6 +32,7 @@ import StartupDetail from './pages/startups/StartupDetail'
 import CreateStartup from './pages/startups/CreateStartup'
 import EditStartup from './pages/startups/EditStartup'
 import MyStartups from './pages/dashboard/MyStartups'
+import MyCapTables from './pages/dashboard/MyCapTables'
 import ApplicationsDashboard from './pages/dashboard/ApplicationsDashboard'
 import MyApplications from './pages/dashboard/MyApplications'
 import JobApplications from './pages/dashboard/JobApplications'
@@ -40,6 +41,8 @@ import SavedStartups from './pages/dashboard/SavedStartups'
 import StartupAnalytics from './pages/startups/StartupAnalytics'
 import DataRoomPage from './pages/startups/DataRoom'
 import CapTablePage from './pages/startups/CapTable'
+import EquityDashboardPage from './pages/equity/EquityDashboard'
+import CapTableAdmin from './pages/admin/CapTableAdmin'
 import Messages from './pages/Messages'
 import Connections from './pages/Connections'
 import NotificationSettings from './pages/NotificationSettings'
@@ -59,6 +62,7 @@ import AvailabilitySettings from './pages/meetings/AvailabilitySettings'
 import BookMeeting from './pages/meetings/BookMeeting'
 import Meetings from './pages/meetings/Meetings'
 import VideoCall from './pages/meetings/VideoCall'
+import MeetingDetail from './pages/meetings/MeetingDetail'
 import CoFounderHub from './pages/cofounder/CoFounderHub'
 import CoFounderPreferences from './pages/cofounder/CoFounderPreferences'
 import StartupInvestors from './pages/investor/StartupInvestors'
@@ -174,6 +178,14 @@ function App() {
                 }
               />
               <Route
+                path="/meetings/:id"
+                element={
+                  <ProtectedRoute>
+                    <MeetingDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/meet/:roomId"
                 element={
                   <ProtectedRoute>
@@ -276,6 +288,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CapTablePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/startups/:id/equity"
+                element={
+                  <ProtectedRoute>
+                    <EquityDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/equity"
+                element={
+                  <ProtectedRoute>
+                    <CapTableAdmin />
                   </ProtectedRoute>
                 }
               />
@@ -399,6 +427,7 @@ function App() {
               >
                 <Route index element={<RoleDashboard />} />
                 <Route path="startups" element={<MyStartups />} />
+                <Route path="equity" element={<MyCapTables />} />
                 <Route path="applications" element={<ApplicationsDashboard />} />
                 <Route path="my-applications" element={<MyApplications />} />
                 <Route path="job-applications" element={<JobApplications />} />

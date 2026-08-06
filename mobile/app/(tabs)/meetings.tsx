@@ -97,7 +97,7 @@ export default function Meetings() {
             const other = item.organizer_id === session?.user.id ? item.participant : item.organizer
             const isOrganizer = item.organizer_id === session?.user.id
             return (
-              <View style={styles.card}>
+              <Pressable style={styles.card} onPress={() => router.push(`/meeting/${item.id}`)}>
                 <View style={styles.cardRow}>
                   <Avatar uri={other?.avatar_url} name={other?.full_name} role={other?.role as never} size={40} />
                   <View style={styles.cardBody}>
@@ -121,11 +121,11 @@ export default function Meetings() {
                   ) : (
                     <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
                   )}
-                  {item.meeting_link ? (
-                    <Button title="Join" variant="secondary" onPress={() => Alert.alert('Join', item.meeting_link!)} style={styles.smallBtn} />
+                  {item.meeting_link || item.meet_link ? (
+                    <Button title="Join" variant="secondary" onPress={() => Alert.alert('Join', (item.meeting_link || item.meet_link)!)} style={styles.smallBtn} />
                   ) : null}
                 </View>
-              </View>
+              </Pressable>
             )
           }}
         />

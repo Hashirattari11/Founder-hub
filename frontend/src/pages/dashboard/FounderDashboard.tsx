@@ -12,6 +12,7 @@ import { useSession } from '../../context/AuthContext'
 import { getMyStartups } from '../../lib/startups'
 import { getApplicationsForStartup } from '../../lib/applications'
 import { getUnreadCount } from '../../lib/notifications'
+import { listMeetings } from '../../lib/meetings'
 import { StatCard } from '../../components/dashboard/StatCard'
 import { StartupCard } from '../../components/dashboard/StartupCard'
 import { StatCardSkeleton, StartupCardSkeleton, SkeletonRow } from '../../components/dashboard/Skeleton'
@@ -21,6 +22,7 @@ import { ProfileCompleteness } from '../../components/dashboard/ProfileCompleten
 import { Avatar } from '../../components/Avatar'
 import { timeAgo } from '../../lib/helpers'
 import type { Application, Startup } from '../../types'
+import type { Meeting, MeetingActionItem } from '../../types/meetings'
 
 const STATUS_BADGE: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
@@ -42,6 +44,9 @@ export default function FounderDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [unread, setUnread] = useState(0)
   const [loadingStats, setLoadingStats] = useState(true)
+  const [upcoming, setUpcoming] = useState<Meeting[]>([])
+  const [previous, setPrevious] = useState<Meeting[]>([])
+  const [myActionItems, setMyActionItems] = useState<MeetingActionItem[]>([])
 
   useEffect(() => {
     if (!user) return
@@ -63,6 +68,25 @@ export default function FounderDashboard() {
       })
 
     getUnreadCount(user.id).then(setUnread).catch(() => {})
+    listMeetings('upcoming')
+      .then((r) => {
+        if (active) setUpcoming(r.meetings)
+      })
+      .catch(() => {})
+    listMeetings('past')
+      .then((r) => {
+        if (active) {
+          setPrevious(r.meetings)
+          const mine: MeetingActionItem[] = []
+          for (const m of r.meetings) {
+            for (const a of m.action_items ?? []) {
+              if (a.status !== 'completed' && (a.assignee_id === user.id || m.organizer_id === user.id)) mine.push(a)
+            }
+          }
+          setMyActionItems(mine)
+        }
+      })
+      .catch(() => {})
     return () => {
       active = false
     }
@@ -126,6 +150,95 @@ export default function FounderDashboard() {
             <StatCard icon={Bell} label="Unread notifications" value={unread} />
           </>
         )}
+      </div>
+
+      {/* Meetings & tasks */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-300 dark:bg-dark-100">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-bold">Upcoming Meetings</h2>
+            <Link to="/meetings" className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all hover:gap-2">
+              View all
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {upcoming.length === 0 ? (
+            <p className="text-sm text-gray-500">No upcoming meetings. Schedule one to connect.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {upcoming.slice(0, 3).map((m) => (
+                <Link
+                  key={m.id}
+                  to={`/meetings/${m.id}`}
+                  className="rounded-xl border border-gray-200 p-4 transition-colors hover:border-primary/30 dark:border-dark-300"
+                >
+                  <p className="truncate text-sm font-semibold">{m.title}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {new Date(m.scheduled_at).toLocaleString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-300 dark:bg-dark-100">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-bold">Pending Tasks</h2>
+            <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+              {myActionItems.length}
+            </span>
+          </div>
+          {myActionItems.length === 0 ? (
+            <p className="text-sm text-gray-500">No pending action items. Generate AI summaries to track tasks.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {myActionItems.slice(0, 4).map((a) => (
+                <div key={a.id} className="rounded-xl border border-gray-200 p-4 dark:border-dark-300">
+                  <p className="text-sm">{a.description}</p>
+                  {a.due_date && (
+                    <p className="mt-1 text-xs text-gray-500">Due {new Date(a.due_date).toLocaleDateString()}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-300 dark:bg-dark-100">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-bold">Previous Meetings</h2>
+            <Link to="/meetings" className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all hover:gap-2">
+              View all
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {previous.length === 0 ? (
+            <p className="text-sm text-gray-500">No past meetings yet.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {previous.slice(0, 3).map((m) => (
+                <Link
+                  key={m.id}
+                  to={`/meetings/${m.id}`}
+                  className="rounded-xl border border-gray-200 p-4 transition-colors hover:border-primary/30 dark:border-dark-300"
+                >
+                  <p className="truncate text-sm font-semibold">{m.title}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {m.status === 'completed' ? 'Completed' : m.status} ·{' '}
+                    {new Date(m.scheduled_at).toLocaleDateString()}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {/* My Startups */}
