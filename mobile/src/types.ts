@@ -35,6 +35,7 @@ export interface Profile {
   portfolio_companies: string[] | null
   notification_preferences: Record<string, boolean> | null
   is_admin: boolean | null
+  is_super_admin: boolean | null
   connections_count: number | null
   created_at: string
   updated_at: string

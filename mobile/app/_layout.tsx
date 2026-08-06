@@ -78,6 +78,7 @@ function RootNavigator() {
           <Stack.Screen name="create-post" />
           <Stack.Screen name="edit-profile" />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="admin" />
         </>
       )}
     </Stack>

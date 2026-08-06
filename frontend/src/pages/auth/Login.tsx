@@ -7,6 +7,8 @@ import toast from 'react-hot-toast'
 import { supabase, APP_URL } from '../../lib/supabase'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
+import { isAdminProfile } from '../../lib/admin'
+import type { Profile } from '../../types'
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -43,8 +45,26 @@ export default function Login() {
 
       if (error) throw error
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      let profile: Profile | null = null
+      if (session) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, role, is_admin')
+          .eq('id', session.user.id)
+          .maybeSingle()
+        profile = (data as Profile | null) ?? null
+      }
+
       toast.success('Welcome back!')
-      navigate(from, { replace: true })
+      if (!location.state?.from && isAdminProfile(profile)) {
+        navigate('/admin/dashboard', { replace: true })
+      } else {
+        navigate(from, { replace: true })
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to sign in')
     } finally {

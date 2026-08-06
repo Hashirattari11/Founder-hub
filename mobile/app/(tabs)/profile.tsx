@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { Screen, Avatar, Button, Card, SectionHeader, EmptyState } from '@/components/ui'
 import { useAuth } from '@/context/AuthContext'
 import { getMyStartups } from '@/lib/startups'
+import { isAdminProfile } from '@/lib/admin'
 import { ROLE_LABELS } from '@/types'
 import { colors, radius, spacing, typography } from '@/theme'
 import type { Startup } from '@/types'
@@ -50,6 +51,12 @@ export default function Profile() {
           <Button title="AI Studio" variant="secondary" onPress={() => router.push('/ai-studio')} style={styles.actionBtn} />
           <Button title="Settings" variant="outline" onPress={() => router.push('/settings')} style={styles.actionBtn} />
         </View>
+
+        {isAdminProfile(profile) ? (
+          <View style={styles.actions}>
+            <Button title="Admin Console" variant="secondary" onPress={() => router.push('/admin')} style={styles.actionBtn} />
+          </View>
+        ) : null}
 
         {profile.skills?.length ? (
           <View>

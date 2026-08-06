@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { HelmetProvider } from 'react-helmet-async'
 import { ThemeProvider } from './hooks/useTheme'
 import { AuthProvider } from './context/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute } from './components/AdminRoute'
 import { FounderGuard, InvestorGuard } from './components/RoleGuard'
 import { OnlinePresence } from './components/OnlinePresence'
 import { DashboardLayout } from './components/dashboard/DashboardLayout'
@@ -73,6 +74,23 @@ import CoFounderPreferences from './pages/cofounder/CoFounderPreferences'
 import StartupInvestors from './pages/investor/StartupInvestors'
 import InvestorRequests from './pages/investor/InvestorRequests'
 import InvestorProfileSetup from './pages/investor/InvestorProfileSetup'
+import AdminLayout from './pages/admin/AdminLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminStartups from './pages/admin/AdminStartups'
+import AdminInvestors from './pages/admin/AdminInvestors'
+import AdminRoleRequests from './pages/admin/AdminRoleRequests'
+import AdminReports from './pages/admin/AdminReports'
+import AdminAnalytics from './pages/admin/AdminAnalytics'
+import AdminHealth from './pages/admin/AdminHealth'
+import AdminAuditLogs from './pages/admin/AdminAuditLogs'
+import AdminNotifications from './pages/admin/AdminNotifications'
+import AdminCms from './pages/admin/AdminCms'
+import AdminAi from './pages/admin/AdminAi'
+import AdminSettings from './pages/admin/AdminSettings'
+import AdminSecurity from './pages/admin/AdminSecurity'
+import AdminSubscriptions from './pages/admin/AdminSubscriptions'
+import AdminStartupMembers from './pages/admin/AdminStartupMembers'
 import { Helmet } from 'react-helmet-async'
 
 function LandingPage() {
@@ -214,6 +232,34 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              {/* Phase 17 — Enterprise Admin Console */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                }
+              >
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="startups" element={<AdminStartups />} />
+                <Route path="investors" element={<AdminInvestors />} />
+                <Route path="role-requests" element={<AdminRoleRequests />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="health" element={<AdminHealth />} />
+                <Route path="audit-logs" element={<AdminAuditLogs />} />
+                <Route path="notifications" element={<AdminNotifications />} />
+                <Route path="cms" element={<AdminCms />} />
+                <Route path="ai" element={<AdminAi />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="security" element={<AdminSecurity />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="startup-members" element={<AdminStartupMembers />} />
+              </Route>
 
               {/* Public app pages (logged-in) */}
               <Route

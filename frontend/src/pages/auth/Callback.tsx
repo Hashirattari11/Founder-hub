@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { isAdminProfile } from '../../lib/admin'
+import type { Profile } from '../../types'
 
 export default function Callback() {
   const [error, setError] = useState<string | null>(null)
@@ -40,13 +42,17 @@ export default function Callback() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, role, is_admin')
           .eq('id', session.user.id)
           .maybeSingle()
 
         if (cancelled) return
 
-        if ((profile as { full_name?: string } | null)?.full_name) {
+        const p = profile as (Profile & { full_name?: string }) | null
+
+        if (isAdminProfile(p)) {
+          navigate('/admin/dashboard', { replace: true })
+        } else if (p?.full_name) {
           navigate('/dashboard', { replace: true })
         } else {
           navigate('/complete-profile', { replace: true })

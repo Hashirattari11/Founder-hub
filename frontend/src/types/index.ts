@@ -37,6 +37,7 @@ export interface Profile {
   preferred_ai_provider: string | null
   preferred_ai_model: string | null
   is_admin: boolean | null
+  is_super_admin: boolean | null
   connections_count: number | null
   created_at: string
   updated_at: string

@@ -25,6 +25,7 @@ import {
   Handshake,
   Wallet,
   Scale,
+  Shield,
 } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { useDashboardStore } from '../../store/dashboardStore'
@@ -140,6 +141,7 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
   ],
   administrator: [
     { label: 'Home', to: '/dashboard', icon: Home },
+    { label: 'Admin Console', to: '/admin/dashboard', icon: Shield },
     { label: 'AI Studio Admin', to: '/admin/ai-studio', icon: Cpu },
     { label: 'Email Logs', to: '/admin/emails', icon: Mail },
     { label: 'Cap Table Admin', to: '/admin/equity', icon: Scale },
@@ -392,6 +394,18 @@ export function DashboardLayout() {
                         <Video className="h-4 w-4" />
                         My Availability
                       </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/admin/dashboard')
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                        >
+                          <Shield className="h-4 w-4" />
+                          Admin Console
+                        </button>
+                      )}
                       {isAdmin && (
                         <button
                           onClick={() => {
