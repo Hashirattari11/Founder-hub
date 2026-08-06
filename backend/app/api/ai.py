@@ -143,30 +143,81 @@ def _stream_openai(api_key: str, model_id: str, prompt: str):
             yield chunk.choices[0].delta.content
 
 
+_RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
+_RETRY_DELAYS = (1.5, 3.0)
+
+
+def _extract_provider_error(response) -> str:
+    """Return a clean human-readable message from a provider error body."""
+    try:
+        body = response.json()
+    except Exception:
+        return response.text[:300]
+    if not isinstance(body, dict):
+        return response.text[:300]
+    detail = body.get("detail")
+    if detail:
+        return detail if isinstance(detail, str) else str(detail)
+    err = body.get("error")
+    if isinstance(err, dict):
+        msg = err.get("message") or err.get("code")
+        if msg:
+            return msg if isinstance(msg, str) else str(msg)
+    if isinstance(err, str):
+        return err
+    if body.get("message"):
+        return body["message"]
+    return response.text[:300]
+
+
 def _stream_http(api_key: str, model_id: str, prompt: str, url: str):
     import requests
+    import time
 
-    response = requests.post(
-        url,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model_id,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 4000,
-            "stream": True,
-        },
-        stream=True,
-        timeout=300,
-    )
-    if response.status_code != 200:
+    host = url.split("/")[2]
+    response = None
+    for attempt in range(len(_RETRY_DELAYS) + 1):
+        if response is not None:
+            response.close()
         try:
-            detail = response.json().get("detail") or response.text[:300]
-        except Exception:
-            detail = response.text[:300]
-        raise Exception(f"{url.split('/')[2]} error: {detail}")
+            response = requests.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model_id,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 4000,
+                    "stream": True,
+                },
+                stream=True,
+                timeout=300,
+            )
+        except requests.RequestException as exc:
+            response = None
+            if attempt < len(_RETRY_DELAYS):
+                time.sleep(_RETRY_DELAYS[attempt])
+                continue
+            raise Exception(f"{host} error: {exc}") from exc
+
+        if response.status_code in _RETRYABLE_STATUSES and attempt < len(_RETRY_DELAYS):
+            time.sleep(_RETRY_DELAYS[attempt])
+            continue
+        break
+
+    if response is None:
+        raise Exception(f"{host} error: provider unreachable")
+
+    if response.status_code != 200:
+        detail = _extract_provider_error(response)
+        if response.status_code == 429 or "ResourceExhausted" in detail:
+            detail = (
+                f"{detail} - the provider is at capacity. Wait a moment and retry, "
+                f"or switch to a different model/provider in AI Settings."
+            )
+        raise Exception(f"{host} error: {detail}")
     for line in response.iter_lines(decode_unicode=True):
         if not line or not line.startswith("data: "):
             continue
