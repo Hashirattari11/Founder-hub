@@ -23,6 +23,7 @@ from app.api.investor_match import router as investor_match_router
 from app.api.data_room import router as data_room_router
 from app.api.cap_table import router as cap_table_router
 from app.api.equity import router as equity_router
+from app.api.business_plan import router as business_plan_router
 from app.services.reminder_service import reminder_loop
 from app.services.push_service import push_loop
 
@@ -97,3 +98,4 @@ app.include_router(investor_match_router)
 app.include_router(data_room_router)
 app.include_router(cap_table_router)
 app.include_router(equity_router)
+app.include_router(business_plan_router)

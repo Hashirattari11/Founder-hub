@@ -42,6 +42,10 @@ import StartupAnalytics from './pages/startups/StartupAnalytics'
 import DataRoomPage from './pages/startups/DataRoom'
 import CapTablePage from './pages/startups/CapTable'
 import EquityDashboardPage from './pages/equity/EquityDashboard'
+import BusinessPlanDashboard from './pages/businessplan/Dashboard'
+import BusinessPlanGenerator from './pages/businessplan/Generator'
+import BusinessPlanViewer from './pages/businessplan/Viewer'
+import BusinessPlanShareView from './pages/businessplan/ShareView'
 import CapTableAdmin from './pages/admin/CapTableAdmin'
 import Messages from './pages/Messages'
 import Connections from './pages/Connections'
@@ -304,6 +308,36 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CapTableAdmin />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* AI Business Plan Generator */}
+              <Route
+                path="/business-plan/share/:token"
+                element={<BusinessPlanShareView />}
+              />
+              <Route
+                path="/business-plan"
+                element={
+                  <ProtectedRoute>
+                    <BusinessPlanDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/business-plan/new"
+                element={
+                  <ProtectedRoute>
+                    <BusinessPlanGenerator />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/business-plan/:id"
+                element={
+                  <ProtectedRoute>
+                    <BusinessPlanViewer />
                   </ProtectedRoute>
                 }
               />

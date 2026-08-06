@@ -7,7 +7,7 @@ import { PostCard } from '@/components/PostCard'
 import { useAuth } from '@/context/AuthContext'
 import { useNotifications } from '@/context/NotificationsContext'
 import { getFeed, subscribeToNewPosts } from '@/lib/feed'
-import { colors, spacing, typography } from '@/theme'
+import { colors, radius, spacing, typography } from '@/theme'
 import type { Post } from '@/types'
 
 type FeedTab = 'for_you' | 'following' | 'trending'
@@ -74,6 +74,19 @@ export default function Home() {
         </Pressable>
       </View>
 
+      {profile?.role === 'founder' ? (
+        <Pressable style={styles.bpCard} onPress={() => router.push('/business-plan')}>
+          <View style={styles.bpIcon}>
+            <Ionicons name="sparkles" size={18} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bpTitle}>Business Plan Generator</Text>
+            <Text style={styles.bpSubtitle}>30-section plan, pitch deck & financials</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+        </Pressable>
+      ) : null}
+
       <View style={styles.tabs}>
         {TABS.map((t) => (
           <Chip key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
@@ -124,6 +137,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  bpCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  bpIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bpTitle: { ...typography.subheading, color: colors.primary },
+  bpSubtitle: { ...typography.small, color: colors.textSecondary, marginTop: 1 },
   tabs: { flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.xs },
   list: { paddingBottom: 120 },
   fab: {

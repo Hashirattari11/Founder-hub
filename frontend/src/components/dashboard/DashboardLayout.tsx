@@ -5,7 +5,6 @@ import {
   Rocket,
   Home,
   FileText,
-  MessageSquare,
   BarChart3,
   Settings,
   Search,
@@ -44,13 +43,13 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'My Startups', to: '/dashboard/startups', icon: Layers },
     { label: 'Applications', to: '/dashboard/applications', icon: FileText },
     { label: 'Equity & Cap Table', to: '/dashboard/equity', icon: Scale },
+    { label: 'AI Business Plan', to: '/business-plan', icon: FileText },
     { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'Post a Job', to: '/jobs/post', icon: Rocket },
     { label: 'Manage Jobs', to: '/dashboard/manage-jobs', icon: FileText },
     { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
     { label: 'Analytics', to: '/dashboard/analytics', icon: BarChart3 },
     { label: 'Community', to: '/community', icon: Users },
-    { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Connections', to: '/connections', icon: Users },
     { label: 'Meetings', to: '/meetings', icon: Video },
   ],
@@ -63,7 +62,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
     { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
     { label: 'Community', to: '/community', icon: Users },
-    { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Connections', to: '/connections', icon: Users },
     { label: 'Meetings', to: '/meetings', icon: Video },
   ],
@@ -76,7 +74,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
     { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
     { label: 'Community', to: '/community', icon: Users },
-    { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Connections', to: '/connections', icon: Users },
     { label: 'Meetings', to: '/meetings', icon: Video },
   ],
@@ -89,7 +86,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
     { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
     { label: 'Community', to: '/community', icon: Users },
-    { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Connections', to: '/connections', icon: Users },
     { label: 'Meetings', to: '/meetings', icon: Video },
   ],
@@ -101,7 +97,6 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'Saved', to: '/dashboard/saved', icon: Bookmark },
     { label: 'Community', to: '/community', icon: Users },
-    { label: 'Messages', to: '/messages', icon: MessageSquare },
     { label: 'Connections', to: '/connections', icon: Users },
     { label: 'Meetings', to: '/meetings', icon: Video },
   ],
@@ -127,7 +122,7 @@ function SidebarContent({
         <span className="text-xl font-bold tracking-tight">FounderHub</span>
       </Link>
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {links.map((link) => (
           <NavLink
             key={link.to + link.label}
