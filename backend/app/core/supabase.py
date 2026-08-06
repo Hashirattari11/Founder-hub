@@ -48,3 +48,13 @@ service_supabase = LazyClient(
     settings.supabase_service_role_key or settings.supabase_anon_key,
     "service_supabase",
 )
+
+
+def single_row(response) -> Optional[dict]:
+    """Normalize a `.maybe_single().execute()` result.
+
+    In the installed supabase-py, `maybe_single` returns ``None`` (not a
+    response object) when no row matches. Callers can then safely use the
+    dict directly.
+    """
+    return response.data if response is not None else None

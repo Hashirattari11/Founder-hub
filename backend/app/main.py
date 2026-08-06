@@ -25,12 +25,18 @@ from app.api.cap_table import router as cap_table_router
 from app.api.equity import router as equity_router
 from app.api.business_plan import router as business_plan_router
 from app.api.ai_studio import router as ai_studio_router
+from app.api.admin import router as admin_router
+from app.api.role_requests import router as role_requests_router
+from app.api.reports import router as reports_router
+from app.core.request_tracking import RequestTrackingMiddleware
+from app.core.security import bootstrap_super_admin
 from app.services.reminder_service import reminder_loop
 from app.services.push_service import push_loop
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await asyncio.to_thread(bootstrap_super_admin)
     stop_event = asyncio.Event()
     reminder_task = asyncio.create_task(reminder_loop(stop_event))
     push_task = asyncio.create_task(push_loop(stop_event))
@@ -74,6 +80,7 @@ async def postgrest_error_handler(_, exc: APIError):
         )
     return JSONResponse(status_code=400, content={"detail": message})
 
+app.add_middleware(RequestTrackingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -101,3 +108,6 @@ app.include_router(cap_table_router)
 app.include_router(equity_router)
 app.include_router(business_plan_router)
 app.include_router(ai_studio_router)
+app.include_router(admin_router)
+app.include_router(role_requests_router)
+app.include_router(reports_router)

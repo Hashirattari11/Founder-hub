@@ -21,6 +21,9 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:3000,"
         "https://your-production-domain.vercel.app"
     )
+    # Super Admin bootstrap — populated from env, never logged or exposed.
+    super_admin_email: str = ""
+    super_admin_password: str = ""
 
     @property
     def cors_origins(self) -> list[str]:
