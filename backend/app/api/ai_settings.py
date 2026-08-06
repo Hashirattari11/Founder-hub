@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from app.core.auth import get_user_id
 from app.core.models import PROVIDER_MODELS
 from app.core.supabase import service_supabase
+from app.api.ai import _extract_provider_error
 from app.services.encryption import decrypt_api_key, encrypt_api_key
 
 router = APIRouter(prefix="/api/ai-settings", tags=["ai-settings"])
@@ -30,7 +31,18 @@ VALID_PROVIDERS = {"anthropic", "openai", "openrouter", "nvidia"}
 
 def _nvidia_error_message(detail: str) -> str:
     detail = detail.strip()
-    if "not found for account" in detail or "Function" in detail:
+    if "ResourceExhausted" in detail or "rate limit" in detail.lower():
+        return (
+            "Nvidia NIM is at capacity (free-tier request limit reached). "
+            "Your key looks fine — wait a minute and test again, or switch to "
+            "a different model in AI Settings."
+        )
+    if "401" in detail or "unauthorized" in detail.lower() or "invalid api key" in detail.lower():
+        return (
+            "Nvidia NIM error: the API key was rejected (401). Double-check the "
+            "key at https://build.nvidia.com/ and paste it again."
+        )
+    if "not found for account" in detail or "Function" in detail or "404" in detail:
         return (
             "Nvidia NIM error: this model/key isn't available for your account. "
             "Fix: (1) enable 'Public API Endpoints' in your NVIDIA Developer "
@@ -136,7 +148,7 @@ async def test_api_key(
                 timeout=60,
             )
             if response.status_code != 200:
-                raise Exception(f"OpenRouter error: {response.text[:300]}")
+                raise Exception(f"OpenRouter error: {_extract_provider_error(response)}")
 
         elif provider == "nvidia":
             response = requests.post(
@@ -153,11 +165,7 @@ async def test_api_key(
                 timeout=60,
             )
             if response.status_code != 200:
-                try:
-                    err = response.json()
-                    detail = err.get("detail") or err.get("message") or response.text[:300]
-                except Exception:
-                    detail = response.text[:300]
+                detail = _extract_provider_error(response)
                 raise Exception(_nvidia_error_message(detail))
 
         # Record a successful test for a saved key if it exists
@@ -182,7 +190,9 @@ async def test_api_key(
     except HTTPException:
         raise
     except Exception as e:
-        # Record a failed test for a saved key if it exists
+        # Record a failed test for a saved key if it exists, unless the
+        # failure was a transient provider capacity/rate-limit issue.
+        transient = "capacity" in str(e) or "rate limit" in str(e).lower() or "ResourceExhausted" in str(e)
         saved = (
             service_supabase.table("ai_provider_settings")
             .select("id")
@@ -191,9 +201,10 @@ async def test_api_key(
             .execute()
         )
         if saved.data:
+            status = "untested" if transient else "failed"
             service_supabase.table("ai_provider_settings").update(
                 {
-                    "test_status": "failed",
+                    "test_status": status,
                     "last_tested_at": "now()",
                     "updated_at": "now()",
                 }
