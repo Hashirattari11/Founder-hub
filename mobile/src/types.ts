@@ -1,6 +1,16 @@
 export type { User, Session } from '@supabase/supabase-js'
 
-export type Role = 'founder' | 'developer' | 'designer' | 'investor' | 'marketer'
+export type Role =
+  | 'founder'
+  | 'developer'
+  | 'designer'
+  | 'investor'
+  | 'marketer'
+  | 'legal_advisor'
+  | 'business_analyst'
+  | 'mentor'
+  | 'recruiter'
+  | 'administrator'
 
 export interface Profile {
   id: string
@@ -30,7 +40,18 @@ export interface Profile {
   updated_at: string
 }
 
-export const ROLES: Role[] = ['founder', 'developer', 'designer', 'investor', 'marketer']
+export const ROLES: Role[] = [
+  'founder',
+  'developer',
+  'designer',
+  'investor',
+  'marketer',
+  'legal_advisor',
+  'business_analyst',
+  'mentor',
+  'recruiter',
+  'administrator',
+]
 
 export const ROLE_LABELS: Record<Role, string> = {
   founder: 'Founder',
@@ -38,6 +59,11 @@ export const ROLE_LABELS: Record<Role, string> = {
   designer: 'Designer',
   investor: 'Investor',
   marketer: 'Marketer',
+  legal_advisor: 'Legal Advisor',
+  business_analyst: 'Business Analyst',
+  mentor: 'Mentor',
+  recruiter: 'Recruiter',
+  administrator: 'Administrator',
 }
 
 export const ROLE_OPTIONS: { value: Role; label: string; description: string }[] = [
@@ -46,6 +72,11 @@ export const ROLE_OPTIONS: { value: Role; label: string; description: string }[]
   { value: 'designer', label: 'Designer', description: 'I design products and want to join a startup' },
   { value: 'marketer', label: 'Marketer', description: 'I help startups grow and reach users' },
   { value: 'investor', label: 'Investor', description: 'I fund startups and look for opportunities' },
+  { value: 'legal_advisor', label: 'Legal Advisor', description: 'I provide legal guidance to founders and startups' },
+  { value: 'business_analyst', label: 'Business Analyst', description: 'I analyze markets, data and business performance' },
+  { value: 'mentor', label: 'Mentor', description: 'I coach founders and early-stage teams' },
+  { value: 'recruiter', label: 'Recruiter', description: 'I source and hire startup talent' },
+  { value: 'administrator', label: 'Administrator', description: 'I manage platform teams and operations' },
 ]
 
 export const SKILLS = [
@@ -79,6 +110,11 @@ export const ROLE_SKILLS: Record<Role, string[]> = {
   designer: ['UI/UX Design', 'Graphic Design', 'Branding', 'Figma', 'Prototyping', 'Design Systems', 'User Research', 'Motion Design', 'Illustration', 'Video Editing'],
   marketer: ['Marketing', 'SEO', 'Content Writing', 'Social Media', 'Growth Marketing', 'Email Marketing', 'Paid Ads', 'Video Editing', 'PR', 'Branding', 'Analytics'],
   investor: ['Finance', 'Financial Modeling', 'Due Diligence', 'Fundraising', 'Networking', 'Legal', 'Strategy', 'Business Development', 'Portfolio Management', 'Valuation'],
+  legal_advisor: ['Legal', 'Contracts', 'Corporate Law', 'IP', 'Compliance', 'Fundraising', 'Negotiation', 'Due Diligence', 'Governance', 'Employment Law'],
+  business_analyst: ['Data Science', 'Analytics', 'Financial Modeling', 'Strategy', 'Market Research', 'SQL', 'Forecasting', 'Business Development', 'Operations', 'Product Management'],
+  mentor: ['Leadership', 'Strategy', 'Fundraising', 'Product Management', 'Growth', 'Pitching', 'Operations', 'Networking', 'Mentoring', 'Sales'],
+  recruiter: ['Talent Acquisition', 'Hiring', 'HR', 'Networking', 'Sourcing', 'Interviewing', 'Employer Branding', 'People Operations', 'Sales', 'Communication'],
+  administrator: ['Operations', 'Management', 'Finance', 'Legal', 'Compliance', 'Strategy', 'HR', 'Governance', 'Project Management', 'Business Development'],
 }
 
 export const INVESTOR_INTERESTS = [

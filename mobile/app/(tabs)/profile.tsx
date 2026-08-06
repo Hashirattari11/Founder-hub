@@ -47,6 +47,7 @@ export default function Profile() {
 
         <View style={styles.actions}>
           <Button title="Edit Profile" variant="secondary" onPress={() => router.push('/edit-profile')} style={styles.actionBtn} />
+          <Button title="AI Studio" variant="secondary" onPress={() => router.push('/ai-studio')} style={styles.actionBtn} />
           <Button title="Settings" variant="outline" onPress={() => router.push('/settings')} style={styles.actionBtn} />
         </View>
 

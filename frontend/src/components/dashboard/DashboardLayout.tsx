@@ -29,6 +29,7 @@ import {
 import { useSession } from '../../context/AuthContext'
 import { useDashboardStore } from '../../store/dashboardStore'
 import { useUnreadChatsCount } from '../../hooks/useUnreadChatsCount'
+import { useAIStudioConfig } from '../../lib/aiStudio'
 import { Avatar } from '../Avatar'
 import { NotificationBell } from './NotificationBell'
 import { MessagesButton } from '../MessagesButton'
@@ -100,6 +101,52 @@ const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]
     { label: 'Connections', to: '/connections', icon: Users },
     { label: 'Meetings', to: '/meetings', icon: Video },
   ],
+  legal_advisor: [
+    { label: 'Home', to: '/dashboard', icon: Home },
+    { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
+    { label: 'Community', to: '/community', icon: Users },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
+  ],
+  business_analyst: [
+    { label: 'Home', to: '/dashboard', icon: Home },
+    { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
+    { label: 'Community', to: '/community', icon: Users },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
+  ],
+  mentor: [
+    { label: 'Home', to: '/dashboard', icon: Home },
+    { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
+    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
+    { label: 'Community', to: '/community', icon: Users },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
+  ],
+  recruiter: [
+    { label: 'Home', to: '/dashboard', icon: Home },
+    { label: 'Explore Startups', to: '/explore', icon: Compass },
+    { label: 'Jobs', to: '/jobs', icon: Briefcase },
+    { label: 'Post a Job', to: '/jobs/post', icon: Rocket },
+    { label: 'Manage Jobs', to: '/dashboard/manage-jobs', icon: FileText },
+    { label: 'Community', to: '/community', icon: Users },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
+  ],
+  administrator: [
+    { label: 'Home', to: '/dashboard', icon: Home },
+    { label: 'AI Studio Admin', to: '/admin/ai-studio', icon: Cpu },
+    { label: 'Email Logs', to: '/admin/emails', icon: Mail },
+    { label: 'Cap Table Admin', to: '/admin/equity', icon: Scale },
+    { label: 'Community', to: '/community', icon: Users },
+    { label: 'Connections', to: '/connections', icon: Users },
+    { label: 'Meetings', to: '/meetings', icon: Video },
+  ],
 }
 
 function SidebarContent({
@@ -110,8 +157,20 @@ function SidebarContent({
   unreadCount: number
 }) {
   const { profile } = useSession()
-  const role = (profile?.role?.toLowerCase() as Role) ?? 'founder'
-  const links = navByRole[role] ?? navByRole.founder
+  const { config: studioConfig } = useAIStudioConfig(profile?.id)
+  const primaryRole = (profile?.role?.toLowerCase() as Role) ?? 'founder'
+  const roles: Role[] = (
+    studioConfig?.roles?.length ? studioConfig.roles : [primaryRole]
+  ) as Role[]
+  const seen = new Set<string>()
+  const links = roles.flatMap((r) => navByRole[r] ?? []).filter((link) => {
+    if (seen.has(link.to)) return false
+    seen.add(link.to)
+    return true
+  })
+  if (!seen.has('/dashboard')) {
+    links.unshift({ label: 'Home', to: '/dashboard', icon: Home })
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -185,6 +244,10 @@ export function DashboardLayout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const navigate = useNavigate()
   const unreadCount = useUnreadChatsCount()
+  const isAdmin = Boolean(
+    profile?.is_admin ||
+      (profile?.role && ['administrator', 'admin'].includes(profile.role.toLowerCase())),
+  )
 
   const handleSignOut = async () => {
     await signOut()
@@ -329,7 +392,19 @@ export function DashboardLayout() {
                         <Video className="h-4 w-4" />
                         My Availability
                       </button>
-                      {profile?.is_admin && (
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/admin/ai-studio')
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-200"
+                        >
+                          <Cpu className="h-4 w-4" />
+                          AI Studio Admin
+                        </button>
+                      )}
+                      {isAdmin && (
                         <button
                           onClick={() => {
                             setUserMenuOpen(false)
@@ -341,7 +416,7 @@ export function DashboardLayout() {
                           Email Logs
                         </button>
                       )}
-                      {profile?.is_admin && (
+                      {isAdmin && (
                         <button
                           onClick={() => {
                             setUserMenuOpen(false)

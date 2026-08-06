@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Check, Plus, ArrowLeft, ArrowRight, Loader2, Rocket, Code2, Palette, Megaphone, Wallet } from 'lucide-react'
+import { Check, Plus, ArrowLeft, ArrowRight, Loader2, Rocket, Code2, Palette, Megaphone, Wallet, Scale, BarChart3, Lightbulb, Users, Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useSession } from '../../context/AuthContext'
 import { AuthLayout } from '../../components/AuthLayout'
@@ -19,6 +19,11 @@ const ROLE_ICONS: Record<Role, typeof Rocket> = {
   designer: Palette,
   marketer: Megaphone,
   investor: Wallet,
+  legal_advisor: Scale,
+  business_analyst: BarChart3,
+  mentor: Lightbulb,
+  recruiter: Users,
+  administrator: Shield,
 }
 
 export default function CompleteProfile() {

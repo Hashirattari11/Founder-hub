@@ -1,6 +1,16 @@
 export type { User } from '@supabase/supabase-js'
 
-export type Role = 'founder' | 'developer' | 'designer' | 'investor' | 'marketer'
+export type Role =
+  | 'founder'
+  | 'developer'
+  | 'designer'
+  | 'investor'
+  | 'marketer'
+  | 'legal_advisor'
+  | 'business_analyst'
+  | 'mentor'
+  | 'recruiter'
+  | 'administrator'
 
 export interface Profile {
   id: string
@@ -38,6 +48,11 @@ export const ROLES: Role[] = [
   'designer',
   'investor',
   'marketer',
+  'legal_advisor',
+  'business_analyst',
+  'mentor',
+  'recruiter',
+  'administrator',
 ]
 
 export const ROLE_LABELS: Record<Role, string> = {
@@ -46,6 +61,11 @@ export const ROLE_LABELS: Record<Role, string> = {
   designer: 'Designer',
   investor: 'Investor',
   marketer: 'Marketer',
+  legal_advisor: 'Legal Advisor',
+  business_analyst: 'Business Analyst',
+  mentor: 'Mentor',
+  recruiter: 'Recruiter',
+  administrator: 'Administrator',
 }
 
 export const SKILLS = [
@@ -79,6 +99,11 @@ export const ROLE_OPTIONS: { value: Role; label: string; description: string }[]
   { value: 'designer', label: 'Designer', description: 'I design products and want to join a startup' },
   { value: 'marketer', label: 'Marketer', description: 'I help startups grow and reach users' },
   { value: 'investor', label: 'Investor', description: 'I fund startups and look for opportunities' },
+  { value: 'legal_advisor', label: 'Legal Advisor', description: 'I provide legal guidance to founders' },
+  { value: 'business_analyst', label: 'Business Analyst', description: 'I analyze business data and metrics' },
+  { value: 'mentor', label: 'Mentor', description: 'I coach and guide founders and teams' },
+  { value: 'recruiter', label: 'Recruiter', description: 'I help startups hire top talent' },
+  { value: 'administrator', label: 'Administrator', description: 'I manage the FounderHub platform' },
 ]
 
 export const ROLE_SKILLS: Record<Role, string[]> = {
@@ -146,6 +171,54 @@ export const ROLE_SKILLS: Record<Role, string[]> = {
     'Business Development',
     'Portfolio Management',
     'Valuation',
+  ],
+  legal_advisor: [
+    'Legal',
+    'Contracts',
+    'Corporate Law',
+    'IP Protection',
+    'Compliance',
+    'Fundraising',
+    'Negotiation',
+    'Due Diligence',
+  ],
+  business_analyst: [
+    'Analytics',
+    'Data Science',
+    'Financial Modeling',
+    'Strategy',
+    'Market Research',
+    'Product Management',
+    'SQL',
+    'Excel',
+    'Forecasting',
+  ],
+  mentor: [
+    'Strategy',
+    'Leadership',
+    'Coaching',
+    'Networking',
+    'Fundraising',
+    'Product Management',
+    'Sales',
+    'Business Development',
+  ],
+  recruiter: [
+    'Hiring',
+    'Talent Sourcing',
+    'Interviewing',
+    'HR',
+    'Networking',
+    'People Operations',
+    'Employer Branding',
+  ],
+  administrator: [
+    'Platform Management',
+    'Analytics',
+    'Compliance',
+    'Community Management',
+    'Support',
+    'Security',
   ],
 }
 

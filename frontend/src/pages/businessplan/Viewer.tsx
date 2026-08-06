@@ -400,7 +400,7 @@ export function FinancialsTab({ plan }: { plan: BusinessPlanRecord }) {
                   ))}
                 </Pie>
                 <Tooltip formatter={(v) => fmt(Number(v))} />
-                <Legend fontSize={11} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
               </RePieChart>
             </ResponsiveContainer>
           </div>

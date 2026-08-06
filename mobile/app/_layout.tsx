@@ -66,6 +66,8 @@ function RootNavigator() {
           <Stack.Screen name="business-plan/new" />
           <Stack.Screen name="business-plan/[id]" />
           <Stack.Screen name="job/[id]" />
+          <Stack.Screen name="ai-studio/index" />
+          <Stack.Screen name="ai-studio/[slug]" />
           <Stack.Screen name="post/[postId]" />
           <Stack.Screen name="jobs" />
           <Stack.Screen name="startups" />

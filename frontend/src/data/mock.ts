@@ -109,4 +109,9 @@ export const recommendedForRole: Record<Role, Startup[]> = {
   designer: [mockStartups[0], mockStartups[1], mockStartups[2]],
   investor: [mockStartups[0], mockStartups[1], mockStartups[2]],
   marketer: [mockStartups[0], mockStartups[1], mockStartups[2]],
+  legal_advisor: [mockStartups[0], mockStartups[1], mockStartups[2]],
+  business_analyst: [mockStartups[0], mockStartups[1], mockStartups[2]],
+  mentor: [mockStartups[0], mockStartups[1], mockStartups[2]],
+  recruiter: [mockStartups[0], mockStartups[1], mockStartups[2]],
+  administrator: [mockStartups[0], mockStartups[1], mockStartups[2]],
 }

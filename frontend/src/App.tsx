@@ -52,6 +52,7 @@ import Connections from './pages/Connections'
 import NotificationSettings from './pages/NotificationSettings'
 import AISettings from './pages/AISettings'
 import AIStudio from './pages/AIStudio'
+import AIStudioAdmin from './pages/admin/AIStudioAdmin'
 import EmailLogs from './pages/EmailLogs'
 import Community from './pages/Community'
 import FounderStories from './pages/FounderStories'
@@ -202,6 +203,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <EmailLogs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/ai-studio"
+                element={
+                  <ProtectedRoute>
+                    <AIStudioAdmin />
                   </ProtectedRoute>
                 }
               />

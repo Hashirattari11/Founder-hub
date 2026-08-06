@@ -115,6 +115,11 @@ const ROLE_COLORS: Record<Role, string> = {
   designer: '#DB2777',
   investor: '#059669',
   marketer: '#D97706',
+  legal_advisor: '#475569',
+  business_analyst: '#0D9488',
+  mentor: '#7C3AED',
+  recruiter: '#B45309',
+  administrator: '#DC2626',
 }
 
 export function Avatar({ uri, name, role, size = 44 }: { uri?: string | null; name?: string | null; role?: Role | null; size?: number }) {

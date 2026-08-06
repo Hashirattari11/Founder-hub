@@ -89,11 +89,7 @@ export default function BusinessPlanDashboard() {
           icon={FileText}
           title="No business plans yet"
           description="Describe your startup idea and the AI will build a complete plan, pitch deck and financial model."
-          action={
-            <Link to="/business-plan/new" className="btn-primary">
-              Create your first plan
-            </Link>
-          }
+          action={{ label: 'Create your first plan', to: '/business-plan/new' }}
         />
       ) : (
         <div className="flex flex-col gap-4">
