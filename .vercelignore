@@ -1,0 +1,10 @@
+.vercel
+.venv
+venv
+**/node_modules
+backend/.env
+backend/.env.*
+mobile/.expo
+**/*.log
+*.log
+expo-go-qr.png

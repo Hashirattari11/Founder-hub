@@ -35,3 +35,7 @@ frontend/dist/
 
 # Ruff
 .ruff_cache/
+
+.vercel
+.env*
+expo-go-qr.png

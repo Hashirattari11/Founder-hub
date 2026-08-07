@@ -1,11 +1,18 @@
 {
-  "buildCommand": "cd frontend && npm ci && npm run build",
-  "functions": {
-    "main.py": {
-      "maxDuration": 60,
-      "memory": 1024,
-      "cpu": 1,
-      "excludeFiles": ["frontend/node_modules/**", "frontend/.env.*", "frontend/src/**", "mobile/**", "docs/**", "supabase/**"]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python",
+      "config": {
+        "buildCommand": "cd frontend && npm ci && npm run build && rm -rf node_modules"
+      }
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
+  ]
 }

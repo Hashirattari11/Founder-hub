@@ -140,7 +140,7 @@ export default function VideoCall() {
       if (!secureContext) {
         setStatus('error')
         setError(
-          'Camera & mic need a secure connection (HTTPS or localhost). Open this room on http://localhost:5173 or deploy the app to HTTPS.',
+          `Camera & mic need a secure connection (HTTPS or localhost). Open this room on ${window.location.origin} or deploy the app to HTTPS.`,
         )
         return null
       }
