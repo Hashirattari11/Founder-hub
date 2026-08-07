@@ -6,8 +6,7 @@ import { useSession } from '../../context/AuthContext'
 import { applyToJob, hasAppliedToJob, getResumes, uploadResumePdf, notifyJobApplication } from '../../lib/jobs'
 import { AVAILABILITY_OPTIONS } from '../../lib/jobUi'
 import type { Job, Resume } from '../../types'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+import { API_URL } from '../../lib/config'
 
 interface ApplyModalProps {
   job: Job

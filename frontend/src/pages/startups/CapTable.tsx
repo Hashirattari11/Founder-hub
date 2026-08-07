@@ -34,6 +34,7 @@ import {
   saveCapTable,
   updateRound,
 } from '../../lib/capTable'
+import { API_URL } from '../../lib/config'
 import { formatDate } from '../../lib/helpers'
 import type { CapTableEntry, CapTableResponse, FundingRound, HolderType, ShareClass } from '../../types'
 import type { LucideIcon } from 'lucide-react'
@@ -74,8 +75,6 @@ const ROUND_TYPE_LABELS: Record<string, string> = {
   angel: 'Angel',
   grant: 'Grant',
 }
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
 
 const fmtMoney = (n: number | null | undefined) =>
   n == null ? '—' : `$${n.toLocaleString()}`

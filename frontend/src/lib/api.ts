@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
-
-const API_URL = (import.meta.env.VITE_API_URL ?? '').trim() || 'http://localhost:8001'
+import { API_URL } from './config'
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown

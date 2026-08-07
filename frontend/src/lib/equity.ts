@@ -17,8 +17,7 @@ import type {
   VestingFrequency,
   VestingSchedule,
 } from '../types'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+import { API_URL } from './config'
 
 export const EQUITY_HOLDER_TYPES: { value: EquityHolderType; label: string }[] = [
   { value: 'founder', label: 'Founder' },

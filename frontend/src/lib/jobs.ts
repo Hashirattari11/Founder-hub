@@ -7,8 +7,7 @@ import type {
   JobType,
   Resume,
 } from '../types'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+import { API_URL } from './config'
 
 const JOB_PROFILE_FIELDS = 'profiles!jobs_posted_by_fkey(full_name, avatar_url)'
 const JOB_STARTUP_FIELDS = 'startups(id, name, tagline, industry)'

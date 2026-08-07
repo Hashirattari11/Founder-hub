@@ -7,8 +7,7 @@ import type {
   GeneratePlanPayload,
   PlanStage,
 } from '../types/businessPlan'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8001'
+import { API_URL } from './config'
 
 export const PLAN_STAGES: { value: PlanStage; label: string }[] = [
   { value: 'idea', label: 'Idea' },
