@@ -135,6 +135,24 @@ async def notify_message(
     sender_id: str = Depends(get_user_id),
 ):
     """Best-effort email + push to the receiver when a message is sent (fire-and-forget from the client)."""
+    if payload.receiver_id == sender_id:
+        return {"sent": False}
+    try:
+        chat = (
+            service_supabase.table("chats")
+            .select("id, participant_1, participant_2")
+            .eq("id", payload.chat_id)
+            .limit(1)
+            .execute()
+        )
+        row = (chat.data or [None])[0]
+    except Exception:
+        row = None
+    if not row:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    participants = {str(row.get("participant_1")), str(row.get("participant_2"))}
+    if str(sender_id) not in participants or str(payload.receiver_id) not in participants:
+        raise HTTPException(status_code=403, detail="Not a participant of this chat")
     email = _receiver_email(payload.receiver_id)
     if not email:
         return {"sent": False}

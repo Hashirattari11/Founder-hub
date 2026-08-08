@@ -7,6 +7,7 @@ import type {
   AdminStartup,
   AdminUsersResponse,
   AdminInvestorsResponse,
+  AdminMessagesResponse,
   AdminNotificationsResponse,
   AiAnalyticsResponse,
   AiUsageResponse,
@@ -144,6 +145,19 @@ export function adminListInvestors(params?: { search?: string; limit?: number })
   if (params?.limit) qs.set('limit', String(params.limit))
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return api.get<AdminInvestorsResponse>(`/api/admin/investors${suffix}`, auth)
+}
+
+// ---------------------------------------------------------------------------
+// Messages (admin metadata)
+// ---------------------------------------------------------------------------
+
+export function adminListMessages(params?: { search?: string; chatId?: string; limit?: number }) {
+  const qs = new URLSearchParams()
+  if (params?.search) qs.set('search', params.search)
+  if (params?.chatId) qs.set('chat_id', params.chatId)
+  if (params?.limit) qs.set('limit', String(params.limit))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return api.get<AdminMessagesResponse>(`/api/admin/messages${suffix}`, auth)
 }
 
 // ---------------------------------------------------------------------------

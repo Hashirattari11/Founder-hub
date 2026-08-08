@@ -11,6 +11,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app.core.auth import get_user_id
+from app.core.permissions import require_permission
 from app.core.supabase import service_supabase
 from app.services.business_plan_generator import generate_business_plan, new_share_token
 from app.services.business_plan_pdf import (
@@ -124,7 +125,7 @@ def _summary(row: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 @router.post("/generate")
-async def generate(payload: GeneratePlanRequest, user_id: str = Depends(get_user_id)):
+async def generate(payload: GeneratePlanRequest, user_id: str = Depends(require_permission("business_plan"))):
     if payload.stage not in STAGES:
         raise HTTPException(status_code=400, detail="Invalid stage")
     if payload.business_model not in MODELS:
@@ -177,7 +178,7 @@ async def generate(payload: GeneratePlanRequest, user_id: str = Depends(get_user
 # ---------------------------------------------------------------------------
 
 @router.get("")
-async def list_plans(user_id: str = Depends(get_user_id)):
+async def list_plans(user_id: str = Depends(require_permission("business_plan"))):
     result = (
         service_supabase.table("business_plans")
         .select("*")
@@ -197,7 +198,7 @@ async def share_view(token: str):
 
 
 @router.get("/{plan_id}")
-async def get_plan(plan_id: str, user_id: str = Depends(get_user_id)):
+async def get_plan(plan_id: str, user_id: str = Depends(require_permission("business_plan"))):
     return _get_owner_plan(plan_id, user_id)
 
 
@@ -206,7 +207,7 @@ async def get_plan(plan_id: str, user_id: str = Depends(get_user_id)):
 # ---------------------------------------------------------------------------
 
 @router.patch("/{plan_id}")
-async def update_plan(plan_id: str, payload: UpdatePlanRequest, user_id: str = Depends(get_user_id)):
+async def update_plan(plan_id: str, payload: UpdatePlanRequest, user_id: str = Depends(require_permission("business_plan"))):
     plan = _get_owner_plan(plan_id, user_id)
     updates = {k: v for k, v in payload.dict().items() if v is not None}
     if not updates:
@@ -216,7 +217,7 @@ async def update_plan(plan_id: str, payload: UpdatePlanRequest, user_id: str = D
 
 
 @router.delete("/{plan_id}")
-async def delete_plan(plan_id: str, user_id: str = Depends(get_user_id)):
+async def delete_plan(plan_id: str, user_id: str = Depends(require_permission("business_plan"))):
     _get_owner_plan(plan_id, user_id)
     service_supabase.table("business_plans").delete().eq("id", plan_id).execute()
     return {"success": True}
@@ -227,7 +228,7 @@ async def delete_plan(plan_id: str, user_id: str = Depends(get_user_id)):
 # ---------------------------------------------------------------------------
 
 @router.post("/{plan_id}/export")
-async def export_plan(plan_id: str, payload: ExportRequest, user_id: str = Depends(get_user_id)):
+async def export_plan(plan_id: str, payload: ExportRequest, user_id: str = Depends(require_permission("business_plan"))):
     plan = _get_owner_plan(plan_id, user_id)
     fmt = (payload.format or "pdf").lower()
     filename = (plan.get("startup_name") or "business_plan").lower().replace(" ", "_").replace("/", "_")

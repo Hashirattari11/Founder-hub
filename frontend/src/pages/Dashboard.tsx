@@ -1,10 +1,15 @@
 import { Navigate } from 'react-router-dom'
 import { useSession } from '../context/AuthContext'
-import { ADMIN_ROLES, PROFESSIONAL_ROLES } from '../lib/permissions'
+import { ADMIN_ROLES } from '../lib/permissions'
 import FounderDashboard from './dashboard/FounderDashboard'
 import DeveloperDashboard from './dashboard/DeveloperDashboard'
+import DesignerDashboard from './dashboard/DesignerDashboard'
+import MarketerDashboard from './dashboard/MarketerDashboard'
 import InvestorDashboard from './dashboard/InvestorDashboard'
-import ProfessionalDashboard from './dashboard/ProfessionalDashboard'
+import MentorDashboard from './dashboard/MentorDashboard'
+import RecruiterDashboard from './dashboard/RecruiterDashboard'
+import BusinessAnalystDashboard from './dashboard/BusinessAnalystDashboard'
+import LegalAdvisorDashboard from './dashboard/LegalAdvisorDashboard'
 
 export function RoleDashboard() {
   const { profile, loading } = useSession()
@@ -24,25 +29,28 @@ export function RoleDashboard() {
     return <Navigate to="/admin/dashboard" replace />
   }
 
+  // Every role gets a dashboard designed around its own purpose.
   switch (role) {
     case 'investor':
       return <InvestorDashboard />
     case 'developer':
-    case 'designer':
-    case 'marketer':
       return <DeveloperDashboard />
+    case 'designer':
+      return <DesignerDashboard />
+    case 'marketer':
+      return <MarketerDashboard />
+    case 'mentor':
+      return <MentorDashboard />
+    case 'recruiter':
+      return <RecruiterDashboard />
+    case 'business_analyst':
+      return <BusinessAnalystDashboard />
+    case 'legal_advisor':
+      return <LegalAdvisorDashboard />
     default:
-      break
+      // Founder and anything unknown fall through to the founder dashboard.
+      return <FounderDashboard />
   }
-
-  // Mentor / recruiter / business analyst / legal advisor get their own
-  // professional dashboard instead of being silently pushed to the founder
-  // one. (Founder and anything unknown fall through to FounderDashboard.)
-  if (PROFESSIONAL_ROLES.includes(role as never)) {
-    return <ProfessionalDashboard />
-  }
-
-  return <FounderDashboard />
 }
 
 export default RoleDashboard

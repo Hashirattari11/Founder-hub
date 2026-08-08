@@ -9,14 +9,13 @@ class Settings(BaseSettings):
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
     supabase_jwt_secret: str = ""
-    resend_api_key: str = ""
     brevo_api_key: str = ""
-    # Provider selection: "resend" | "brevo" | "auto". When "auto" (default),
-    # the first provider with a configured API key wins (resend → brevo).
-    email_provider: str = "auto"
+    # Single provider: Brevo is the only transactional email provider.
+    email_provider: str = "brevo"
     email_from_name: str = "FounderHub AI"
-    email_from_email: str = "onboarding@resend.dev"
-    resend_from_email: str = "FounderHub AI <onboarding@resend.dev>"
+    email_from_email: str = "hashirattari73@11839374.brevosend.com"
+    # Shared secret used to verify Brevo webhook signatures (HMAC-SHA256).
+    brevo_webhook_secret: str = ""
     anthropic_api_key: str = ""
     encryption_key: str = ""
     frontend_url: str = "http://localhost:5173"

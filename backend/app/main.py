@@ -14,6 +14,7 @@ from app.api.matching import router as matching_router
 from app.api.chat import router as chat_router
 from app.api.notifications import router as notifications_router
 from app.api.notification_center import router as notification_center_router
+from app.api.brevo_webhook import router as brevo_webhook_router
 from app.api.job_notifications import router as job_notifications_router
 from app.api.ai import router as ai_router
 from app.api.ai_settings import router as ai_settings_router
@@ -35,6 +36,7 @@ from app.core.security import bootstrap_super_admin
 from app.services.reminder_service import reminder_loop
 from app.services.push_service import push_loop
 from app.services.email_queue_service import drain_pending, email_loop
+from app.services.presence_service import presence_loop
 
 
 @asynccontextmanager
@@ -49,9 +51,10 @@ async def lifespan(app: FastAPI):
     reminder_task = asyncio.create_task(reminder_loop(stop_event))
     push_task = asyncio.create_task(push_loop(stop_event))
     email_task = asyncio.create_task(email_loop(stop_event))
+    presence_task = asyncio.create_task(presence_loop(stop_event))
     yield
     stop_event.set()
-    for task in (reminder_task, push_task, email_task):
+    for task in (reminder_task, push_task, email_task, presence_task):
         task.cancel()
         try:
             await task
@@ -98,6 +101,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_secure_headers(request, call_next):
+    """Security hardening headers on every response (F2.3.1)."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    response.headers["X-XSS-Protection"] = "0"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 app.include_router(health_router)
 app.include_router(profile_router)
 app.include_router(startups_router)
@@ -106,6 +123,7 @@ app.include_router(matching_router)
 app.include_router(chat_router)
 app.include_router(notifications_router)
 app.include_router(notification_center_router)
+app.include_router(brevo_webhook_router)
 app.include_router(job_notifications_router)
 app.include_router(ai_router)
 app.include_router(ai_settings_router)

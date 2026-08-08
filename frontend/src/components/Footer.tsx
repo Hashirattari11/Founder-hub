@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Rocket, Check } from 'lucide-react'
 
 const linkGroups = [
@@ -14,10 +15,10 @@ const linkGroups = [
   {
     title: 'Company',
     links: [
-      { label: 'About', href: '#' },
+      { label: 'About', href: '/about' },
       { label: 'Blog', href: '#' },
       { label: 'Careers', href: '#' },
-      { label: 'Contact', href: '#' },
+      { label: 'Contact', href: '/contact' },
     ],
   },
   {
@@ -25,8 +26,8 @@ const linkGroups = [
     links: [
       { label: 'Startup Guides', href: '#' },
       { label: 'Pitch Deck Templates', href: '#' },
-      { label: 'Help Center', href: '#' },
-      { label: 'Community', href: '#' },
+      { label: 'Help Center', href: '/contact' },
+      { label: 'Community', href: '/community' },
     ],
   },
 ]
@@ -128,12 +129,18 @@ export function Footer() {
               <ul className="mt-4 flex flex-col gap-3">
                 {group.links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="nav-link text-sm"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith('/') ? (
+                      <Link to={link.href} className="nav-link text-sm">
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.href}
+                        className="nav-link text-sm"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -146,12 +153,15 @@ export function Footer() {
             © {new Date().getFullYear()} FounderHub AI. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+            <Link to="/privacy" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
               Privacy Policy
-            </a>
-            <a href="#" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+            </Link>
+            <Link to="/terms" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
               Terms of Service
-            </a>
+            </Link>
+            <Link to="/cookies" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+              Cookie Policy
+            </Link>
           </div>
         </div>
       </div>

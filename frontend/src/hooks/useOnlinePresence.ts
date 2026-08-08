@@ -20,6 +20,13 @@ export function useOnlinePresence() {
 
     void setStatus(true)
 
+    // Heartbeat while the tab is visible so the server-side stale sweep
+    // (which flips `is_online` off after ~2 minutes of no updates) never
+    // marks an actively browsing user as offline.
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === 'visible') void setStatus(true)
+    }, 60_000)
+
     const handleUnload = () => {
       void supabase
         .from('profiles')
@@ -37,6 +44,7 @@ export function useOnlinePresence() {
 
     return () => {
       cancelled = true
+      clearInterval(heartbeat)
       window.removeEventListener('beforeunload', handleUnload)
       document.removeEventListener('visibilitychange', handleVisibility)
       void supabase

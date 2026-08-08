@@ -57,6 +57,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { label: 'Role Requests', to: '/admin/role-requests', icon: UserCog },
       { label: 'Reports', to: '/admin/reports', icon: Flag },
       { label: 'Startup Members', to: '/admin/startup-members', icon: Users2 },
+      { label: 'Messages', to: '/admin/messages', icon: Mail },
       { label: 'Equity / Cap Tables', to: '/admin/equity', icon: Scale },
     ],
   },

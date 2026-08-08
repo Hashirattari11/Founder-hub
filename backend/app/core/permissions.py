@@ -38,6 +38,9 @@ INVESTOR_PERMISSIONS = {
     "investor.saved",
     "investor.data_room_request",
     "investor.meetings",
+    "investor.compare",
+    "investor.notes",
+    "investor.portfolio_tracker",
 }
 
 # Talent-side (developers, designers, marketers)
@@ -49,11 +52,35 @@ TALENT_PERMISSIONS = {
     "talent.opportunities",
 }
 
+# Design work (designers)
+DESIGNER_PERMISSIONS = TALENT_PERMISSIONS | {
+    "designer.portfolio",
+    "designer.opportunities",
+    "designer.projects",
+    "designer.branding",
+    "designer.collaboration",
+    "designer.brief_generator",
+}
+
+# Growth & marketing (marketers)
+MARKETER_PERMISSIONS = TALENT_PERMISSIONS | {
+    "marketer.opportunities",
+    "marketer.requests",
+    "marketer.seo_audit",
+    "marketer.competitor_analysis",
+    "marketer.content_planner",
+    "marketer.campaigns",
+    "marketer.growth_strategy",
+    "marketer.social_planner",
+    "marketer.analytics",
+}
+
 # Mentorship
 MENTOR_PERMISSIONS = {
     "mentor.profile",
     "mentor.requests",
     "mentor.sessions",
+    "mentor.matching",
 }
 
 # Recruitment
@@ -69,12 +96,17 @@ ANALYST_PERMISSIONS = {
     "analyst.tools",
     "analyst.startup_analysis",
     "analyst.market_analysis",
+    "analyst.financial_analysis",
+    "analyst.reports",
 }
 
 # Legal
 LEGAL_PERMISSIONS = {
     "legal.requests",
     "legal.documents",
+    "legal.compliance",
+    "legal.sessions",
+    "legal.cases",
 }
 
 # Shared / platform-wide
@@ -118,8 +150,8 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     "founder": COMMON_PERMISSIONS | STARTUP_PERMISSIONS | {"business_plan", "team.manage", "analytics.founder"},
     "investor": COMMON_PERMISSIONS | INVESTOR_PERMISSIONS,
     "developer": COMMON_PERMISSIONS | TALENT_PERMISSIONS,
-    "designer": COMMON_PERMISSIONS | TALENT_PERMISSIONS,
-    "marketer": COMMON_PERMISSIONS | TALENT_PERMISSIONS,
+    "designer": COMMON_PERMISSIONS | DESIGNER_PERMISSIONS,
+    "marketer": COMMON_PERMISSIONS | MARKETER_PERMISSIONS,
     "mentor": COMMON_PERMISSIONS | MENTOR_PERMISSIONS,
     "recruiter": COMMON_PERMISSIONS | RECRUITER_PERMISSIONS,
     "business_analyst": COMMON_PERMISSIONS | ANALYST_PERMISSIONS,

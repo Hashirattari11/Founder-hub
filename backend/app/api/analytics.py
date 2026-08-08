@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends
 
 from app.core.auth import get_user_id
+from app.core.permissions import require_permission
 from app.core.supabase import service_supabase
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -47,7 +48,7 @@ def _fill_series(days: list[dict], rows: list[dict], key_field: str) -> list[dic
 
 
 @router.get("/founder")
-async def founder_analytics(user_id: str = Depends(get_user_id)):
+async def founder_analytics(user_id: str = Depends(require_permission("analytics.founder"))):
     """Aggregate analytics for the authenticated founder across all their startups."""
 
     # ---- Startups owned by this user ----

@@ -148,6 +148,26 @@ export interface RoleRequestsResponse {
   requests: RoleRequest[]
 }
 
+export interface AdminMessageItem {
+  id: string
+  chat_id: string | null
+  sender_id: string | null
+  sender_name: string | null
+  receiver_id: string | null
+  receiver_name: string | null
+  content: string | null
+  type: string | null
+  is_read: boolean
+  is_deleted: boolean
+  is_forwarded: boolean
+  created_at: string | null
+}
+
+export interface AdminMessagesResponse {
+  messages: AdminMessageItem[]
+  total: number
+}
+
 export type ReportStatus = 'open' | 'under_review' | 'resolved' | 'dismissed'
 
 export interface ReportItem {

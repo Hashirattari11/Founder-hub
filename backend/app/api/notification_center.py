@@ -228,7 +228,10 @@ async def admin_email_queue(
     limit = max(1, min(limit, 500))
     query = (
         service_supabase.table("email_queue")
-        .select("id, to_email, subject, template, status, attempts, max_attempts, error, created_at, updated_at, sent_at")
+        .select(
+            "id, to_email, subject, template, status, attempts, max_attempts, "
+            "error, message_id, http_status, last_error_at, created_at, updated_at, sent_at"
+        )
         .order("created_at", desc=True)
         .limit(limit)
     )
@@ -239,7 +242,7 @@ async def admin_email_queue(
 
     counts: dict[str, int] = {}
     try:
-        for s in ("pending", "sending", "sent", "failed", "cancelled"):
+        for s in ("queued", "sending", "sent", "delivered", "opened", "clicked", "failed", "bounced", "blocked"):
             res = (
                 service_supabase.table("email_queue")
                 .select("id", count="exact")
@@ -257,6 +260,47 @@ async def admin_email_queue(
 async def admin_retry_failed(admin_id: str = Depends(RequireAdmin())):
     count = retry_failed()
     return {"success": True, "retried": count}
+
+
+class TestEmailRequest(BaseModel):
+    to_email: str = Field(min_length=3, max_length=254)
+
+
+@router.post("/api/admin/email/test")
+async def admin_send_test_email(payload: TestEmailRequest, admin_id: str = Depends(RequireAdmin())):
+    """Send a test transactional email through Brevo (admin self-check)."""
+    from app.core.email import send_brevo_email
+    from app.services.email_templates import render_template
+
+    rendered = render_template("welcome", {"user_name": "FounderHub Admin"})
+    subject = f"[FounderHub test] {rendered['subject']}"
+    result = send_brevo_email(payload.to_email, subject, rendered["html"])
+    if not result["ok"]:
+        raise HTTPException(status_code=502, detail=result["error"] or "Brevo send failed")
+
+    try:
+        service_supabase.table("email_logs").insert(
+            {
+                "recipient_email": payload.to_email,
+                "email_type": "test_email",
+                "status": "sent",
+                "subject": subject,
+                "template": "welcome",
+                "provider": "brevo",
+                "message_id": result["message_id"],
+                "http_status": result["http_status"],
+                "sent_at": "now",
+            }
+        ).execute()
+    except Exception as exc:  # pragma: no cover
+        print(f"[admin] failed to log test email: {exc}")
+
+    return {
+        "success": True,
+        "recipient": payload.to_email,
+        "message_id": result["message_id"],
+        "subject": subject,
+    }
 
 
 class BroadcastRequest(BaseModel):

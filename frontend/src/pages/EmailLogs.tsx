@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Loader2, RefreshCw, Send, Mail, MailCheck, MailX, RotateCcw } from 'lucide-react'
+import { Loader2, RefreshCw, Send, Mail, MailCheck, MailX, RotateCcw, Zap } from 'lucide-react'
 import { api } from '../lib/api'
 import {
   getEmailQueue,
   retryFailedEmails,
   sendBroadcast,
   getEmailAnalytics,
+  sendTestEmail,
   type EmailQueueRow,
 } from '../lib/notifications'
 import {
@@ -50,7 +51,42 @@ const TYPE_LABELS: Record<string, string> = {
   role_rejected: 'Role rejected',
   startup_approved: 'Startup approved',
   investor_interested: 'Investor interested',
+  test_email: 'Test email',
 }
+
+const emailTone = (status: string): 'green' | 'red' | 'amber' | 'blue' | 'gray' => {
+  switch (status) {
+    case 'sent':
+    case 'delivered':
+      return 'green'
+    case 'opened':
+    case 'clicked':
+      return 'blue'
+    case 'queued':
+      return 'amber'
+    case 'sending':
+      return 'blue'
+    case 'bounced':
+    case 'blocked':
+      return 'amber'
+    case 'failed':
+      return 'red'
+    default:
+      return 'gray'
+  }
+}
+
+const QUEUE_STATUSES: { status: string; dot: string }[] = [
+  { status: 'queued', dot: 'bg-amber-400' },
+  { status: 'sending', dot: 'bg-blue-400' },
+  { status: 'sent', dot: 'bg-green-500' },
+  { status: 'delivered', dot: 'bg-green-500' },
+  { status: 'opened', dot: 'bg-blue-500' },
+  { status: 'clicked', dot: 'bg-purple-500' },
+  { status: 'failed', dot: 'bg-red-500' },
+  { status: 'bounced', dot: 'bg-amber-500' },
+  { status: 'blocked', dot: 'bg-amber-500' },
+]
 
 export default function EmailLogs() {
   const [logs, setLogs] = useState<EmailLogRow[]>([])
@@ -67,6 +103,10 @@ export default function EmailLogs() {
   const [bBody, setBBody] = useState('')
   const [bEmail, setBEmail] = useState(true)
   const [bSending, setBSending] = useState(false)
+
+  const [testOpen, setTestOpen] = useState(false)
+  const [tEmail, setTEmail] = useState('')
+  const [tSending, setTSending] = useState(false)
 
   const loadLogs = () => {
     api
@@ -134,6 +174,25 @@ export default function EmailLogs() {
     }
   }
 
+  const handleTestEmail = async () => {
+    if (!tEmail.trim()) {
+      toast.error('Enter a recipient email')
+      return
+    }
+    setTSending(true)
+    try {
+      const res = await sendTestEmail(tEmail.trim())
+      toast.success(`Test email sent to ${res.recipient}`)
+      setTestOpen(false)
+      setTEmail('')
+      loadLogs()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Test email failed')
+    } finally {
+      setTSending(false)
+    }
+  }
+
   const today = logs.filter((l) => new Date(l.sent_at).toDateString() === new Date().toDateString()).length
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
   const thisWeek = logs.filter((l) => new Date(l.sent_at).getTime() >= weekAgo).length
@@ -150,6 +209,9 @@ export default function EmailLogs() {
             <button onClick={() => { loadQueue(); loadLogs(); loadAnalytics() }} className="btn-secondary">
               <RefreshCw className="h-4 w-4" /> Refresh
             </button>
+            <button onClick={() => setTestOpen((v) => !v)} className="btn-secondary">
+              <Zap className="h-4 w-4" /> Test Email
+            </button>
             <button onClick={() => setBroadcastOpen((v) => !v)} className="btn-primary">
               <Send className="h-4 w-4" /> Broadcast
             </button>
@@ -165,6 +227,30 @@ export default function EmailLogs() {
         <StatCard label="Delivery rate" value={`${analytics.delivery_rate}%`} icon={<MailCheck className="h-4 w-4" />} color="text-emerald-500" />
         <StatCard label="Today" value={today} sub={`${thisWeek} this week`} icon={<Mail className="h-4 w-4" />} color="text-blue-500" />
       </div>
+
+      {/* Test email composer */}
+      {testOpen && (
+        <Card className="mt-6 p-5">
+          <p className="text-sm font-bold">Send a test transactional email</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Verifies Brevo delivery to any address. Shows up in the delivery logs below.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <input
+              type="email"
+              value={tEmail}
+              onChange={(e) => setTEmail(e.target.value)}
+              placeholder="recipient@example.com"
+              className="input min-w-64 flex-1"
+            />
+            <button onClick={handleTestEmail} disabled={tSending} className="btn-primary disabled:opacity-60">
+              {tSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+              Send test
+            </button>
+            <button onClick={() => setTestOpen(false)} className="btn-secondary">Cancel</button>
+          </div>
+        </Card>
+      )}
 
       {/* Broadcast composer */}
       {broadcastOpen && (
@@ -205,13 +291,11 @@ export default function EmailLogs() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-bold">Email queue</p>
           <div className="flex flex-wrap items-center gap-2">
-            {(['pending', 'sending', 'sent', 'failed'] as const).map((s) => (
-              <span key={s} className="flex items-center gap-1.5 rounded-full border border-gray-200 px-2.5 py-1 text-xs dark:border-dark-300">
-                <span className={`h-1.5 w-1.5 rounded-full ${
-                  s === 'pending' ? 'bg-amber-400' : s === 'sending' ? 'bg-blue-400' : s === 'sent' ? 'bg-green-500' : 'bg-red-500'
-                }`} />
-                <span className="capitalize">{s}</span>
-                <span className="font-bold">{queueCounts[s] ?? 0}</span>
+            {QUEUE_STATUSES.map(({ status, dot }) => (
+              <span key={status} className="flex items-center gap-1.5 rounded-full border border-gray-200 px-2.5 py-1 text-xs dark:border-dark-300">
+                <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                <span className="capitalize">{status}</span>
+                <span className="font-bold">{queueCounts[status] ?? 0}</span>
               </span>
             ))}
             <button onClick={handleRetry} className="btn-secondary text-xs">
@@ -237,12 +321,16 @@ export default function EmailLogs() {
                       <td className="px-4 py-3 font-medium">{q.to_email}</td>
                       <td className="max-w-52 truncate px-4 py-3 text-gray-600 dark:text-gray-300">{q.subject}</td>
                       <td className="px-4 py-3">
-                        <Badge tone={q.status === 'sent' ? 'green' : q.status === 'failed' ? 'red' : q.status === 'pending' ? 'amber' : 'blue'}>
-                          {q.status}
-                        </Badge>
+                        <Badge tone={emailTone(q.status)}>{q.status}</Badge>
                       </td>
                       <td className="px-4 py-3 text-gray-500">{q.attempts}/{q.max_attempts}</td>
-                      <td className="max-w-40 truncate px-4 py-3 text-gray-500">{q.error ?? '—'}</td>
+                      <td className="max-w-40 truncate px-4 py-3 text-gray-500">
+                        {q.error
+                          ? `${q.error}${q.http_status ? ` (HTTP ${q.http_status})` : ''}`
+                          : q.status === 'sent'
+                            ? 'Accepted by Brevo'
+                            : '—'}
+                      </td>
                       <td className="px-4 py-3 text-gray-500">{formatDateTime(q.created_at)}</td>
                     </tr>
                   ))
@@ -275,7 +363,7 @@ export default function EmailLogs() {
                         {TYPE_LABELS[log.email_type] ?? TYPE_LABELS[log.template ?? ''] ?? log.email_type ?? log.template}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge tone={log.status === 'sent' ? 'green' : 'red'}>{log.status}</Badge>
+                        <Badge tone={emailTone(log.status)}>{log.status}</Badge>
                       </td>
                       <td className="px-4 py-3 text-gray-500">{formatDateTime(log.sent_at)}</td>
                     </tr>

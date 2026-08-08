@@ -16,14 +16,33 @@ export type Permission =
   | 'investor.saved'
   | 'investor.data_room_request'
   | 'investor.meetings'
+  | 'investor.compare'
+  | 'investor.notes'
+  | 'investor.portfolio_tracker'
   | 'talent.apply'
   | 'talent.portfolio'
   | 'talent.resume'
   | 'talent.invitations'
   | 'talent.opportunities'
+  | 'designer.portfolio'
+  | 'designer.opportunities'
+  | 'designer.projects'
+  | 'designer.branding'
+  | 'designer.collaboration'
+  | 'designer.brief_generator'
+  | 'marketer.opportunities'
+  | 'marketer.requests'
+  | 'marketer.seo_audit'
+  | 'marketer.competitor_analysis'
+  | 'marketer.content_planner'
+  | 'marketer.campaigns'
+  | 'marketer.growth_strategy'
+  | 'marketer.social_planner'
+  | 'marketer.analytics'
   | 'mentor.profile'
   | 'mentor.requests'
   | 'mentor.sessions'
+  | 'mentor.matching'
   | 'recruiter.candidates'
   | 'recruiter.jobs'
   | 'recruiter.pipeline'
@@ -31,8 +50,13 @@ export type Permission =
   | 'analyst.tools'
   | 'analyst.startup_analysis'
   | 'analyst.market_analysis'
+  | 'analyst.financial_analysis'
+  | 'analyst.reports'
   | 'legal.requests'
   | 'legal.documents'
+  | 'legal.compliance'
+  | 'legal.sessions'
+  | 'legal.cases'
   | 'community.engage'
   | 'connections.manage'
   | 'meetings.manage'
@@ -74,6 +98,9 @@ const INVESTOR = new Set<Permission>([
   'investor.saved',
   'investor.data_room_request',
   'investor.meetings',
+  'investor.compare',
+  'investor.notes',
+  'investor.portfolio_tracker',
 ])
 const TALENT = new Set<Permission>([
   'talent.apply',
@@ -82,7 +109,33 @@ const TALENT = new Set<Permission>([
   'talent.invitations',
   'talent.opportunities',
 ])
-const MENTOR = new Set<Permission>(['mentor.profile', 'mentor.requests', 'mentor.sessions'])
+const DESIGNER = new Set<Permission>([
+  ...TALENT,
+  'designer.portfolio',
+  'designer.opportunities',
+  'designer.projects',
+  'designer.branding',
+  'designer.collaboration',
+  'designer.brief_generator',
+])
+const MARKETER = new Set<Permission>([
+  ...TALENT,
+  'marketer.opportunities',
+  'marketer.requests',
+  'marketer.seo_audit',
+  'marketer.competitor_analysis',
+  'marketer.content_planner',
+  'marketer.campaigns',
+  'marketer.growth_strategy',
+  'marketer.social_planner',
+  'marketer.analytics',
+])
+const MENTOR = new Set<Permission>([
+  'mentor.profile',
+  'mentor.requests',
+  'mentor.sessions',
+  'mentor.matching',
+])
 const RECRUITER = new Set<Permission>([
   'recruiter.candidates',
   'recruiter.jobs',
@@ -93,8 +146,16 @@ const ANALYST = new Set<Permission>([
   'analyst.tools',
   'analyst.startup_analysis',
   'analyst.market_analysis',
+  'analyst.financial_analysis',
+  'analyst.reports',
 ])
-const LEGAL = new Set<Permission>(['legal.requests', 'legal.documents'])
+const LEGAL = new Set<Permission>([
+  'legal.requests',
+  'legal.documents',
+  'legal.compliance',
+  'legal.sessions',
+  'legal.cases',
+])
 const COMMON = new Set<Permission>([
   'startup.discover',
   'jobs.discover',
@@ -135,8 +196,8 @@ const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
   ]),
   investor: new Set<Permission>([...INVESTOR, ...COMMON]),
   developer: new Set<Permission>([...TALENT, ...COMMON]),
-  designer: new Set<Permission>([...TALENT, ...COMMON]),
-  marketer: new Set<Permission>([...TALENT, ...COMMON]),
+  designer: new Set<Permission>([...DESIGNER, ...COMMON]),
+  marketer: new Set<Permission>([...MARKETER, ...COMMON]),
   mentor: new Set<Permission>([...MENTOR, ...COMMON]),
   recruiter: new Set<Permission>([...RECRUITER, ...COMMON]),
   business_analyst: new Set<Permission>([...ANALYST, ...COMMON]),
@@ -227,14 +288,24 @@ export function canAccess(
     ['/business-plan', 'business_plan'],
     ['/data-room', 'startup.data_room'],
     ['/investors', 'investor.discover'],
+    ['/investor/requests', 'investor.pipeline'],
     ['/investor/preferences', 'investor.preferences'],
+    ['/investor/setup', 'investor.preferences'],
     ['/portfolio', 'investor.saved'],
+    ['/dashboard/saved', 'investor.saved'],
     ['/analytics', 'analytics.founder'],
     ['/resume', 'talent.resume'],
+    ['/resume-builder', 'talent.resume'],
     ['/cofounder', 'cofounder.match'],
+    ['/dashboard/my-applications', 'talent.apply'],
+    ['/dashboard/job-applications', 'jobs.apply'],
+    ['/jobs/post', 'recruiter.jobs'],
+    ['/dashboard/manage-jobs', 'recruiter.jobs'],
     ['/recruiter', 'recruiter.candidates'],
     ['/mentor', 'mentor.profile'],
     ['/legal', 'legal.requests'],
+    ['/designer', 'designer.portfolio'],
+    ['/marketer', 'marketer.opportunities'],
   ]
   const match = pathMap.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`))
   if (match) return hasPermission(p, match[1])

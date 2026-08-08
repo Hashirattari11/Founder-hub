@@ -53,7 +53,8 @@ Set these for all environments. Copy values from your local `backend/.env` and S
 | `SUPABASE_SERVICE_ROLE_KEY` | yes (cross-user/admin) | service_role key (keep secret) |
 | `SUPER_ADMIN_EMAIL` | yes | super admin email (bootstrap) |
 | `SUPER_ADMIN_PASSWORD` | yes | super admin password (keep secret) |
-| `RESEND_API_KEY` | yes (email) | Resend API key |
+| `BREVO_API_KEY` | yes (email) | Brevo transactional email API key (keep secret) |
+| `BREVO_WEBHOOK_SECRET` | optional (webhook) | Brevo webhook signing secret for delivery events |
 | `ANTHROPIC_API_KEY` | yes (AI) | Anthropic key for AI features |
 | `ENCRYPTION_KEY` | yes | your encryption key |
 | `FRONTEND_URL` | yes | `https://<your-app>.vercel.app` |

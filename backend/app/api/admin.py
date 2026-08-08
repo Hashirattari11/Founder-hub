@@ -759,6 +759,96 @@ async def admin_investors(
 
 
 # ---------------------------------------------------------------------------
+# Messages (admin metadata view)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/messages")
+async def admin_messages(
+    request: Request,
+    chat_id: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 50,
+    admin_id: str = Depends(RequireAdmin()),
+):
+    """Admin view of message metadata (sender, receiver, chat, read state).
+
+    Content is included so moderators can inspect reported/spam conversations;
+    the RLS policies on `messages` only expose chats to their participants, so
+    this reads through the service role.
+    """
+    query = (
+        service_supabase.table("messages")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(min(limit, 200))
+    )
+    if chat_id:
+        query = query.eq("chat_id", chat_id)
+    if search:
+        query = query.ilike("content", f"%{search}%")
+    rows = query.execute().data or []
+
+    chat_ids = list(dict.fromkeys(r.get("chat_id") for r in rows if r.get("chat_id")))
+    user_ids = list(
+        dict.fromkeys(
+            r.get("sender_id") for r in rows if r.get("sender_id")
+        )
+    )
+    chats: dict[str, dict] = {}
+    if chat_ids:
+        try:
+            chat_rows = (
+                service_supabase.table("chats")
+                .select("id, participant_1, participant_2")
+                .in_("id", chat_ids)
+                .execute()
+            )
+            for c in chat_rows.data or []:
+                chats[c["id"]] = c
+                user_ids.extend([c.get("participant_1"), c.get("participant_2")])
+        except Exception:
+            pass
+
+    names: dict[str, str] = {}
+    user_ids = [u for u in dict.fromkeys(user_ids) if u]
+    if user_ids:
+        try:
+            profs = (
+                service_supabase.table("profiles")
+                .select("id, full_name")
+                .in_("id", user_ids)
+                .execute()
+            )
+            for p in profs.data or []:
+                names[p["id"]] = p.get("full_name") or p["id"]
+        except Exception:
+            pass
+
+    items = []
+    for r in rows:
+        chat = chats.get(r.get("chat_id")) or {}
+        p1, p2 = chat.get("participant_1"), chat.get("participant_2")
+        receiver_id = p2 if r.get("sender_id") == p1 else p1
+        items.append({
+            "id": r.get("id"),
+            "chat_id": r.get("chat_id"),
+            "sender_id": r.get("sender_id"),
+            "sender_name": names.get(r.get("sender_id")) or r.get("sender_id"),
+            "receiver_id": receiver_id,
+            "receiver_name": (names.get(receiver_id) or receiver_id) if receiver_id else None,
+            "content": r.get("content"),
+            "type": r.get("type"),
+            "is_read": bool(r.get("is_read")),
+            "is_deleted": bool(r.get("is_deleted")),
+            "is_forwarded": bool(r.get("is_forwarded")),
+            "created_at": r.get("created_at"),
+        })
+
+    return {"messages": items, "total": len(items)}
+
+
+# ---------------------------------------------------------------------------
 # Role requests (admin side)
 # ---------------------------------------------------------------------------
 

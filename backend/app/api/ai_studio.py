@@ -15,7 +15,8 @@ from pydantic import BaseModel, Field
 
 from app.api.ai import _resolve_user_provider, generate_text_sync
 from app.core.auth import get_user_id
-from app.core.rbac import ALL_ROLES, get_user_primary_role, get_user_roles, require_admin
+from app.core.rbac import ADMIN_ROLES, ALL_ROLES, get_user_primary_role, get_user_roles, require_admin
+from app.core.security import is_super_admin_user
 from app.core.supabase import service_supabase
 from app.services.ai_studio_catalog import (
     CATEGORY_ORDER,
@@ -504,6 +505,12 @@ async def admin_list_users(
 @router.put("/admin/users/{user_id}/roles")
 async def admin_set_user_roles(user_id: str, payload: SetRolesRequest, admin_id: str = Depends(require_admin)):
     _validate_role_tags(payload.roles)
+    granting_admin = any(r in ADMIN_ROLES for r in payload.roles)
+    if granting_admin and not is_super_admin_user(admin_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the super admin can grant or revoke administrator roles",
+        )
     profile = (
         service_supabase.table("profiles")
         .select("id, role")

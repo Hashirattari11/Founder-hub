@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /messages
+Disallow: /meetings
+Disallow: /settings
+Disallow: /ai-studio
+Disallow: /api/
+
+Sitemap: https://founder-hub-0.vercel.app/sitemap.xml

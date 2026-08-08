@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [data, setData] = useState<AdminOverviewResponse | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [live, setLive] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -35,6 +36,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Live auto-refresh: poll every 30s while visible and enabled.
+  useEffect(() => {
+    if (!live) return
+    let interval: ReturnType<typeof setInterval>
+    const start = () => {
+      interval = setInterval(() => {
+        if (document.visibilityState === 'visible') load()
+      }, 30_000)
+    }
+    start()
+    const onVisibility = () => {
+      clearInterval(interval)
+      start()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [live, load])
 
   const stats = data && [
     { label: 'Total users', value: data.users.total, icon: <Users className="h-4 w-4" />, sub: `${data.users.new_7d} new in 7 days` },
@@ -66,12 +88,26 @@ export default function AdminDashboard() {
         title="Admin Dashboard"
         description="Platform-wide overview of users, startups, revenue and activity."
         actions={
-          <button
-            onClick={load}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
-          >
-            <TrendingUp className="h-3.5 w-3.5" /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLive((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                live
+                  ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-400'
+                  : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300'
+              }`}
+              title={live ? 'Live auto-refresh is on (30s)' : 'Live auto-refresh is off'}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${live ? 'animate-pulse bg-green-500' : 'bg-gray-400'}`} />
+              Live
+            </button>
+            <button
+              onClick={load}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-300"
+            >
+              <TrendingUp className="h-3.5 w-3.5" /> Refresh
+            </button>
+          </div>
         }
       />
 

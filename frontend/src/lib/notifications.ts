@@ -137,15 +137,30 @@ export async function getNotificationHistory(
 // Admin email operations
 // ---------------------------------------------------------------------------
 
+export type EmailStatus =
+  | 'queued'
+  | 'sending'
+  | 'sent'
+  | 'delivered'
+  | 'opened'
+  | 'clicked'
+  | 'failed'
+  | 'bounced'
+  | 'blocked'
+  | 'cancelled'
+
 export interface EmailQueueRow {
   id: string
   to_email: string
   subject: string
   template: string | null
-  status: 'pending' | 'sending' | 'sent' | 'failed' | 'cancelled'
+  status: EmailStatus
   attempts: number
   max_attempts: number
   error: string | null
+  message_id: string | null
+  http_status: number | null
+  last_error_at: string | null
   created_at: string
   updated_at: string
   sent_at: string | null
@@ -176,6 +191,17 @@ export async function sendBroadcast(payload: {
 export async function getEmailAnalytics(): Promise<{ total: number; sent: number; failed: number; delivery_rate: number }> {
   const res = await api.get<{ total: number; sent: number; failed: number; delivery_rate: number }>(
     '/api/admin/email-analytics',
+    { auth: true },
+  )
+  return res
+}
+
+export async function sendTestEmail(
+  toEmail: string,
+): Promise<{ success: boolean; recipient: string; message_id: string | null; subject: string }> {
+  const res = await api.post<{ success: boolean; recipient: string; message_id: string | null; subject: string }>(
+    '/api/admin/email/test',
+    { to_email: toEmail },
     { auth: true },
   )
   return res

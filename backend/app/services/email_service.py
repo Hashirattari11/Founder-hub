@@ -1,6 +1,6 @@
 """Rich HTML email templates used by the smart-notification pipeline.
 
-Templates here build on the transport layer in `app.core.email` (Resend).
+Templates here build on the transport layer in `app.core.email` (Brevo).
 """
 import html
 from typing import Dict

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.auth import get_user_id
+from app.core.security import is_super_admin_user
 from app.core.supabase import service_supabase
 from app.services.push_service import enqueue_push
 
@@ -60,10 +61,9 @@ async def send_push(
     payload: SendPushIn,
     user_id: str = Depends(get_user_id),
 ):
-    """Send a push notification (defaults to the caller's own devices).
-
-    Useful for testing end-to-end delivery from the backend.
-    """
+    """Send a push notification to your own devices (super admins may target any user)."""
     target = payload.user_id or user_id
+    if target != user_id and not is_super_admin_user(user_id):
+        raise HTTPException(status_code=403, detail="You can only send pushes to your own devices")
     queued = enqueue_push(target, payload.title, payload.body, payload.data)
     return {"success": True, "target": target, "queued": queued}

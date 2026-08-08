@@ -1,7 +1,7 @@
 """Reusable, branded HTML email templates for FounderHub.
 
 Every template returns the full HTML document (dark, responsive, inline CSS)
-so it can be sent as-is through any provider (Brevo / Resend).
+so it can be sent as-is through Brevo.
 """
 import html
 from datetime import datetime

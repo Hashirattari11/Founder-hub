@@ -4,33 +4,25 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Rocket,
   Home,
-  FileText,
-  BarChart3,
   Settings,
   Search,
   Menu,
   X,
   LogOut,
   User,
-  Compass,
-  Bookmark,
-  Layers,
-  Users,
   Bell,
   Mail,
-  Briefcase,
   Video,
   Sparkles,
   Cpu,
-  Handshake,
-  Wallet,
-  Scale,
   Shield,
+  Scale,
 } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { useDashboardStore } from '../../store/dashboardStore'
 import { useUnreadChatsCount } from '../../hooks/useUnreadChatsCount'
 import { useAIStudioConfig } from '../../lib/aiStudio'
+import { NAV_BY_ROLE } from '../../lib/navigation'
 import { GuardedOutlet } from '../RoleGuard'
 import { Avatar } from '../Avatar'
 import { NotificationBell } from './NotificationBell'
@@ -40,119 +32,6 @@ import { PageLoader } from '../PageLoader'
 import { PreviewBar } from './PreviewBar'
 import { ROLE_LABELS } from '../../types'
 import type { Role } from '../../types'
-
-const navByRole: Record<Role, { label: string; to: string; icon: typeof Home }[]> = {
-  founder: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Post a Startup', to: '/startups/create', icon: Rocket },
-    { label: 'My Startups', to: '/dashboard/startups', icon: Layers },
-    { label: 'Applications', to: '/dashboard/applications', icon: FileText },
-    { label: 'Equity & Cap Table', to: '/dashboard/equity', icon: Scale },
-    { label: 'AI Business Plan', to: '/business-plan', icon: FileText },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'Post a Job', to: '/jobs/post', icon: Rocket },
-    { label: 'Manage Jobs', to: '/dashboard/manage-jobs', icon: FileText },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Analytics', to: '/dashboard/analytics', icon: BarChart3 },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  developer: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'My Applications', to: '/dashboard/my-applications', icon: FileText },
-    { label: 'My Job Applications', to: '/dashboard/job-applications', icon: FileText },
-    { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  designer: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'My Applications', to: '/dashboard/my-applications', icon: FileText },
-    { label: 'My Job Applications', to: '/dashboard/job-applications', icon: FileText },
-    { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  marketer: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'My Applications', to: '/dashboard/my-applications', icon: FileText },
-    { label: 'My Job Applications', to: '/dashboard/job-applications', icon: FileText },
-    { label: 'Resume Builder', to: '/resume-builder', icon: FileText },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  investor: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Investor Requests', to: '/investor/requests', icon: Handshake },
-    { label: 'Investor Profile', to: '/investor/profile/setup', icon: Wallet },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'Saved', to: '/dashboard/saved', icon: Bookmark },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  legal_advisor: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  business_analyst: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  mentor: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'Find Co-Founder', to: '/co-founder', icon: Handshake },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  recruiter: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Explore Startups', to: '/explore', icon: Compass },
-    { label: 'Jobs', to: '/jobs', icon: Briefcase },
-    { label: 'Post a Job', to: '/jobs/post', icon: Rocket },
-    { label: 'Manage Jobs', to: '/dashboard/manage-jobs', icon: FileText },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-  administrator: [
-    { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Admin Console', to: '/admin/dashboard', icon: Shield },
-    { label: 'AI Studio Admin', to: '/admin/ai-studio', icon: Cpu },
-    { label: 'Email Logs', to: '/admin/emails', icon: Mail },
-    { label: 'Cap Table Admin', to: '/admin/equity', icon: Scale },
-    { label: 'Community', to: '/community', icon: Users },
-    { label: 'Connections', to: '/connections', icon: Users },
-    { label: 'Meetings', to: '/meetings', icon: Video },
-  ],
-}
 
 function SidebarContent({
   onNavigate,
@@ -168,7 +47,7 @@ function SidebarContent({
     ? [primaryRole]
     : (studioConfig?.roles?.length ? studioConfig.roles : [primaryRole]) as Role[]
   const seen = new Set<string>()
-  const links = roles.flatMap((r) => navByRole[r] ?? []).filter((link) => {
+  const links = roles.flatMap((r) => NAV_BY_ROLE[r] ?? []).filter((link) => {
     if (seen.has(link.to)) return false
     seen.add(link.to)
     return true

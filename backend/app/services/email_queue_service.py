@@ -1,14 +1,17 @@
-"""Persistent email queue backed by the `email_queue` table.
+"""Persistent email queue backed by the `email_queue` table (Brevo only).
 
 Delivery strategy (production-ready):
   1. :func:`enqueue_email` inserts a row, then **sends immediately** on a
      background thread (real-time delivery on any host, including serverless).
   2. :func:`email_loop` is a background worker that drains anything left in
-     `pending`/`sending` (crash recovery) and retries `failed` rows.
+     `queued`/`sending` (crash recovery) and retries `failed` rows.
   3. :func:`drain_pending` runs at app startup so serverless instances flush
      anything queued by a previous invocation.
 
-Failed sends are logged to `email_logs` for the admin panel.
+Statuses: queued → sending → sent, then the Brevo webhook moves rows to
+delivered / opened / clicked, or to failed / bounced / blocked. The Brevo
+messageId is stored so webhook events map back to the right row. Sends and
+failures are logged to `email_logs` for the admin panel.
 """
 import asyncio
 import hashlib
@@ -18,7 +21,7 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from app.core.email import resolve_email_provider, send_email_ex
+from app.core.email import send_brevo_email
 from app.core.supabase import service_supabase
 from app.services.email_templates import render_template
 
@@ -107,10 +110,9 @@ def enqueue_email(
     if not service_supabase.available:
         return False
 
-    # Resolve the real provider at enqueue time so queued rows use whatever
-    # provider has a configured API key (resend → brevo), instead of blindly
-    # pinning "brevo" and failing when only a Resend key is provisioned.
-    provider = resolve_email_provider() or ""
+    # All transactional email goes through Brevo — pin the provider on the row
+    # so the admin panel can see where each message was sent.
+    provider = "brevo"
 
     try:
         payload = {
@@ -122,7 +124,7 @@ def enqueue_email(
             "template": template,
             "template_data": data or {},
             "dedupe_key": key,
-            "status": "pending",
+            "status": "queued",
             "attempts": 0,
             "max_attempts": 3,
             "provider": provider,
@@ -216,7 +218,7 @@ def _claim_batch() -> list[dict]:
         rows = (
             service_supabase.table("email_queue")
             .select("*")
-            .in_("status", ["pending", "sending"])
+            .in_("status", ["queued", "sending", "pending"])
             .order("created_at")
             .limit(MAX_BATCH)
             .execute()
@@ -234,25 +236,43 @@ def _claim_batch() -> list[dict]:
         return []
 
 
-def _retry_later(row: dict, error: str) -> None:
+def _retry_later(row: dict, error: str, http_status: int | None = None) -> None:
     attempts = int(row.get("attempts") or 0) + 1
     if attempts >= int(row.get("max_attempts") or 3):
         try:
             service_supabase.table("email_queue").update(
-                {"status": "failed", "attempts": attempts, "error": error[:500]}
+                {
+                    "status": "failed",
+                    "attempts": attempts,
+                    "error": error[:500],
+                    "http_status": http_status,
+                    "last_error_at": "now",
+                }
             ).eq("id", row["id"]).execute()
         except Exception:  # pragma: no cover
             pass
         return
     try:
         service_supabase.table("email_queue").update(
-            {"status": "pending", "attempts": attempts, "error": error[:500]}
+            {
+                "status": "queued",
+                "attempts": attempts,
+                "error": error[:500],
+                "http_status": http_status,
+                "last_error_at": "now",
+            }
         ).eq("id", row["id"]).execute()
     except Exception:  # pragma: no cover
         pass
 
 
-def _record_log(row: dict, ok: bool, error: str | None = None) -> None:
+def _record_log(
+    row: dict,
+    ok: bool,
+    error: str | None = None,
+    message_id: str | None = None,
+    http_status: int | None = None,
+) -> None:
     """Write a row to email_logs (admin panel)."""
     if not service_supabase.available:
         return
@@ -266,8 +286,10 @@ def _record_log(row: dict, ok: bool, error: str | None = None) -> None:
                 "subject": row.get("subject"),
                 "template": row.get("template"),
                 "template_data": row.get("template_data"),
-                "provider": row.get("provider") or "",
+                "provider": "brevo",
                 "error": (error or None)[:500] if error else None,
+                "message_id": message_id,
+                "http_status": http_status,
                 "sent_at": "now" if ok else None,
             }
         ).execute()
@@ -276,27 +298,36 @@ def _record_log(row: dict, ok: bool, error: str | None = None) -> None:
 
 
 def _send_one(row: dict) -> None:
-    try:
-        ok, error = send_email_ex(
-            row.get("to_email", ""),
-            row.get("subject", ""),
-            row.get("html_body", ""),
-            row.get("text_body"),
-            row.get("provider") or None,
-        )
-    except Exception as exc:  # pragma: no cover
-        ok, error = False, str(exc)
+    result = send_brevo_email(
+        row.get("to_email", ""),
+        row.get("subject", ""),
+        row.get("html_body", ""),
+        row.get("text_body"),
+    )
+    ok, error, message_id, http_status = (
+        result["ok"],
+        result["error"],
+        result["message_id"],
+        result["http_status"],
+    )
 
     if ok:
         try:
             service_supabase.table("email_queue").update(
-                {"status": "sent", "sent_at": "now", "error": None}
+                {
+                    "status": "sent",
+                    "sent_at": "now",
+                    "error": None,
+                    "message_id": message_id,
+                    "http_status": http_status,
+                    "last_error_at": None,
+                }
             ).eq("id", row["id"]).execute()
         except Exception:  # pragma: no cover
             pass
     else:
-        _retry_later(row, error or "unknown error")
-    _record_log(row, ok, error)
+        _retry_later(row, error or "unknown error", http_status)
+    _record_log(row, ok, error, message_id, http_status)
 
 
 def _drain() -> int:
@@ -331,7 +362,9 @@ def retry_failed(max_rows: int = 50) -> int:
         ids = [r["id"] for r in (rows.data or [])]
         if not ids:
             return 0
-        service_supabase.table("email_queue").update({"status": "pending", "error": None}).in_("id", ids).execute()
+        service_supabase.table("email_queue").update(
+            {"status": "queued", "error": None, "http_status": None, "last_error_at": None}
+        ).in_("id", ids).execute()
         _wake_worker()
         return len(ids)
     except Exception as exc:  # pragma: no cover

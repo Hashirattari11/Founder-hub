@@ -106,6 +106,13 @@ const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminSecurity = lazy(() => import('./pages/admin/AdminSecurity'))
 const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'))
 const AdminStartupMembers = lazy(() => import('./pages/admin/AdminStartupMembers'))
+const AdminMessages = lazy(() => import('./pages/admin/AdminMessages'))
+
+const PrivacyPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.TermsPage })))
+const CookiePage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.CookiePage })))
+const AboutPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.AboutPage })))
+const ContactPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.ContactPage })))
 
 function LandingPage() {
   const [waitlistOpen, setWaitlistOpen] = useState(false)
@@ -156,6 +163,11 @@ function App() {
               <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
               <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
+              <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><PrivacyPage /></Suspense>} />
+              <Route path="/terms" element={<Suspense fallback={<PageLoader />}><TermsPage /></Suspense>} />
+              <Route path="/cookies" element={<Suspense fallback={<PageLoader />}><CookiePage /></Suspense>} />
+              <Route path="/about" element={<Suspense fallback={<PageLoader />}><AboutPage /></Suspense>} />
+              <Route path="/contact" element={<Suspense fallback={<PageLoader />}><ContactPage /></Suspense>} />
               <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><Callback /></Suspense>} />
               <Route path="/profile/:username" element={<Suspense fallback={<PageLoader />}><ProfileView /></Suspense>} />
               <Route path="/403" element={<Suspense fallback={<PageLoader />}><Forbidden /></Suspense>} />
@@ -303,6 +315,7 @@ function App() {
                 <Route path="equity" element={<CapTableAdmin />} />
                 <Route path="emails" element={<EmailLogs />} />
                 <Route path="ai-studio" element={<AIStudioAdmin />} />
+                <Route path="messages" element={<AdminMessages />} />
               </Route>
 
               {/* Public app pages (logged-in) */}
