@@ -404,10 +404,32 @@ async def admin_change_role(
         updates["is_admin"] = True
     else:
         updates["is_admin"] = False
-    service_supabase.table("profiles").update(updates).eq("id", user_id).execute()
+    try:
+        res = (
+            service_supabase.table("profiles")
+            .update(updates)
+            .eq("id", user_id)
+            .execute()
+        )
+        if not (res.data or []):
+            raise HTTPException(status_code=500, detail="Role change failed — profile not found")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Role change failed: {exc}")
 
     try:
         service_supabase.table("user_roles").delete().eq("user_id", user_id).execute()
+        service_supabase.table("user_roles").insert(
+            {"user_id": user_id, "role": payload.role}
+        ).execute()
+    except Exception:
+        pass
+    try:
+        service_supabase.auth.admin.update_user_by_id(
+            user_id,
+            {"user_metadata": {"role": payload.role, "is_admin": payload.role in ADMIN_ROLES}},
+        )
     except Exception:
         pass
 
@@ -415,6 +437,18 @@ async def admin_change_role(
     log_audit(
         admin_id, _email(admin_id), "user.change_role", "user", user_id,
         old_value={"role": old}, new_value={"role": payload.role}, ip=ip, user_agent=ua,
+    )
+    from app.services.notification_service import notify
+
+    notify(
+        user_id,
+        "role_changed",
+        "Your role was updated",
+        f"Your role changed to {payload.role}.",
+        {"role": payload.role, "from_role": old},
+        template="role_approved",
+        template_data={"role": payload.role, "from_role": old},
+        dedupe_key=f"role_changed:{user_id}:{payload.role}",
     )
     return {"success": True, "previous_role": old, "role": payload.role}
 
@@ -792,16 +826,45 @@ async def admin_approve_role_request(
         raise HTTPException(status_code=400, detail="Request already reviewed")
 
     new_role = req.get("requested_role")
+    if new_role not in ALL_ROLES:
+        raise HTTPException(status_code=400, detail="Requested role is no longer valid")
+
     updates = {"role": new_role}
     if new_role in ADMIN_ROLES:
         updates["is_admin"] = True
     else:
         updates["is_admin"] = False
-    service_supabase.table("profiles").update(updates).eq("id", req["user_id"]).execute()
+    try:
+        res = (
+            service_supabase.table("profiles")
+            .update(updates)
+            .eq("id", req["user_id"])
+            .execute()
+        )
+        if not (res.data or []):
+            raise HTTPException(status_code=500, detail="Role update failed — profile not found")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Role update failed: {exc}")
+
+    # Keep extra-role table + auth metadata in sync so server-side permission
+    # checks pick up the new role immediately.
     try:
         service_supabase.table("user_roles").delete().eq("user_id", req["user_id"]).execute()
+        service_supabase.table("user_roles").insert(
+            {"user_id": req["user_id"], "role": new_role}
+        ).execute()
     except Exception:
         pass
+    try:
+        service_supabase.auth.admin.update_user_by_id(
+            req["user_id"],
+            {"user_metadata": {"role": new_role, "is_admin": new_role in ADMIN_ROLES}},
+        )
+    except Exception:
+        pass
+
     service_supabase.table("role_requests").update(
         {"status": "approved", "admin_id": admin_id, "admin_note": payload.note, "reviewed_at": _now()}
     ).eq("id", request_id).execute()
@@ -826,10 +889,13 @@ async def admin_approve_role_request(
         f"Your {new_role} role request was approved.",
         {"request_id": request_id},
         template="role_approved",
-        template_data={"role": new_role},
+        template_data={
+            "role": new_role,
+            "from_role": req.get("from_role"),
+        },
         dedupe_key=f"role_approved:{request_id}",
     )
-    return {"success": True}
+    return {"success": True, "role": new_role, "user_id": req["user_id"]}
 
 
 @router.post("/role-requests/{request_id}/reject")

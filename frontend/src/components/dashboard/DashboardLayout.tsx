@@ -31,6 +31,7 @@ import { useSession } from '../../context/AuthContext'
 import { useDashboardStore } from '../../store/dashboardStore'
 import { useUnreadChatsCount } from '../../hooks/useUnreadChatsCount'
 import { useAIStudioConfig } from '../../lib/aiStudio'
+import { GuardedOutlet } from '../RoleGuard'
 import { Avatar } from '../Avatar'
 import { NotificationBell } from './NotificationBell'
 import { MessagesButton } from '../MessagesButton'
@@ -489,6 +490,7 @@ export function DashboardLayout() {
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <Suspense fallback={<PageLoader />}>
+              <GuardedOutlet />
               <Outlet />
             </Suspense>
           </motion.div>

@@ -36,6 +36,7 @@ const ProfileView = lazy(() => import('./pages/profile/ProfileView'))
 const EditProfile = lazy(() => import('./pages/profile/EditProfile'))
 const RoleDashboard = lazy(() => import('./pages/Dashboard'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const Forbidden = lazy(() => import('./pages/Forbidden'))
 const PlaceholderPage = lazy(() =>
   import('./pages/dashboard/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage }))
 )
@@ -157,6 +158,7 @@ function App() {
               <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
               <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><Callback /></Suspense>} />
               <Route path="/profile/:username" element={<Suspense fallback={<PageLoader />}><ProfileView /></Suspense>} />
+              <Route path="/403" element={<Suspense fallback={<PageLoader />}><Forbidden /></Suspense>} />
               <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
 
               <Route

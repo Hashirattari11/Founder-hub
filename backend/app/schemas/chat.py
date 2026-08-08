@@ -7,6 +7,10 @@ class ChatStartIn(BaseModel):
     receiver_id: str
 
 
+class ChatMessageIn(BaseModel):
+    content: str
+
+
 class ChatProfileOut(BaseModel):
     id: str
     full_name: Optional[str] = None

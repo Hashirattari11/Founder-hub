@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { invalidateStudioConfig } from '../lib/aiStudio'
 import type { User, Profile } from '../types'
 
 interface AuthContextValue {
@@ -20,6 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const userIdRef = useRef<string | null>(null)
+  const lastRoleRef = useRef<string | null>(null)
 
   async function fetchProfile(userId: string) {
     const { data } = await supabase
@@ -27,7 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('id', userId)
       .maybeSingle()
-    setProfile((data as Profile | null) ?? null)
+    const next = (data as Profile | null) ?? null
+    setProfile(next)
+    if (next?.role && next.role !== lastRoleRef.current) {
+      lastRoleRef.current = next.role
+      // The AI studio config is role-aware (model/provider presets) — drop the
+      // cache when the user's role changes so features update immediately.
+      invalidateStudioConfig()
+    }
   }
 
   async function refreshProfile() {
@@ -39,7 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) {
+        userIdRef.current = session.user.id
+        fetchProfile(session.user.id)
+      }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -47,14 +60,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
+          userIdRef.current = session.user.id
           await fetchProfile(session.user.id)
         } else {
+          userIdRef.current = null
+          lastRoleRef.current = null
           setProfile(null)
         }
       },
     )
 
-    return () => subscription.unsubscribe()
+    // Live profile refresh — when an admin approves/changes your role (or your
+    // profile is otherwise updated), the UI reacts immediately instead of
+    // serving a stale role until reload. This is the core fix for "role
+    // approved but dashboard didn't switch".
+    const realtime = supabase
+      .channel('auth-profile-sync')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles' },
+        (payload) => {
+          const updated = payload.new as Partial<Profile> | null
+          const uid = userIdRef.current
+          if (uid && updated && updated.id === uid) {
+            fetchProfile(uid)
+          }
+        },
+      )
+      .subscribe()
+
+    // Fresh profile on tab refocus too (cheap safety net).
+    const onFocus = () => {
+      const uid = userIdRef.current
+      if (uid) fetchProfile(uid)
+    }
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      subscription.unsubscribe()
+      realtime.unsubscribe()
+      window.removeEventListener('focus', onFocus)
+    }
   }, [])
 
   async function signOut() {

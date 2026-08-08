@@ -4,9 +4,11 @@ Supports two providers behind one interface:
   * Brevo (SIB / Sendinblue) — `BREVO_API_KEY`
   * Resend — `RESEND_API_KEY`
 
-Provider selection is `EMAIL_PROVIDER` (default "brevo"). Sending never
-raises: failures are logged and reported via the return value / exception
-list so the queue worker can decide whether to retry.
+Provider selection is `EMAIL_PROVIDER` ("resend" | "brevo" | "auto"). In
+"auto" mode the first provider with a configured key wins (resend → brevo),
+which guarantees emails work regardless of which key is provisioned. Sending
+never raises: failures are logged and reported via the return value /
+exception list so the queue worker can decide whether to retry.
 """
 import logging
 from typing import List, Optional, Tuple
@@ -18,6 +20,24 @@ from app.core.config import settings
 logger = logging.getLogger("founderhub.email")
 
 BREVO_API = "https://api.brevo.com/v3/smtp/email"
+
+
+def resolve_email_provider() -> str | None:
+    """Resolve the effective provider based on config + available keys."""
+    chosen = (settings.email_provider or "auto").lower()
+    if chosen not in ("auto", "resend", "brevo"):
+        logger.warning("Unknown EMAIL_PROVIDER %r — falling back to auto", chosen)
+        chosen = "auto"
+    if chosen == "resend":
+        return "resend" if settings.resend_api_key else None
+    if chosen == "brevo":
+        return "brevo" if settings.brevo_api_key else None
+    # auto
+    if settings.resend_api_key:
+        return "resend"
+    if settings.brevo_api_key:
+        return "brevo"
+    return None
 
 
 def _from_headers() -> dict:
@@ -74,14 +94,14 @@ def send_email(
 
     Returns True when the provider accepted it. Never raises.
     """
-    chosen = (provider or settings.email_provider or "brevo").lower()
+    chosen = (provider or resolve_email_provider() or "none").lower()
     try:
         if chosen == "resend":
             _send_resend(to, subject, html, text)
         elif chosen == "brevo":
             _send_brevo(to, subject, html, text)
         else:
-            logger.warning("Unknown email provider %r — skipping", chosen)
+            logger.warning("No email provider configured — skipping send to %s", to)
             return False
         return True
     except Exception as exc:  # pragma: no cover
@@ -97,14 +117,14 @@ def send_email_ex(
     provider: str | None = None,
 ) -> Tuple[bool, Optional[str]]:
     """Like send_email but also returns the error message (for queue retry)."""
-    chosen = (provider or settings.email_provider or "brevo").lower()
+    chosen = (provider or resolve_email_provider() or "none").lower()
     try:
         if chosen == "resend":
             _send_resend(to, subject, html, text)
         elif chosen == "brevo":
             _send_brevo(to, subject, html, text)
         else:
-            return False, f"Unknown email provider {chosen!r}"
+            return False, "No email provider configured (missing RESEND_API_KEY / BREVO_API_KEY)"
         return True, None
     except Exception as exc:  # pragma: no cover
         logger.warning("Email to %s failed via %s: %s", to, chosen, exc)

@@ -473,6 +473,34 @@ def _message_received(d: Dict) -> Dict[str, str]:
     return {"subject": f"New message from {from_} — FounderHub", "html": _shell(inner, "You can change message emails in your preferences.")}
 
 
+def _role_request(d: Dict) -> Dict[str, str]:
+    role = d.get("role", "a new role")
+    name = d.get("user_name", "A user")
+    email = d.get("email", "")
+    from_role = d.get("from_role", "")
+    reason = d.get("reason", "")
+    url = d.get("action_url") or f"{FRONTEND_URL}/admin/role-requests"
+    label = d.get("action_label") or "Review Request"
+    from_line = f" from <strong style='color:#FFFFFF;'>{_esc(from_role)}</strong>" if from_role else ""
+    reason_block = (
+        f"<div style='margin:14px 0;padding:12px 14px;background:#111827;border:1px solid #1F2937;border-radius:8px;color:#D1D5DB;font-size:13px;'>“{_esc(reason)}”</div>"
+        if reason
+        else ""
+    )
+    inner = (
+        _badge("#F59E0B", "Role change request")
+        + _heading("A user requested a role change")
+        + _text(
+            f"<strong style='color:#FFFFFF;'>{_esc(name)}</strong>{from_line} requested the "
+            f"<strong style='color:#FFFFFF;'>{_esc(role)}</strong> role."
+            + (f"<br><span style='color:#9CA3AF;'>{_esc(email)}</span>" if email else "")
+        )
+        + reason_block
+        + _cta(url, label)
+    )
+    return {"subject": f"Role request: {role} — FounderHub", "html": _shell(inner, "Sent to admin from FounderHub AI.")}
+
+
 _RENDERERS = {
     "welcome": _welcome,
     "verify_email": _verify_email,
@@ -497,6 +525,7 @@ _RENDERERS = {
     "startup_approved": _startup_approved,
     "role_approved": _role_approved,
     "role_rejected": _role_rejected,
+    "role_request": _role_request,
     "admin_alert": _admin_alert,
     "broadcast": _broadcast,
     "startup_new": _startup_new,

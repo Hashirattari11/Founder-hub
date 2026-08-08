@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from app.core.auth import get_user_client, get_user_id
-from app.schemas.chat import ChatMessageOut, ChatOut, ChatStartIn
+from app.schemas.chat import ChatMessageIn, ChatMessageOut, ChatOut, ChatStartIn
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -126,6 +126,88 @@ async def mark_chat_read(
         .execute()
     )
     return {"updated": len(result.data or [])}
+
+
+@router.post("/messages/{chat_id}/send", response_model=ChatMessageOut)
+async def send_chat_message(
+    chat_id: str,
+    payload: ChatMessageIn,
+    user_id: str = Depends(get_user_id),
+    user_client=Depends(get_user_client),
+):
+    """Send a message in a chat you belong to.
+
+    Inserting happens here (not the browser) so we can notify the other
+    participant (bell + email + push) and stamp `last_message_at` on the chat.
+    """
+    content = (payload.content or "").strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    chat = (
+        user_client.table("chats")
+        .select("participant_1, participant_2")
+        .eq("id", chat_id)
+        .limit(1)
+        .execute()
+    )
+    row = (chat.data or [None])[0]
+    if not row:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    if user_id not in (row["participant_1"], row["participant_2"]):
+        raise HTTPException(status_code=403, detail="You are not a participant in this chat")
+
+    receiver_id = row["participant_2"] if row["participant_1"] == user_id else row["participant_1"]
+
+    inserted = (
+        user_client.table("messages")
+        .insert({
+            "chat_id": chat_id,
+            "sender_id": user_id,
+            "content": content,
+        })
+        .execute()
+    )
+    msg = (inserted.data or [None])[0]
+    if not msg:
+        raise HTTPException(status_code=500, detail="Could not save message")
+
+    # Keep the chat list ordering fresh.
+    try:
+        user_client.table("chats").update({"last_message_at": msg.get("created_at")}).eq("id", chat_id).execute()
+    except Exception:
+        pass
+
+    # Notify the other participant without blocking the send path.
+    try:
+        from app.services.notification_service import notify
+        from app.core.users import user_full_name
+
+        sender_name = user_full_name(user_id) or "Someone"
+        notify(
+            receiver_id,
+            "message_received",
+            "New message",
+            f"{sender_name} sent you a message.",
+            {"chat_id": chat_id, "sender_id": user_id, "message_id": msg.get("id")},
+            email=True,
+            template="message_received",
+            template_data={
+                "from_name": sender_name,
+                "action_url": f"{_frontend_base()}/messages",
+                "action_label": "Open Chat",
+            },
+            dedupe_key=f"message:{chat_id}:{user_id}:{msg.get('id')}",
+        )
+    except Exception as exc:  # pragma: no cover
+        print(f"[chat.send] notify failed: {exc}")
+
+    return msg
+
+
+def _frontend_base() -> str:
+    from app.core.config import settings
+    return settings.frontend_url_for("")
 
 
 @router.post("/upload/chat-file", response_model=dict)

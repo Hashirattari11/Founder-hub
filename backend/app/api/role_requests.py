@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.auth import get_user_id
-from app.core.rbac import ALL_ROLES, get_user_primary_role
+from app.core.rbac import ALL_ROLES, ADMIN_ROLES, get_user_primary_role
 from app.core.supabase import service_supabase, single_row
+from app.core.users import user_email, user_full_name
 
 router = APIRouter(prefix="/api/role-requests", tags=["role-requests"])
 
@@ -24,6 +25,10 @@ async def create_role_request(
 ):
     if payload.requested_role not in ALL_ROLES:
         raise HTTPException(status_code=400, detail="Invalid role")
+    # Administrator is a privileged role — it can never be requested through
+    # the public role-change flow (super admins are bootstrapped separately).
+    if payload.requested_role in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Administrator cannot be requested as a role")
 
     from_role = get_user_primary_role(user_id)
     if from_role == payload.requested_role:
@@ -55,15 +60,31 @@ async def create_role_request(
     )
     from app.services.notification_service import notify_admin
 
+    requester_name = user_full_name(user_id) or "A user"
+    requester_email = user_email(user_id) or ""
     notify_admin(
         "New role change request",
-        f"A user requested a change to {payload.requested_role}.",
+        f"{requester_name} requested a change to {payload.requested_role}.",
         {"requested_role": payload.requested_role, "user_id": user_id},
-        email=False,
-        template_data={"role": payload.requested_role},
+        email=True,
+        template="role_request",
+        template_data={
+            "user_name": requester_name,
+            "email": requester_email,
+            "from_role": from_role,
+            "role": payload.requested_role,
+            "reason": payload.reason,
+            "action_url": f"{_frontend_base()}/admin/role-requests",
+            "action_label": "Review Request",
+        },
         dedupe_key=f"role_request:{user_id}:{payload.requested_role}",
     )
     return result.data[0]
+
+
+def _frontend_base() -> str:
+    from app.core.config import settings
+    return settings.frontend_url_for("")
 
 
 @router.get("/me")

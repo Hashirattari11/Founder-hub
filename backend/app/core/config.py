@@ -11,7 +11,9 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
     resend_api_key: str = ""
     brevo_api_key: str = ""
-    email_provider: str = "brevo"
+    # Provider selection: "resend" | "brevo" | "auto". When "auto" (default),
+    # the first provider with a configured API key wins (resend → brevo).
+    email_provider: str = "auto"
     email_from_name: str = "FounderHub AI"
     email_from_email: str = "onboarding@resend.dev"
     resend_from_email: str = "FounderHub AI <onboarding@resend.dev>"

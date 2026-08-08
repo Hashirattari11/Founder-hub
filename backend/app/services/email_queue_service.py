@@ -184,6 +184,7 @@ def _template_for(notification_type: str) -> str | None:
         "startup_approved": "startup_approved",
         "role_approved": "role_approved",
         "role_rejected": "role_rejected",
+        "role_request": "role_request",
         "admin_alert": "admin_alert",
         "broadcast": "broadcast",
         "message_received": "message_received",

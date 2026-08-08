@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { ArrowRight, BadgeCheck, Clock, Loader2, Send, ShieldCheck, X } from 'lucide-react'
 import { ROLES, ROLE_LABELS } from '../../types'
 import type { Role } from '../../types'
+import { useSession } from '../../context/AuthContext'
 import {
   createRoleRequest,
   getMyRoleRequests,
@@ -18,6 +19,7 @@ const STATUS_STYLES: Record<RoleRequest['status'], { label: string; cls: string 
 }
 
 export default function RoleRequestCard({ currentRole }: { currentRole: Role | null }) {
+  const { refreshProfile } = useSession()
   const [requests, setRequests] = useState<RoleRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -29,6 +31,12 @@ export default function RoleRequestCard({ currentRole }: { currentRole: Role | n
     try {
       const rows = await getMyRoleRequests()
       setRequests(rows)
+      const justApproved = rows[0]?.status === 'approved'
+      if (justApproved) {
+        // Role became effective server-side — refresh the live profile so the
+        // dashboard, nav and permissions update without a manual reload.
+        await refreshProfile()
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to load role requests')
     } finally {
@@ -39,6 +47,15 @@ export default function RoleRequestCard({ currentRole }: { currentRole: Role | n
   useEffect(() => {
     void load()
   }, [])
+
+  // While a request is pending, poll so an admin decision appears live
+  // (the profile realtime subscription covers the role change itself).
+  useEffect(() => {
+    const hasPending = requests.some((r) => r.status === 'pending')
+    if (!hasPending) return
+    const timer = window.setInterval(() => void load(), 8000)
+    return () => window.clearInterval(timer)
+  }, [requests])
 
   const pending = requests.find((r) => r.status === 'pending')
   const latest = requests[0]

@@ -29,6 +29,20 @@ _CATEGORY_TO_PREF = {
     "admin": "admin_alerts",
 }
 
+# System-critical notifications are ALWAYS emailed (respecting only the global
+# email_enabled switch). These are transactional — e.g. role approvals/rejections
+# — and must never be silenced by a per-category toggle.
+_TRANSACTIONAL_TYPES = {
+    "role_approved",
+    "role_rejected",
+    "role_changed",
+    "admin_alert",
+    "welcome",
+    "verify_email",
+    "password_reset",
+    "account_suspended",
+}
+
 DEFAULT_PREFS = {
     "email_enabled": True,
     "push_enabled": True,
@@ -137,7 +151,9 @@ def notify(
 
     if email and prefs.get("email_enabled", True):
         pref_col = _CATEGORY_TO_PREF.get(category, "marketing")
-        if prefs.get(pref_col, True):
+        type_key = (notification_type or "").lower()
+        allowed = type_key in _TRANSACTIONAL_TYPES or prefs.get(pref_col, True)
+        if allowed:
             merged_data = dict(template_data or {})
             merged_data.setdefault("user_name", to_name or user_full_name(user_id))
             if not merged_data.get("user_name"):
