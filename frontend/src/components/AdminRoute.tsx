@@ -9,7 +9,7 @@ interface AdminRouteProps {
 
 /** Blocks non-admin users from /admin/* routes. */
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { user, profile, loading } = useSession()
+  const { user, realProfile, loading } = useSession()
   const location = useLocation()
 
   if (loading) {
@@ -24,7 +24,8 @@ export function AdminRoute({ children }: AdminRouteProps) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
-  if (!isAdminProfile(profile)) {
+  // Use the REAL profile so a role preview never locks an admin out of /admin/*.
+  if (!isAdminProfile(realProfile)) {
     return <Navigate to="/dashboard" replace />
   }
 

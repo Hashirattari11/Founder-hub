@@ -921,15 +921,15 @@ function UsageTab() {
 // Page
 // ---------------------------------------------------------------------------
 export default function AIStudioAdmin() {
-  const { profile } = useSession()
+  const { realProfile } = useSession()
   const [tab, setTab] = useState<'tools' | 'users' | 'analytics' | 'usage'>('tools')
 
   const isAdmin = Boolean(
-    profile?.is_admin ||
-      (profile?.role && ['administrator', 'admin'].includes(profile.role.toLowerCase())),
+    realProfile?.is_admin ||
+      (realProfile?.role && ['administrator', 'admin'].includes(realProfile.role.toLowerCase())),
   )
 
-  if (profile && !isAdmin) {
+  if (realProfile && !isAdmin) {
     return (
       <div className="mx-auto max-w-2xl py-8">
         <AdminAccessDenied />

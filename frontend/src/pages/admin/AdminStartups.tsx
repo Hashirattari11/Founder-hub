@@ -16,8 +16,8 @@ import {
 } from './adminUi'
 
 export default function AdminStartups() {
-  const { profile } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
+  const { realProfile } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
   const [startups, setStartups] = useState<AdminStartup[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')

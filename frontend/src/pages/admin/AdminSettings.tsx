@@ -8,8 +8,8 @@ import type { SettingsMap } from '../../types/admin'
 import { Badge, Card, LoadingBlock, PageHeader } from './adminUi'
 
 export default function AdminSettings() {
-  const { profile } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
+  const { realProfile } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
   const [settings, setSettings] = useState<SettingsMap>({})
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)

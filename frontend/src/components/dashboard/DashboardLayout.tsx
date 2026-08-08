@@ -37,6 +37,7 @@ import { NotificationBell } from './NotificationBell'
 import { MessagesButton } from '../MessagesButton'
 import { MobileBottomNav } from '../MobileBottomNav'
 import { PageLoader } from '../PageLoader'
+import { PreviewBar } from './PreviewBar'
 import { ROLE_LABELS } from '../../types'
 import type { Role } from '../../types'
 
@@ -160,12 +161,12 @@ function SidebarContent({
   onNavigate?: () => void
   unreadCount: number
 }) {
-  const { profile } = useSession()
+  const { profile, isPreviewing } = useSession()
   const { config: studioConfig } = useAIStudioConfig(profile?.id)
   const primaryRole = (profile?.role?.toLowerCase() as Role) ?? 'founder'
-  const roles: Role[] = (
-    studioConfig?.roles?.length ? studioConfig.roles : [primaryRole]
-  ) as Role[]
+  const roles: Role[] = isPreviewing
+    ? [primaryRole]
+    : (studioConfig?.roles?.length ? studioConfig.roles : [primaryRole]) as Role[]
   const seen = new Set<string>()
   const links = roles.flatMap((r) => navByRole[r] ?? []).filter((link) => {
     if (seen.has(link.to)) return false
@@ -265,15 +266,16 @@ function SidebarContent({
 }
 
 export function DashboardLayout() {
-  const { user, profile, signOut } = useSession()
+  const { user, profile, realProfile, signOut } = useSession()
   const { sidebarOpen, toggleSidebar, closeSidebar } = useDashboardStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const unreadCount = useUnreadChatsCount()
+  // Admin shortcuts use the REAL profile so they stay available in preview mode.
   const isAdmin = Boolean(
-    profile?.is_admin ||
-      (profile?.role && ['administrator', 'admin'].includes(profile.role.toLowerCase())),
+    realProfile?.is_admin ||
+      (realProfile?.role && ['administrator', 'admin'].includes(realProfile.role.toLowerCase())),
   )
 
   const handleSignOut = async () => {
@@ -499,6 +501,9 @@ export function DashboardLayout() {
 
       {/* Mobile bottom nav */}
       <MobileBottomNav />
+
+      {/* Role preview switcher (admins only) */}
+      <PreviewBar />
     </div>
   )
 }

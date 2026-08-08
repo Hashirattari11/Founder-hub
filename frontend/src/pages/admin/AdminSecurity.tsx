@@ -8,8 +8,8 @@ import type { LoginLog } from '../../types/admin'
 import { Badge, Card, EmptyRow, formatDateTime, LoadingBlock, PageHeader, statusTone, TableHead, TableShell } from './adminUi'
 
 export default function AdminSecurity() {
-  const { profile } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
+  const { realProfile } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
   const [logs, setLogs] = useState<LoginLog[]>([])
   const [loading, setLoading] = useState(true)
   const [twoFactor, setTwoFactor] = useState(false)

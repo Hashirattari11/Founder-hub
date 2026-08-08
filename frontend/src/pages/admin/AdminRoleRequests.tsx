@@ -18,8 +18,8 @@ import {
 } from './adminUi'
 
 export default function AdminRoleRequests() {
-  const { profile } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
+  const { realProfile } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
   const [requests, setRequests] = useState<RoleRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState('')

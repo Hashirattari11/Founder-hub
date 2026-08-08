@@ -31,6 +31,7 @@ import { useSession } from '../../context/AuthContext'
 import { Avatar } from '../../components/Avatar'
 import { isAdminProfile, isSuperAdminProfile } from '../../lib/admin'
 import { PageLoader } from '../../components/PageLoader'
+import { PreviewBar } from '../../components/dashboard/PreviewBar'
 
 interface NavItem {
   label: string
@@ -88,9 +89,9 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
 ]
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { profile, user } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
-  const admin = isAdminProfile(profile)
+  const { realProfile, user } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
+  const admin = isAdminProfile(realProfile)
 
   return (
     <div className="flex h-full flex-col">
@@ -138,9 +139,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="border-t border-gray-200 p-4 dark:border-dark-300">
         <div className="flex items-center gap-3">
-          <Avatar src={profile?.avatar_url} name={profile?.full_name} size="sm" />
+          <Avatar src={realProfile?.avatar_url} name={realProfile?.full_name} size="sm" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{profile?.full_name ?? 'Admin'}</p>
+            <p className="truncate text-sm font-semibold">{realProfile?.full_name ?? 'Admin'}</p>
             <p className="truncate text-xs text-gray-500">{user?.email ?? ''}</p>
           </div>
         </div>
@@ -150,7 +151,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function AdminLayout() {
-  const { profile, user, signOut } = useSession()
+  const { realProfile, user, signOut } = useSession()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -229,13 +230,13 @@ export default function AdminLayout() {
                 <Bell className="h-4 w-4" />
               </Link>
               <div className="flex items-center gap-2">
-                <Avatar src={profile?.avatar_url} name={profile?.full_name ?? user?.email} size="sm" />
+                <Avatar src={realProfile?.avatar_url} name={realProfile?.full_name ?? user?.email} size="sm" />
                 <div className="hidden md:block">
                   <p className="text-sm font-semibold leading-tight">
-                    {profile?.full_name ?? 'Admin'}
+                    {realProfile?.full_name ?? 'Admin'}
                   </p>
                   <p className="text-xs leading-tight text-gray-500">
-                    {profile?.is_super_admin ? 'Super Admin' : 'Administrator'}
+                    {realProfile?.is_super_admin ? 'Super Admin' : 'Administrator'}
                   </p>
                 </div>
               </div>
@@ -262,6 +263,9 @@ export default function AdminLayout() {
           </motion.div>
         </main>
       </div>
+
+      {/* Role preview switcher (admins only) */}
+      <PreviewBar />
     </div>
   )
 }

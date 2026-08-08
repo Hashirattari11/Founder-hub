@@ -59,8 +59,8 @@ interface PasswordModalState {
 }
 
 export default function AdminUsers() {
-  const { profile } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
+  const { realProfile } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')

@@ -33,8 +33,8 @@ const STATUS_TONES: Record<string, 'green' | 'gray' | 'red' | 'purple'> = {
 }
 
 export default function AdminMeetings() {
-  const { profile } = useSession()
-  const superAdmin = isSuperAdminProfile(profile)
+  const { realProfile } = useSession()
+  const superAdmin = isSuperAdminProfile(realProfile)
   const [meetings, setMeetings] = useState<AdminMeeting[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
