@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom'
+import { useState, Suspense } from 'react'
+import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity,
@@ -23,12 +23,14 @@ import {
   UserCog,
   Users,
   Users2,
+  Video,
   Wallet,
   X,
 } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { Avatar } from '../../components/Avatar'
 import { isAdminProfile, isSuperAdminProfile } from '../../lib/admin'
+import { PageLoader } from '../../components/PageLoader'
 
 interface NavItem {
   label: string
@@ -49,6 +51,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'Users', to: '/admin/users', icon: Users },
       { label: 'Startups', to: '/admin/startups', icon: Rocket },
+      { label: 'Meetings', to: '/admin/meetings', icon: Video },
       { label: 'Investors', to: '/admin/investors', icon: Wallet },
       { label: 'Role Requests', to: '/admin/role-requests', icon: UserCog },
       { label: 'Reports', to: '/admin/reports', icon: Flag },
@@ -149,6 +152,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 export default function AdminLayout() {
   const { profile, user, signOut } = useSession()
   const navigate = useNavigate()
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleSignOut = async () => {
@@ -246,7 +250,16 @@ export default function AdminLayout() {
         </header>
 
         <main className="p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">
-          <Outlet />
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          </motion.div>
         </main>
       </div>
     </div>

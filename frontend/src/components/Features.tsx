@@ -54,10 +54,29 @@ const features = [
   },
 ]
 
+function TiltCard({ children }: { children: React.ReactNode }) {
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    const rect = el.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    el.style.transform = `perspective(900px) rotateX(${y * -6}deg) rotateY(${x * 8}deg) translateY(-6px)`
+  }
+  const handleLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)'
+  }
+  return (
+    <div onMouseMove={handleMove} onMouseLeave={handleLeave} className="transition-transform duration-300 ease-out will-change-transform">
+      {children}
+    </div>
+  )
+}
+
 export function Features() {
   return (
-    <section id="features" className="py-24 lg:py-32">
-      <div className="container-x">
+    <section id="features" className="relative py-24 lg:py-32">
+      <div className="hero-grid pointer-events-none absolute inset-0 opacity-60" />
+      <div className="container-x relative">
         <SectionHeading
           eyebrow="Features"
           title="Everything you need to launch"
@@ -72,17 +91,21 @@ export function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
-              className="group rounded-2xl border border-gray-200 bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 dark:border-dark-300 dark:bg-dark-100"
             >
-              <div
-                className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} text-white shadow-lg`}
-              >
-                <feature.icon className="h-6 w-6" />
-              </div>
-              <h3 className="mt-6 text-lg font-bold">{feature.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                {feature.description}
-              </p>
+              <TiltCard>
+                <div className="group relative h-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 transition-shadow duration-300 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/15 dark:border-dark-300 dark:bg-dark-100">
+                  <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gradient-brand opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-25" />
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.gradient} text-white shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
+                  >
+                    <feature.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-6 text-lg font-bold">{feature.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                    {feature.description}
+                  </p>
+                </div>
+              </TiltCard>
             </motion.div>
           ))}
         </div>

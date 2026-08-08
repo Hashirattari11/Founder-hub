@@ -1,12 +1,14 @@
+import time
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from pydantic import BaseModel
 
 from app.core.auth import get_user_id
-from app.core.email import send_email
-from app.core.security import is_admin_user_full
+from app.core.config import settings
 from app.core.supabase import service_supabase
 from app.core.users import user_email
+from app.services.notification_service import notify, broadcast
 from app.services.push_service import enqueue_push
 
 router = APIRouter(prefix="/api", tags=["notifications"])
@@ -40,6 +42,24 @@ def _sender_name(sender_id: str) -> str:
         return "Someone"
 
 
+def _frontend_url(path: str) -> str:
+    return settings.frontend_url_for(path)
+
+
+def _sender_username(user_id: str) -> str | None:
+    try:
+        row = (
+            service_supabase.table("profiles")
+            .select("username")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+        return (row.data[0] or {}).get("username") or None
+    except Exception:
+        return None
+
+
 def _email_html(body: str) -> str:
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
@@ -49,6 +69,64 @@ def _email_html(body: str) -> str:
       <p style="color:#6b7280">— FounderHub AI</p>
     </div>
     """
+
+
+def _message_dedupe_key(chat_id: str, receiver_id: str) -> str:
+    """Time-windowed dedupe: one email per chat per minute, so every new
+    message burst still produces a fresh email without flooding the inbox."""
+    bucket = int(time.time() // 60)
+    return f"message:{chat_id}:{receiver_id}:{bucket}"
+
+
+def _broadcast_startup_published(startup: dict, exclude_ids: set[str]) -> int:
+    """Email + notify every other user about a newly published startup.
+
+    Respects each user's notification preferences (marketing/email_enabled).
+    Matched talent/investors are excluded so they don't get a second, less
+    targeted email.
+    """
+    try:
+        rows = (
+            service_supabase.table("profiles")
+            .select("id")
+            .execute()
+        )
+        user_ids = [r["id"] for r in (rows.data or [])]
+    except Exception as exc:
+        print(f"[notify] failed to list users for startup broadcast: {exc}")
+        return 0
+
+    startup_id = startup.get("id")
+    startup_name = startup.get("name") or "A new startup"
+    exclude_ids = exclude_ids or set()
+
+    count = 0
+    for uid in user_ids:
+        if uid in exclude_ids or str(uid) == str(startup.get("founder_id")):
+            continue
+        try:
+            notify(
+                uid,
+                "startup_new",
+                f"{startup_name} just launched",
+                f"A new startup just launched on FounderHub: {startup_name}",
+                {
+                    "startup_id": startup_id,
+                    "url": f"/startups/{startup_id}",
+                },
+                template="startup_new",
+                template_data={
+                    "startup_name": startup_name,
+                    "tagline": startup.get("tagline") or "",
+                    "industry": startup.get("industry") or "",
+                    "action_url": _frontend_url(f"/startups/{startup_id}"),
+                },
+                dedupe_key=f"startup_new:{startup_id}:{uid}",
+            )
+            count += 1
+        except Exception as exc:
+            print(f"[notify] failed startup broadcast to {uid}: {exc}")
+    return count
 
 
 @router.post("/notify/message")
@@ -61,18 +139,31 @@ async def notify_message(
     if not email:
         return {"sent": False}
     name = _sender_name(sender_id)
-    ok = send_email(
-        email,
-        f"New message from {name} on FounderHub",
-        _email_html(f"{name} sent you a message on FounderHub."),
+    notify(
+        payload.receiver_id,
+        "message_received",
+        f"New message from {name}",
+        f"{name} sent you a message on FounderHub.",
+        {
+            "sender_id": sender_id,
+            "chat_id": payload.chat_id,
+            "url": f"/messages?user={sender_id}",
+        },
+        template="message_received",
+        template_data={
+            "from_name": name,
+            "action_url": _frontend_url(f"/messages?user={sender_id}"),
+            "action_label": "Open Chat",
+        },
+        dedupe_key=_message_dedupe_key(payload.chat_id, payload.receiver_id),
     )
     enqueue_push(
         payload.receiver_id,
         f"{name} sent you a message",
         "Tap to open the chat.",
-        {"url": f"/chat/{payload.chat_id}"},
+        {"url": f"/messages?user={sender_id}"},
     )
-    return {"sent": ok}
+    return {"sent": True}
 
 
 @router.post("/notify/connection-request")
@@ -85,18 +176,32 @@ async def notify_connection_request(
     if not email:
         return {"sent": False}
     name = _sender_name(requester_id)
-    ok = send_email(
-        email,
-        f"{name} sent you a connection request on FounderHub",
-        _email_html(f"{name} wants to connect with you on FounderHub."),
+    requester_username = _sender_username(requester_id)
+    notify(
+        payload.receiver_id,
+        "connection_request",
+        f"{name} wants to connect",
+        f"{name} wants to connect with you on FounderHub.",
+        {
+            "requester_id": requester_id,
+            "requester_username": requester_username,
+            "url": f"/profile/{requester_username}" if requester_username else "/dashboard",
+        },
+        template="message_received",
+        template_data={
+            "from_name": name,
+            "action_url": _frontend_url(f"/profile/{requester_username}" if requester_username else "/dashboard"),
+            "action_label": "View Profile",
+        },
+        dedupe_key=f"connection_request:{requester_id}:{payload.receiver_id}:{int(time.time() // 300)}",
     )
     enqueue_push(
         payload.receiver_id,
         f"{name} wants to connect",
         "Accept or decline the connection request.",
-        {"url": f"/user/{requester_id}"},
+        {"url": f"/profile/{requester_username}" if requester_username else "/dashboard"},
     )
-    return {"sent": ok}
+    return {"sent": True}
 
 
 @router.post("/notify-startup-published/{startup_id}")
@@ -128,29 +233,17 @@ async def notify_startup_published(
     if not startup.get("is_published"):
         raise HTTPException(status_code=400, detail="Startup is not published")
 
-    talent = notify_matched_users(startup)
-    investors = notify_investors(startup)
+    talent_count, talent_ids = notify_matched_users(startup)
+    investor_count, investor_ids = notify_investors(startup)
+
+    already_notified = set(talent_ids + investor_ids)
+    broadcast_count = _broadcast_startup_published(startup, exclude_ids=already_notified)
 
     return {
         "success": True,
         "startup": startup.get("name"),
-        "notified": talent + investors,
-        "matched_talent": talent,
-        "matched_investors": investors,
+        "notified": talent_count + investor_count + broadcast_count,
+        "matched_talent": talent_count,
+        "matched_investors": investor_count,
+        "broadcast_all": broadcast_count,
     }
-
-
-@router.get("/admin/email-logs")
-async def admin_email_logs(user_id: str = Depends(get_user_id)):
-    """Recent email_logs rows (admins only)."""
-    if not is_admin_user_full(user_id):
-        raise HTTPException(status_code=403, detail="Admins only")
-
-    rows = (
-        service_supabase.table("email_logs")
-        .select("*")
-        .order("sent_at", desc=True)
-        .limit(100)
-        .execute()
-    )
-    return {"logs": rows.data or []}

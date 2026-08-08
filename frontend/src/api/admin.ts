@@ -2,6 +2,7 @@ import { api } from '../lib/api'
 import type {
   AdminMeResponse,
   AdminOverviewResponse,
+  AdminMeetingsResponse,
   AdminStartupsResponse,
   AdminStartup,
   AdminUsersResponse,
@@ -110,6 +111,27 @@ export function adminUpdateStartup(startupId: string, patch: Partial<AdminStartu
 
 export function adminDeleteStartup(startupId: string) {
   return api.delete<SuccessResponse>(`/api/admin/startups/${startupId}`, auth)
+}
+
+// ---------------------------------------------------------------------------
+// Meetings moderation
+// ---------------------------------------------------------------------------
+
+export function adminListMeetings(params?: { search?: string; status?: string; limit?: number }) {
+  const qs = new URLSearchParams()
+  if (params?.search) qs.set('search', params.search)
+  if (params?.status) qs.set('status', params.status)
+  if (params?.limit) qs.set('limit', String(params.limit))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return api.get<AdminMeetingsResponse>(`/api/admin/meetings${suffix}`, auth)
+}
+
+export function adminUpdateMeeting(meetingId: string, patch: Record<string, unknown>) {
+  return api.patch<SuccessResponse>(`/api/admin/meetings/${meetingId}`, patch, auth)
+}
+
+export function adminDeleteMeeting(meetingId: string) {
+  return api.delete<SuccessResponse>(`/api/admin/meetings/${meetingId}`, auth)
 }
 
 // ---------------------------------------------------------------------------

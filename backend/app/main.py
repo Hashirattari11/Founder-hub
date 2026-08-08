@@ -13,6 +13,7 @@ from app.api.applications import router as applications_router
 from app.api.matching import router as matching_router
 from app.api.chat import router as chat_router
 from app.api.notifications import router as notifications_router
+from app.api.notification_center import router as notification_center_router
 from app.api.job_notifications import router as job_notifications_router
 from app.api.ai import router as ai_router
 from app.api.ai_settings import router as ai_settings_router
@@ -28,21 +29,29 @@ from app.api.ai_studio import router as ai_studio_router
 from app.api.admin import router as admin_router
 from app.api.role_requests import router as role_requests_router
 from app.api.reports import router as reports_router
+from app.api.analytics import router as analytics_router
 from app.core.request_tracking import RequestTrackingMiddleware
 from app.core.security import bootstrap_super_admin
 from app.services.reminder_service import reminder_loop
 from app.services.push_service import push_loop
+from app.services.email_queue_service import drain_pending, email_loop
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await asyncio.to_thread(bootstrap_super_admin)
+    # Flush anything left in the email queue by a previous instance (serverless recovery).
+    try:
+        await asyncio.to_thread(drain_pending)
+    except Exception:
+        pass
     stop_event = asyncio.Event()
     reminder_task = asyncio.create_task(reminder_loop(stop_event))
     push_task = asyncio.create_task(push_loop(stop_event))
+    email_task = asyncio.create_task(email_loop(stop_event))
     yield
     stop_event.set()
-    for task in (reminder_task, push_task):
+    for task in (reminder_task, push_task, email_task):
         task.cancel()
         try:
             await task
@@ -96,6 +105,7 @@ app.include_router(applications_router)
 app.include_router(matching_router)
 app.include_router(chat_router)
 app.include_router(notifications_router)
+app.include_router(notification_center_router)
 app.include_router(job_notifications_router)
 app.include_router(ai_router)
 app.include_router(ai_settings_router)
@@ -111,3 +121,4 @@ app.include_router(ai_studio_router)
 app.include_router(admin_router)
 app.include_router(role_requests_router)
 app.include_router(reports_router)
+app.include_router(analytics_router)

@@ -1,11 +1,9 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException
+from app.core.config import settings
 from app.core.supabase import service_supabase, supabase
 from app.core.users import user_email as _user_email_lookup
-from app.services.email_service import (
-    send_developer_notification,
-    send_investor_notification,
-)
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/api/startups", tags=["startups"])
 
@@ -141,8 +139,11 @@ def _log_email(startup_id: str, recipient_id: str, email: str, email_type: str, 
         print(f"[matching] failed to log email to {email}: {exc}")
 
 
-def notify_matched_users(startup: dict) -> int:
-    """Notify developer/designer/marketer users whose match score >= 50."""
+def notify_matched_users(startup: dict) -> tuple[int, list[str]]:
+    """Notify developer/designer/marketer users whose match score >= 50.
+
+    Returns (count, notified_user_ids).
+    """
     roles = ["developer", "designer", "marketer"]
     users = get_role_users(roles)
 
@@ -151,6 +152,7 @@ def notify_matched_users(startup: dict) -> int:
     startup_roles = startup.get("team_roles_needed") or []
 
     notified = 0
+    notified_ids: list[str] = []
     for user in users:
         score = calculate_match_score(user, startup)
         if score < 50:
@@ -174,26 +176,43 @@ def notify_matched_users(startup: dict) -> int:
         )
         if ok:
             notified += 1
+            notified_ids.append(user["id"])
 
-        # Email the matched user (respects notification preferences).
-        email = get_user_email(user["id"])
-        if email and _prefers(user, "email_new_match"):
-            name = user.get("full_name") or "there"
-            email_ok = send_developer_notification(email, name, startup, score, role)
-            if email_ok:
-                _log_email(startup_id, user["id"], email, "developer_match", score)
+        # Email + push through the unified pipeline (respects preferences + dedupe).
+        notify(
+            user["id"],
+            "startup_match",
+            "New startup matches your skills",
+            f"{startup_name} is looking for a {role}",
+            {"startup_id": startup_id, "match_score": score},
+            email=True,
+            template="startup_match",
+            template_data={
+                "user_name": user.get("full_name") or "there",
+                "startup_name": startup_name,
+                "industry": startup.get("industry") or "",
+                "role": role,
+                "match_score": score,
+                "action_url": settings.frontend_url_for(f"/startups/{startup_id}"),
+            },
+            dedupe_key=f"startup_match:{startup_id}:{user['id']}",
+        )
 
     print(f"[matching] notified {notified} users for startup {startup_id}")
-    return notified
+    return notified, notified_ids
 
 
-def notify_investors(startup: dict) -> int:
-    """Notify investors whose interests overlap the startup's industry."""
+def notify_investors(startup: dict) -> tuple[int, list[str]]:
+    """Notify investors whose interests overlap the startup's industry.
+
+    Returns (count, notified_user_ids).
+    """
     users = get_role_users(["investor"])
     startup_id = startup.get("id")
     startup_name = startup.get("name") or "A startup"
 
     notified = 0
+    notified_ids: list[str] = []
     for user in users:
         score = calculate_investor_match(user, startup)
         if score < 40:
@@ -208,15 +227,29 @@ def notify_investors(startup: dict) -> int:
         )
         if ok:
             notified += 1
+            notified_ids.append(user["id"])
 
-        email = get_user_email(user["id"])
-        if email and _prefers(user, "email_new_match"):
-            name = user.get("full_name") or "there"
-            email_ok = send_investor_notification(email, name, startup, score)
-            if email_ok:
-                _log_email(startup_id, user["id"], email, "investor_match", score)
+        # Email + push through the unified pipeline (respects preferences + dedupe).
+        notify(
+            user["id"],
+            "startup_match",
+            "New startup in your sector",
+            f"{startup_name} just launched in {startup.get('industry')}",
+            {"startup_id": startup_id, "match_score": score},
+            email=True,
+            template="startup_match",
+            template_data={
+                "user_name": user.get("full_name") or "there",
+                "startup_name": startup_name,
+                "industry": startup.get("industry") or "",
+                "role": "",
+                "match_score": score,
+                "action_url": settings.frontend_url_for(f"/startups/{startup_id}"),
+            },
+            dedupe_key=f"startup_match:{startup_id}:{user['id']}",
+        )
 
-    return notified
+    return notified, notified_ids
 
 
 @router.post("/{startup_id}/notify-matches")
@@ -233,12 +266,12 @@ async def trigger_notify_matches(startup_id: str):
     if not startup.get("is_published"):
         raise HTTPException(status_code=400, detail="Startup is not published")
 
-    talent = notify_matched_users(startup)
-    investors = notify_investors(startup)
+    talent_count, talent_ids = notify_matched_users(startup)
+    investor_count, investor_ids = notify_investors(startup)
 
     return {
         "startup_id": startup_id,
-        "notified_users": talent + investors,
-        "matched_talent": talent,
-        "matched_investors": investors,
+        "notified_users": talent_count + investor_count,
+        "matched_talent": talent_count,
+        "matched_investors": investor_count,
     }

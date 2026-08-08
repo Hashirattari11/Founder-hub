@@ -4,10 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { supabase, APP_URL } from '../../lib/supabase'
+import { supabase, APP_URL, stashAuthRedirect } from '../../lib/supabase'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
 import { isAdminProfile } from '../../lib/admin'
+import { Seo } from '../../components/Seo'
 import type { Profile } from '../../types'
 
 const loginSchema = z.object({
@@ -75,6 +76,7 @@ export default function Login() {
   const handleGoogle = async () => {
     setOauthLoading(true)
     try {
+      stashAuthRedirect(from)
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -89,10 +91,12 @@ export default function Login() {
   }
 
   return (
-    <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to continue building your startup."
-    >
+    <>
+      <Seo title="Sign in — FounderHub AI" description="Sign in to FounderHub AI to continue building your startup." />
+      <AuthLayout
+        title="Welcome back"
+        subtitle="Sign in to continue building your startup."
+      >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <Field label="Email" error={errors.email?.message}>
           <TextInput
@@ -175,5 +179,6 @@ export default function Login() {
         </Link>
       </p>
     </AuthLayout>
+    </>
   )
 }

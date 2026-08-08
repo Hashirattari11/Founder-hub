@@ -13,6 +13,7 @@ import {
 import { adminOverview } from '../../api/admin'
 import type { AdminOverviewResponse } from '../../types/admin'
 import { Badge, Card, formatMoney, PageHeader, StatCard, statusTone } from './adminUi'
+import { Seo } from '../../components/Seo'
 
 export default function AdminDashboard() {
   const [data, setData] = useState<AdminOverviewResponse | null>(null)
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
+      <Seo title="Admin Dashboard — FounderHub AI" />
       <PageHeader
         title="Admin Dashboard"
         description="Platform-wide overview of users, startups, revenue and activity."

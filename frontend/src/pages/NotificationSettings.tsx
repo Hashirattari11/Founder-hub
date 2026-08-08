@@ -1,48 +1,55 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Bell, Loader2, Save } from 'lucide-react'
+import { Bell, Loader2, Save, Mail, Smartphone } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
-import { useSession } from '../context/AuthContext'
-import { updateProfile } from '../lib/profile'
+import {
+  getNotificationPreferences,
+  saveNotificationPreferences,
+  type NotificationPreferences,
+} from '../lib/notifications'
 
-const DEFAULT_PREFS: Record<string, boolean> = {
-  email_new_match: true,
-  email_new_application: true,
-  email_status_update: true,
-  email_messages: false,
-  push_new_match: true,
-  push_new_application: true,
+interface ToggleGroup {
+  key: keyof NotificationPreferences
+  label: string
+  description: string
 }
 
-const TOGGLES: { key: string; label: string; description: string }[] = [
-  { key: 'email_new_match', label: 'Email me when a startup matches my profile', description: 'Get an email with an AI match score when a new startup fits your skills or sectors.' },
-  { key: 'email_new_application', label: 'Email me when someone applies to my startup', description: 'Founders: know the moment a new application lands in your inbox.' },
-  { key: 'email_status_update', label: 'Email me when my application status changes', description: 'Be notified when a founder shortlists, accepts or rejects your application.' },
-  { key: 'email_messages', label: 'Email me for new messages', description: 'Get an email when someone messages you (default off to avoid noise).' },
-  { key: 'push_new_match', label: 'Push notifications for new matches', description: 'See a badge in the bell for newly matched startups.' },
-  { key: 'push_new_application', label: 'Push notifications for new applications', description: 'See a badge in the bell when someone applies to your startup.' },
+const EMAIL_TOGGLES: ToggleGroup[] = [
+  { key: 'email_enabled', label: 'Enable email notifications', description: 'Master switch for all transactional email.' },
+  { key: 'marketing', label: 'Product news & features', description: 'Updates about new FounderHub features and events.' },
+  { key: 'meeting_emails', label: 'Meeting invites & reminders', description: 'Invites, confirmations, reschedules and reminders for meetings.' },
+  { key: 'message_emails', label: 'New messages', description: 'An email when someone sends you a message.' },
+  { key: 'investor_emails', label: 'Investor activity', description: 'Investor interest, requests and funding opportunities.' },
+  { key: 'application_emails', label: 'Applications & status changes', description: 'New applications and accept/reject updates.' },
+  { key: 'admin_alerts', label: 'Admin alerts', description: 'Security and platform alerts from the FounderHub team.' },
+]
+
+const PUSH_TOGGLES: ToggleGroup[] = [
+  { key: 'push_enabled', label: 'Enable push notifications', description: 'In-app badge + mobile push for new activity.' },
 ]
 
 export default function NotificationSettings() {
-  const { user, profile, refreshProfile } = useSession()
-  const [prefs, setPrefs] = useState<Record<string, boolean>>(DEFAULT_PREFS)
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!profile) return
-    setPrefs({ ...DEFAULT_PREFS, ...(profile.notification_preferences ?? {}) })
-    setLoading(false)
-  }, [profile])
+    getNotificationPreferences().then((p) => {
+      setPrefs(p)
+      setLoading(false)
+    })
+  }, [])
 
-  const toggle = (key: string) => setPrefs((prev) => ({ ...prev, [key]: !prev[key] }))
+  const toggle = (key: keyof NotificationPreferences) => {
+    setPrefs((prev) => (prev ? { ...prev, [key]: !prev[key] } : prev))
+  }
 
   const save = async () => {
-    if (!user) return
+    if (!prefs) return
     setSaving(true)
     try {
-      await updateProfile(user.id, { notification_preferences: prefs })
-      await refreshProfile()
+      const saved = await saveNotificationPreferences(prefs)
+      setPrefs(saved)
       toast.success('Notification preferences saved')
     } catch {
       toast.error('Could not save preferences')
@@ -50,6 +57,33 @@ export default function NotificationSettings() {
       setSaving(false)
     }
   }
+
+  const renderToggle = ({ key, label, description }: ToggleGroup) => (
+    <div
+      key={key}
+      className="flex items-center justify-between gap-4 rounded-xl px-4 py-4 hover:bg-gray-50 dark:hover:bg-dark-200"
+    >
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={!!prefs?.[key]}
+        onClick={() => toggle(key)}
+        className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
+          prefs?.[key] ? 'bg-primary' : 'bg-gray-300 dark:bg-dark-400'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            prefs?.[key] ? 'translate-x-[22px]' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
@@ -65,40 +99,29 @@ export default function NotificationSettings() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-2 dark:border-dark-300 dark:bg-dark-100">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            TOGGLES.map(({ key, label, description }) => (
-              <div
-                key={key}
-                className="flex items-center justify-between gap-4 rounded-xl px-4 py-4 hover:bg-gray-50 dark:hover:bg-dark-200"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{label}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{description}</p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={prefs[key]}
-                  onClick={() => toggle(key)}
-                  className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
-                    prefs[key] ? 'bg-primary' : 'bg-gray-300 dark:bg-dark-400'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                      prefs[key] ? 'translate-x-[22px]' : 'translate-x-0.5'
-                    }`}
-                  />
-                </button>
+        {loading || !prefs ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-2 dark:border-dark-300 dark:bg-dark-100">
+              <div className="flex items-center gap-2 border-b border-gray-100 px-4 pb-3 pt-2 dark:border-dark-300">
+                <Mail className="h-4 w-4 text-primary" />
+                <p className="text-sm font-bold">Email</p>
               </div>
-            ))
-          )}
-        </div>
+              {EMAIL_TOGGLES.map(renderToggle)}
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-2 dark:border-dark-300 dark:bg-dark-100">
+              <div className="flex items-center gap-2 border-b border-gray-100 px-4 pb-3 pt-2 dark:border-dark-300">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <p className="text-sm font-bold">Push & In-app</p>
+              </div>
+              {PUSH_TOGGLES.map(renderToggle)}
+            </div>
+          </div>
+        )}
 
         <button onClick={save} disabled={saving || loading} className="btn-primary mt-6 w-full disabled:opacity-60">
           {saving ? (

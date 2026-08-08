@@ -1,4 +1,5 @@
-import { Rocket } from 'lucide-react'
+import { useState } from 'react'
+import { Rocket, Check } from 'lucide-react'
 
 const linkGroups = [
   {
@@ -54,6 +55,15 @@ const socials = [
 ]
 
 export function Footer() {
+  const [email, setEmail] = useState('')
+  const [subscribed, setSubscribed] = useState(false)
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    setSubscribed(true)
+  }
+
   return (
     <footer className="border-t border-gray-200 bg-white py-16 dark:border-dark-300 dark:bg-dark-50">
       <div className="container-x">
@@ -69,13 +79,38 @@ export function Footer() {
               The Startup OS for modern founders. From idea to funded startup — all in
               one place.
             </p>
+
+            <form onSubmit={handleSubscribe} className="mt-6 max-w-sm">
+              <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Get founder tips in your inbox
+              </label>
+              {subscribed ? (
+                <p className="mt-3 flex items-center gap-2 text-sm font-medium text-green-500">
+                  <Check className="h-4 w-4" /> You are subscribed. Welcome aboard!
+                </p>
+              ) : (
+                <div className="mt-3 flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@startup.com"
+                    className="input flex-1"
+                  />
+                  <button type="submit" className="btn-primary px-4">
+                    Subscribe
+                  </button>
+                </div>
+              )}
+            </form>
+
             <div className="mt-6 flex gap-3">
               {socials.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-primary hover:text-primary dark:border-dark-300 dark:text-gray-400"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:text-primary hover:shadow-lg hover:shadow-primary/20 dark:border-dark-300 dark:text-gray-400"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
                     <path d={social.path} />
@@ -95,7 +130,7 @@ export function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-sm text-gray-600 transition-colors hover:text-primary dark:text-gray-400 dark:hover:text-white"
+                      className="nav-link text-sm"
                     >
                       {link.label}
                     </a>

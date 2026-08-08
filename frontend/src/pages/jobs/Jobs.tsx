@@ -11,6 +11,7 @@ import { searchJobs, getRecommendedJobs, getSavedJobIds, toggleSavedJob } from '
 import { INDUSTRIES } from '../../lib/constants'
 import { SKILLS } from '../../types'
 import { JOB_EXPERIENCE_LEVELS, JOB_TYPES } from '../../types'
+import { Seo } from '../../components/Seo'
 import type { Job, JobExperienceLevel, JobType } from '../../types'
 
 const PAGE_SIZE = 12
@@ -258,6 +259,7 @@ export default function Jobs() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
+      <Seo title="Jobs — FounderHub AI" description="Browse startup jobs and opportunities on FounderHub AI." />
       <AppHeader title="Jobs" backTo="/dashboard" />
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 lg:pb-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

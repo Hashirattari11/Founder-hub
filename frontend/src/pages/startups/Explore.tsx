@@ -10,6 +10,7 @@ import { useSavedStartups } from '../../hooks/useSavedStartups'
 import { exploreStartups, getApplicantCounts, FUNDING_MIDPOINTS, FUNDING_ORDER } from '../../lib/startups'
 import { calcMatchScore } from '../../lib/helpers'
 import { INDUSTRIES, STAGES, TEAM_ROLES } from '../../lib/constants'
+import { Seo } from '../../components/Seo'
 import type { Startup } from '../../types'
 
 type SortOption = 'newest' | 'applicants' | 'equity'
@@ -222,6 +223,7 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark">
+      <Seo title="Explore Startups — FounderHub AI" description="Discover startups, founders, and opportunities on FounderHub AI." />
       <AppHeader title="Explore Startups" backTo="/dashboard" />
       <main className="mx-auto max-w-7xl px-4 pt-6 pb-24 sm:px-6 lg:pb-6">
         {/* Top bar: search + sort + mobile filter button */}

@@ -26,6 +26,7 @@ import { useSavedStartups } from '../../hooks/useSavedStartups'
 import { getStartupById, trackStartupView } from '../../lib/startups'
 import { hasApplied } from '../../lib/applications'
 import { capitalize, formatDate, skillsMatchPercent } from '../../lib/helpers'
+import { Seo } from '../../components/Seo'
 import type { Startup } from '../../types'
 
 export default function StartupDetail() {
@@ -113,6 +114,7 @@ export default function StartupDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-dark lg:pb-0">
+        <Seo title={`${startup.name} — FounderHub AI`} description={startup.tagline || startup.description || `Explore ${startup.name} on FounderHub AI.`} />
         <AppHeader title={startup.name} backTo="/explore" backLabel="Back to Explore" />
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">

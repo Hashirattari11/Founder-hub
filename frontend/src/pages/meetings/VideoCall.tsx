@@ -73,6 +73,7 @@ export default function VideoCall() {
   const [copied, setCopied] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [peerReady, setPeerReady] = useState(false)
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
 
   const localRef = useRef<HTMLVideoElement | null>(null)
   const remoteRef = useRef<HTMLVideoElement | null>(null)
@@ -112,6 +113,13 @@ export default function VideoCall() {
   useEffect(() => {
     if (chatBoxRef.current) chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight
   }, [chatMsgs])
+
+  // Attach the remote stream once the remote <video> element is mounted.
+  useEffect(() => {
+    if (status !== 'connected' || !remoteStream || !remoteRef.current) return
+    remoteRef.current.srcObject = remoteStream
+    remoteRef.current.play().catch(() => {})
+  }, [status, remoteStream])
 
   useEffect(() => {
     let cancelled = false
@@ -243,10 +251,7 @@ export default function VideoCall() {
             if (cancelled) return
             setIncoming(false)
             setStatus('connected')
-            if (remoteRef.current) {
-              remoteRef.current.srcObject = remote
-              remoteRef.current.play().catch(() => {})
-            }
+            setRemoteStream(remote)
           })
           call.on('close', () => {
             if (!cancelled) setStatus('waiting')
@@ -286,10 +291,7 @@ export default function VideoCall() {
         call.on('stream', (remote) => {
           setIncoming(false)
           setStatus('connected')
-          if (remoteRef.current) {
-            remoteRef.current.srcObject = remote
-            remoteRef.current.play().catch(() => {})
-          }
+          setRemoteStream(remote)
         })
         call.on('close', () => {
           if (!cancelled) setStatus('waiting')

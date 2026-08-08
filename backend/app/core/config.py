@@ -8,7 +8,12 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
+    supabase_jwt_secret: str = ""
     resend_api_key: str = ""
+    brevo_api_key: str = ""
+    email_provider: str = "brevo"
+    email_from_name: str = "FounderHub AI"
+    email_from_email: str = "onboarding@resend.dev"
     resend_from_email: str = "FounderHub AI <onboarding@resend.dev>"
     anthropic_api_key: str = ""
     encryption_key: str = ""
@@ -28,6 +33,12 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    def frontend_url_for(self, path: str = "") -> str:
+        base = (self.frontend_url or "https://founder-hub-0.vercel.app").rstrip("/")
+        if path and not path.startswith("/"):
+            path = f"/{path}"
+        return f"{base}{path}"
 
     class Config:
         env_file = ".env"

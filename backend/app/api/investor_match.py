@@ -6,12 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.auth import get_user_id
+from app.core.config import settings
 from app.core.supabase import service_supabase
-from app.core.users import user_email
-from app.services.email_service import (
-    send_investor_interested_email,
-    send_investor_match_email,
-)
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/api/investor-match", tags=["investor-match"])
 
@@ -55,11 +52,6 @@ def _notify_user(user_id: str, ntype: str, title: str, body: str, data: Optional
     except Exception as exc:
         print(f"[investor-match] failed to notify {user_id}: {exc}")
         return False
-
-
-def _prefers(profile: dict, key: str, default: bool = True) -> bool:
-    prefs = profile.get("notification_preferences") or {}
-    return bool(prefs.get(key, default))
 
 
 def _funding_midpoint(funding_text: str | None) -> int:
@@ -290,16 +282,23 @@ async def send_request(payload: InvestorRequestIn, user_id: str = Depends(get_us
         {"startup_id": payload.startup_id, "investor_id": payload.investor_id},
     )
 
-    investor_email = user_email(payload.investor_id)
-    if investor_email and investor and _prefers(investor, "email_new_match"):
-        send_investor_match_email(
-            investor_email,
-            investor.get("full_name") or "there",
-            startup,
-            row.get("match_score") or 0,
-            _parse_reasons(row.get("ai_reasoning")),
-            f"{_frontend_url()}/investor/dashboard",
-        )
+    notify(
+        payload.investor_id,
+        "investor_match",
+        f"Intro request: {startup_name}",
+        f"A founder reached out about {startup_name} ({row.get('match_score') or 'AI'}% match).",
+        {"startup_id": payload.startup_id, "investor_id": payload.investor_id},
+        email=True,
+        template="investor_match",
+        template_data={
+            "user_name": (investor or {}).get("full_name") or "there",
+            "startup_name": startup.get("name") or "your startup",
+            "match_score": row.get("match_score") or 0,
+            "reasons": _parse_reasons(row.get("ai_reasoning")),
+            "action_url": settings.frontend_url_for("/investor/dashboard"),
+        },
+        dedupe_key=f"investor_match:{payload.investor_id}:{payload.startup_id}",
+    )
     return {"success": True, "match_id": row["id"], "status": row.get("status", "pending")}
 
 
@@ -341,15 +340,24 @@ async def update_status(match_id: str, payload: InvestorStatusIn, user_id: str =
             or "They'd love to learn more about your startup.",
             {"startup_id": row.get("startup_id"), "investor_id": user_id},
         )
-        founder_email = user_email(row.get("founder_id"))
-        if founder_email and founder:
-            send_investor_interested_email(
-                founder_email,
-                founder.get("full_name") or "there",
-                investor or {},
-                startup_name,
-                f"{_frontend_url()}/startups/{row.get('startup_id')}",
-            )
+        notify(
+            row.get("founder_id"),
+            "investor_interested",
+            f"{investor_name} is interested in {startup_name}",
+            payload.status == "meeting_scheduled"
+            and "Wants to schedule a meeting with you."
+            or "They'd love to learn more about your startup.",
+            {"startup_id": row.get("startup_id"), "investor_id": user_id},
+            email=True,
+            template="investor_interested",
+            template_data={
+                "user_name": (founder or {}).get("full_name") or "there",
+                "investor_name": investor_name,
+                "startup_name": startup_name,
+                "action_url": settings.frontend_url_for(f"/startups/{row.get('startup_id')}"),
+            },
+            dedupe_key=f"investor_interested:{row.get('founder_id')}:{row.get('startup_id')}:{user_id}",
+        )
 
     return {"success": True, "match_id": match_id, "status": payload.status}
 
@@ -390,9 +398,3 @@ def _parse_reasons(raw: str | None) -> list[str]:
         return parsed if isinstance(parsed, list) else []
     except Exception:
         return []
-
-
-def _frontend_url() -> str:
-    from app.core.config import settings
-
-    return settings.frontend_url

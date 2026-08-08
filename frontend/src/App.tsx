@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { HelmetProvider } from 'react-helmet-async'
+import { HelmetProvider, Helmet } from 'react-helmet-async'
 import { ThemeProvider } from './hooks/useTheme'
 import { AuthProvider } from './context/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -17,81 +17,94 @@ import { HowItWorks } from './components/HowItWorks'
 import { Pricing } from './components/Pricing'
 import { Footer } from './components/Footer'
 import { WaitlistModal } from './components/WaitlistModal'
-import Register from './pages/auth/Register'
-import Login from './pages/auth/Login'
-import Callback from './pages/auth/Callback'
-import ForgotPassword from './pages/auth/ForgotPassword'
-import ResetPassword from './pages/auth/ResetPassword'
-import CompleteProfile from './pages/profile/CompleteProfile'
-import ProfileView from './pages/profile/ProfileView'
-import EditProfile from './pages/profile/EditProfile'
-import RoleDashboard from './pages/Dashboard'
-import NotFound from './pages/NotFound'
-import { PlaceholderPage } from './pages/dashboard/PlaceholderPage'
-import Explore from './pages/startups/Explore'
-import StartupDetail from './pages/startups/StartupDetail'
-import CreateStartup from './pages/startups/CreateStartup'
-import EditStartup from './pages/startups/EditStartup'
-import MyStartups from './pages/dashboard/MyStartups'
-import MyCapTables from './pages/dashboard/MyCapTables'
-import ApplicationsDashboard from './pages/dashboard/ApplicationsDashboard'
-import MyApplications from './pages/dashboard/MyApplications'
-import JobApplications from './pages/dashboard/JobApplications'
-import ManageJobApplications from './pages/dashboard/ManageJobApplications'
-import SavedStartups from './pages/dashboard/SavedStartups'
-import StartupAnalytics from './pages/startups/StartupAnalytics'
-import DataRoomPage from './pages/startups/DataRoom'
-import CapTablePage from './pages/startups/CapTable'
-import EquityDashboardPage from './pages/equity/EquityDashboard'
-import BusinessPlanDashboard from './pages/businessplan/Dashboard'
-import BusinessPlanGenerator from './pages/businessplan/Generator'
-import BusinessPlanViewer from './pages/businessplan/Viewer'
-import BusinessPlanShareView from './pages/businessplan/ShareView'
-import CapTableAdmin from './pages/admin/CapTableAdmin'
-import Messages from './pages/Messages'
-import Connections from './pages/Connections'
-import NotificationSettings from './pages/NotificationSettings'
-import AISettings from './pages/AISettings'
-import AIStudio from './pages/AIStudio'
-import AIStudioAdmin from './pages/admin/AIStudioAdmin'
-import EmailLogs from './pages/EmailLogs'
-import Community from './pages/Community'
-import FounderStories from './pages/FounderStories'
-import PostDetail from './pages/PostDetail'
-import HashtagPage from './pages/HashtagPage'
-import SavedPosts from './pages/SavedPosts'
-import Jobs from './pages/jobs/Jobs'
-import JobDetail from './pages/jobs/JobDetail'
-import PostJob from './pages/jobs/PostJob'
-import ResumeBuilder from './pages/ResumeBuilder'
-import AvailabilitySettings from './pages/meetings/AvailabilitySettings'
-import BookMeeting from './pages/meetings/BookMeeting'
-import Meetings from './pages/meetings/Meetings'
-import VideoCall from './pages/meetings/VideoCall'
-import MeetingDetail from './pages/meetings/MeetingDetail'
-import CoFounderHub from './pages/cofounder/CoFounderHub'
-import CoFounderPreferences from './pages/cofounder/CoFounderPreferences'
-import StartupInvestors from './pages/investor/StartupInvestors'
-import InvestorRequests from './pages/investor/InvestorRequests'
-import InvestorProfileSetup from './pages/investor/InvestorProfileSetup'
-import AdminLayout from './pages/admin/AdminLayout'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminUsers from './pages/admin/AdminUsers'
-import AdminStartups from './pages/admin/AdminStartups'
-import AdminInvestors from './pages/admin/AdminInvestors'
-import AdminRoleRequests from './pages/admin/AdminRoleRequests'
-import AdminReports from './pages/admin/AdminReports'
-import AdminAnalytics from './pages/admin/AdminAnalytics'
-import AdminHealth from './pages/admin/AdminHealth'
-import AdminAuditLogs from './pages/admin/AdminAuditLogs'
-import AdminNotifications from './pages/admin/AdminNotifications'
-import AdminCms from './pages/admin/AdminCms'
-import AdminAi from './pages/admin/AdminAi'
-import AdminSettings from './pages/admin/AdminSettings'
-import AdminSecurity from './pages/admin/AdminSecurity'
-import AdminSubscriptions from './pages/admin/AdminSubscriptions'
-import AdminStartupMembers from './pages/admin/AdminStartupMembers'
-import { Helmet } from 'react-helmet-async'
+import { LogoMarquee } from './components/LogoMarquee'
+import { StatsBand } from './components/StatsBand'
+import { Testimonials } from './components/Testimonials'
+import { FAQ } from './components/FAQ'
+import { FinalCTA } from './components/FinalCTA'
+import { PageLoader } from './components/PageLoader'
+import { ScrollToTop } from './components/ScrollToTop'
+import { Seo } from './components/Seo'
+
+const Register = lazy(() => import('./pages/auth/Register'))
+const Login = lazy(() => import('./pages/auth/Login'))
+const Callback = lazy(() => import('./pages/auth/Callback'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+const CompleteProfile = lazy(() => import('./pages/profile/CompleteProfile'))
+const ProfileView = lazy(() => import('./pages/profile/ProfileView'))
+const EditProfile = lazy(() => import('./pages/profile/EditProfile'))
+const RoleDashboard = lazy(() => import('./pages/Dashboard'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const PlaceholderPage = lazy(() =>
+  import('./pages/dashboard/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage }))
+)
+const Explore = lazy(() => import('./pages/startups/Explore'))
+const StartupDetail = lazy(() => import('./pages/startups/StartupDetail'))
+const CreateStartup = lazy(() => import('./pages/startups/CreateStartup'))
+const EditStartup = lazy(() => import('./pages/startups/EditStartup'))
+const MyStartups = lazy(() => import('./pages/dashboard/MyStartups'))
+const MyCapTables = lazy(() => import('./pages/dashboard/MyCapTables'))
+const ApplicationsDashboard = lazy(() => import('./pages/dashboard/ApplicationsDashboard'))
+const MyApplications = lazy(() => import('./pages/dashboard/MyApplications'))
+const JobApplications = lazy(() => import('./pages/dashboard/JobApplications'))
+const ManageJobApplications = lazy(() => import('./pages/dashboard/ManageJobApplications'))
+const SavedStartups = lazy(() => import('./pages/dashboard/SavedStartups'))
+const FounderAnalytics = lazy(() => import('./pages/dashboard/FounderAnalytics'))
+const StartupAnalytics = lazy(() => import('./pages/startups/StartupAnalytics'))
+const DataRoomPage = lazy(() => import('./pages/startups/DataRoom'))
+const CapTablePage = lazy(() => import('./pages/startups/CapTable'))
+const EquityDashboardPage = lazy(() => import('./pages/equity/EquityDashboard'))
+const BusinessPlanDashboard = lazy(() => import('./pages/businessplan/Dashboard'))
+const BusinessPlanGenerator = lazy(() => import('./pages/businessplan/Generator'))
+const BusinessPlanViewer = lazy(() => import('./pages/businessplan/Viewer'))
+const BusinessPlanShareView = lazy(() => import('./pages/businessplan/ShareView'))
+const CapTableAdmin = lazy(() => import('./pages/admin/CapTableAdmin'))
+const Messages = lazy(() => import('./pages/Messages'))
+const Connections = lazy(() => import('./pages/Connections'))
+const NotificationSettings = lazy(() => import('./pages/NotificationSettings'))
+const NotificationsPage = lazy(() => import('./pages/Notifications'))
+const AISettings = lazy(() => import('./pages/AISettings'))
+const AIStudio = lazy(() => import('./pages/AIStudio'))
+const AIStudioAdmin = lazy(() => import('./pages/admin/AIStudioAdmin'))
+const EmailLogs = lazy(() => import('./pages/EmailLogs'))
+const Community = lazy(() => import('./pages/Community'))
+const FounderStories = lazy(() => import('./pages/FounderStories'))
+const PostDetail = lazy(() => import('./pages/PostDetail'))
+const HashtagPage = lazy(() => import('./pages/HashtagPage'))
+const SavedPosts = lazy(() => import('./pages/SavedPosts'))
+const Jobs = lazy(() => import('./pages/jobs/Jobs'))
+const JobDetail = lazy(() => import('./pages/jobs/JobDetail'))
+const PostJob = lazy(() => import('./pages/jobs/PostJob'))
+const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'))
+const AvailabilitySettings = lazy(() => import('./pages/meetings/AvailabilitySettings'))
+const BookMeeting = lazy(() => import('./pages/meetings/BookMeeting'))
+const Meetings = lazy(() => import('./pages/meetings/Meetings'))
+const VideoCall = lazy(() => import('./pages/meetings/VideoCall'))
+const MeetingDetail = lazy(() => import('./pages/meetings/MeetingDetail'))
+const CoFounderHub = lazy(() => import('./pages/cofounder/CoFounderHub'))
+const CoFounderPreferences = lazy(() => import('./pages/cofounder/CoFounderPreferences'))
+const StartupInvestors = lazy(() => import('./pages/investor/StartupInvestors'))
+const InvestorRequests = lazy(() => import('./pages/investor/InvestorRequests'))
+const InvestorProfileSetup = lazy(() => import('./pages/investor/InvestorProfileSetup'))
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminStartups = lazy(() => import('./pages/admin/AdminStartups'))
+const AdminMeetings = lazy(() => import('./pages/admin/AdminMeetings'))
+const AdminInvestors = lazy(() => import('./pages/admin/AdminInvestors'))
+const AdminRoleRequests = lazy(() => import('./pages/admin/AdminRoleRequests'))
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'))
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'))
+const AdminHealth = lazy(() => import('./pages/admin/AdminHealth'))
+const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'))
+const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications'))
+const AdminCms = lazy(() => import('./pages/admin/AdminCms'))
+const AdminAi = lazy(() => import('./pages/admin/AdminAi'))
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
+const AdminSecurity = lazy(() => import('./pages/admin/AdminSecurity'))
+const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'))
+const AdminStartupMembers = lazy(() => import('./pages/admin/AdminStartupMembers'))
 
 function LandingPage() {
   const [waitlistOpen, setWaitlistOpen] = useState(false)
@@ -101,12 +114,21 @@ function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-dark dark:text-[#FAFAFA]">
+      <Seo
+        title="FounderHub AI — Startup OS"
+        description="From Idea to Funded Startup, All in One Place. Connect with co-founders, developers, investors, and AI tools."
+      />
       <Navbar onJoinWaitlist={openWaitlist} />
       <main>
         <Hero onJoinWaitlist={openWaitlist} />
+        <LogoMarquee />
         <Features />
+        <StatsBand />
         <HowItWorks />
+        <Testimonials />
         <Pricing onJoinWaitlist={openWaitlist} />
+        <FAQ />
+        <FinalCTA onJoinWaitlist={openWaitlist} />
       </main>
       <Footer />
       <WaitlistModal isOpen={waitlistOpen} onClose={closeWaitlist} />
@@ -121,6 +143,7 @@ function App() {
           <OnlinePresence />
           <HelmetProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <ErrorBoundary>
             <Helmet>
               <title>FounderHub AI — Build your startup</title>
@@ -128,19 +151,21 @@ function App() {
             </Helmet>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/callback" element={<Callback />} />
-              <Route path="/profile/:username" element={<ProfileView />} />
-              <Route path="*" element={<NotFound />} />
+              <Route path="/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
+              <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+              <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
+              <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
+              <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><Callback /></Suspense>} />
+              <Route path="/profile/:username" element={<Suspense fallback={<PageLoader />}><ProfileView /></Suspense>} />
+              <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
 
               <Route
                 path="/complete-profile"
                 element={
                   <ProtectedRoute>
-                    <CompleteProfile />
+                    <Suspense fallback={<PageLoader />}>
+                      <CompleteProfile />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -148,7 +173,19 @@ function App() {
                 path="/settings/profile"
                 element={
                   <ProtectedRoute>
-                    <EditProfile />
+                    <Suspense fallback={<PageLoader />}>
+                      <EditProfile />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <NotificationsPage />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -156,7 +193,9 @@ function App() {
                 path="/settings/notifications"
                 element={
                   <ProtectedRoute>
-                    <NotificationSettings />
+                    <Suspense fallback={<PageLoader />}>
+                      <NotificationSettings />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -164,7 +203,9 @@ function App() {
                 path="/settings/ai"
                 element={
                   <ProtectedRoute>
-                    <AISettings />
+                    <Suspense fallback={<PageLoader />}>
+                      <AISettings />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -172,7 +213,9 @@ function App() {
                 path="/ai-studio"
                 element={
                   <ProtectedRoute>
-                    <AIStudio />
+                    <Suspense fallback={<PageLoader />}>
+                      <AIStudio />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -180,7 +223,9 @@ function App() {
                 path="/settings/availability"
                 element={
                   <ProtectedRoute>
-                    <AvailabilitySettings />
+                    <Suspense fallback={<PageLoader />}>
+                      <AvailabilitySettings />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -188,7 +233,9 @@ function App() {
                 path="/book-meeting/:userId"
                 element={
                   <ProtectedRoute>
-                    <BookMeeting />
+                    <Suspense fallback={<PageLoader />}>
+                      <BookMeeting />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -196,7 +243,9 @@ function App() {
                 path="/meetings"
                 element={
                   <ProtectedRoute>
-                    <Meetings />
+                    <Suspense fallback={<PageLoader />}>
+                      <Meetings />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -204,7 +253,9 @@ function App() {
                 path="/meetings/:id"
                 element={
                   <ProtectedRoute>
-                    <MeetingDetail />
+                    <Suspense fallback={<PageLoader />}>
+                      <MeetingDetail />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -212,7 +263,9 @@ function App() {
                 path="/meet/:roomId"
                 element={
                   <ProtectedRoute>
-                    <VideoCall />
+                    <Suspense fallback={<PageLoader />}>
+                      <VideoCall />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -221,15 +274,18 @@ function App() {
                 path="/admin"
                 element={
                   <AdminRoute>
-                    <AdminLayout />
+                    <Suspense fallback={<PageLoader />}>
+                      <AdminLayout />
+                    </Suspense>
                   </AdminRoute>
                 }
               >
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
-                <Route path="startups" element={<AdminStartups />} />
-                <Route path="investors" element={<AdminInvestors />} />
+        <Route path="startups" element={<AdminStartups />} />
+        <Route path="meetings" element={<AdminMeetings />} />
+        <Route path="investors" element={<AdminInvestors />} />
                 <Route path="role-requests" element={<AdminRoleRequests />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
@@ -252,7 +308,9 @@ function App() {
                 path="/explore"
                 element={
                   <ProtectedRoute>
-                    <Explore />
+                    <Suspense fallback={<PageLoader />}>
+                      <Explore />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -260,7 +318,9 @@ function App() {
                 path="/messages"
                 element={
                   <ProtectedRoute>
-                    <Messages />
+                    <Suspense fallback={<PageLoader />}>
+                      <Messages />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -268,7 +328,9 @@ function App() {
                 path="/connections"
                 element={
                   <ProtectedRoute>
-                    <Connections />
+                    <Suspense fallback={<PageLoader />}>
+                      <Connections />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -276,7 +338,9 @@ function App() {
                 path="/community"
                 element={
                   <ProtectedRoute>
-                    <Community />
+                    <Suspense fallback={<PageLoader />}>
+                      <Community />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -284,7 +348,9 @@ function App() {
                 path="/community/stories"
                 element={
                   <ProtectedRoute>
-                    <FounderStories />
+                    <Suspense fallback={<PageLoader />}>
+                      <FounderStories />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -292,7 +358,9 @@ function App() {
                 path="/community/post/:id"
                 element={
                   <ProtectedRoute>
-                    <PostDetail />
+                    <Suspense fallback={<PageLoader />}>
+                      <PostDetail />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -300,7 +368,9 @@ function App() {
                 path="/community/hashtag/:tag"
                 element={
                   <ProtectedRoute>
-                    <HashtagPage />
+                    <Suspense fallback={<PageLoader />}>
+                      <HashtagPage />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -308,7 +378,9 @@ function App() {
                 path="/community/saved"
                 element={
                   <ProtectedRoute>
-                    <SavedPosts />
+                    <Suspense fallback={<PageLoader />}>
+                      <SavedPosts />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -316,7 +388,9 @@ function App() {
                 path="/startups/:id"
                 element={
                   <ProtectedRoute>
-                    <StartupDetail />
+                    <Suspense fallback={<PageLoader />}>
+                      <StartupDetail />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -324,7 +398,9 @@ function App() {
                 path="/startups/:id/data-room"
                 element={
                   <ProtectedRoute>
-                    <DataRoomPage />
+                    <Suspense fallback={<PageLoader />}>
+                      <DataRoomPage />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -332,7 +408,9 @@ function App() {
                 path="/startups/:id/cap-table"
                 element={
                   <ProtectedRoute>
-                    <CapTablePage />
+                    <Suspense fallback={<PageLoader />}>
+                      <CapTablePage />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -340,7 +418,9 @@ function App() {
                 path="/startups/:id/equity"
                 element={
                   <ProtectedRoute>
-                    <EquityDashboardPage />
+                    <Suspense fallback={<PageLoader />}>
+                      <EquityDashboardPage />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -348,13 +428,19 @@ function App() {
               {/* AI Business Plan Generator */}
               <Route
                 path="/business-plan/share/:token"
-                element={<BusinessPlanShareView />}
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <BusinessPlanShareView />
+                  </Suspense>
+                }
               />
               <Route
                 path="/business-plan"
                 element={
                   <ProtectedRoute>
-                    <BusinessPlanDashboard />
+                    <Suspense fallback={<PageLoader />}>
+                      <BusinessPlanDashboard />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -362,7 +448,9 @@ function App() {
                 path="/business-plan/new"
                 element={
                   <ProtectedRoute>
-                    <BusinessPlanGenerator />
+                    <Suspense fallback={<PageLoader />}>
+                      <BusinessPlanGenerator />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -370,7 +458,9 @@ function App() {
                 path="/business-plan/:id"
                 element={
                   <ProtectedRoute>
-                    <BusinessPlanViewer />
+                    <Suspense fallback={<PageLoader />}>
+                      <BusinessPlanViewer />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -380,7 +470,9 @@ function App() {
                 path="/jobs"
                 element={
                   <ProtectedRoute>
-                    <Jobs />
+                    <Suspense fallback={<PageLoader />}>
+                      <Jobs />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -388,7 +480,9 @@ function App() {
                 path="/jobs/post"
                 element={
                   <ProtectedRoute>
-                    <PostJob />
+                    <Suspense fallback={<PageLoader />}>
+                      <PostJob />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -396,7 +490,9 @@ function App() {
                 path="/jobs/:id"
                 element={
                   <ProtectedRoute>
-                    <JobDetail />
+                    <Suspense fallback={<PageLoader />}>
+                      <JobDetail />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -404,7 +500,9 @@ function App() {
                 path="/resume-builder"
                 element={
                   <ProtectedRoute>
-                    <ResumeBuilder />
+                    <Suspense fallback={<PageLoader />}>
+                      <ResumeBuilder />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -414,7 +512,9 @@ function App() {
                 path="/co-founder"
                 element={
                   <ProtectedRoute>
-                    <CoFounderHub />
+                    <Suspense fallback={<PageLoader />}>
+                      <CoFounderHub />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -422,7 +522,9 @@ function App() {
                 path="/co-founder/preferences"
                 element={
                   <ProtectedRoute>
-                    <CoFounderPreferences />
+                    <Suspense fallback={<PageLoader />}>
+                      <CoFounderPreferences />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -433,7 +535,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <InvestorGuard>
-                      <DashboardLayout />
+                      <Suspense fallback={<PageLoader />}>
+                        <DashboardLayout />
+                      </Suspense>
                     </InvestorGuard>
                   </ProtectedRoute>
                 }
@@ -448,7 +552,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FounderGuard>
-                      <CreateStartup />
+                      <Suspense fallback={<PageLoader />}>
+                        <CreateStartup />
+                      </Suspense>
                     </FounderGuard>
                   </ProtectedRoute>
                 }
@@ -458,7 +564,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FounderGuard>
-                      <StartupInvestors />
+                      <Suspense fallback={<PageLoader />}>
+                        <StartupInvestors />
+                      </Suspense>
                     </FounderGuard>
                   </ProtectedRoute>
                 }
@@ -468,7 +576,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FounderGuard>
-                      <EditStartup />
+                      <Suspense fallback={<PageLoader />}>
+                        <EditStartup />
+                      </Suspense>
                     </FounderGuard>
                   </ProtectedRoute>
                 }
@@ -478,7 +588,9 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FounderGuard>
-                      <StartupAnalytics />
+                      <Suspense fallback={<PageLoader />}>
+                        <StartupAnalytics />
+                      </Suspense>
                     </FounderGuard>
                   </ProtectedRoute>
                 }
@@ -511,12 +623,7 @@ function App() {
                 />
                 <Route
                   path="analytics"
-                  element={
-                    <PlaceholderPage
-                      title="Analytics"
-                      description="Profile views, applicant funnels, and engagement metrics will appear here."
-                    />
-                  }
+                  element={<FounderAnalytics />}
                 />
               </Route>
             </Routes>

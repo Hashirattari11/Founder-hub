@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowLeft, MapPin, Rocket, Globe, UserPlus, UserCheck, MessageCircle, CalendarDays, Loader2 } from 'lucide-react'
-import { getProfileByUsername } from '../../lib/profile'
+import { getProfileByUsername, trackProfileView } from '../../lib/profile'
 import { getMyStartups } from '../../lib/startups'
 import { getConnectionState, sendConnectionRequest, acceptConnectionRequest } from '../../lib/connections'
 import { FollowButton } from '../../components/FollowButton'
 import { useSession } from '../../context/AuthContext'
 import { Avatar } from '../../components/Avatar'
+import { Seo } from '../../components/Seo'
 import { ROLE_LABELS } from '../../types'
 import type { Profile } from '../../types'
 
@@ -62,6 +63,7 @@ export default function ProfileView() {
       getConnectionState(user.id, profile.id)
         .then((state) => setConnectionStatus(state.status))
         .catch(() => setConnectionStatus('none'))
+      trackProfileView(profile.id, user.id)
     }
   }, [profile, user])
 
@@ -99,6 +101,10 @@ export default function ProfileView() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-dark">
+      <Seo
+        title={`${profile.full_name || profile.username} — FounderHub AI`}
+        description={profile.bio || `${profile.full_name}'s profile on FounderHub AI.`}
+      />
       <div className={`h-40 bg-gradient-to-r ${roleGradients[profile.role ?? 'founder']} opacity-80`} />
 
       <div className="container-x -mt-16 pb-16">

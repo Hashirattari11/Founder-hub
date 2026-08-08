@@ -37,6 +37,15 @@ export async function getProfileByUsername(username: string) {
   return (data as Profile | null) ?? null
 }
 
+export async function trackProfileView(profileId: string, viewerId: string | null): Promise<void> {
+  if (!profileId || !viewerId) return
+  try {
+    await supabase.from('profile_views').insert({ profile_id: profileId, viewer_id: viewerId })
+  } catch {
+    // Non-critical tracking — ignore failures.
+  }
+}
+
 export interface PeopleSearchResult {
   id: string
   full_name: string | null

@@ -81,6 +81,33 @@ export interface AdminStartupsResponse {
   startups: AdminStartup[]
 }
 
+export interface AdminMeeting {
+  id: string
+  title: string
+  description: string | null
+  scheduled_at: string | null
+  status: string
+  duration_minutes: number
+  meet_link: string | null
+  organizer_id: string | null
+  participant_id: string | null
+  startup_id: string | null
+  created_at: string | null
+  started_at: string | null
+  ended_at: string | null
+  transcript: string | null
+  ai_summary: Record<string, unknown> | null
+  recording_url: string | null
+  organizer_name: string | null
+  participant_name: string | null
+  has_transcript: boolean
+  has_summary: boolean
+}
+
+export interface AdminMeetingsResponse {
+  meetings: AdminMeeting[]
+}
+
 export interface AdminInvestor {
   id: string
   full_name: string | null

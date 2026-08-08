@@ -5,12 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.auth import get_user_id
+from app.core.config import settings
 from app.core.supabase import service_supabase
-from app.core.users import user_email
-from app.services.email_service import (
-    send_cofounder_accepted_email,
-    send_cofounder_request_email,
-)
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/api/cofounder", tags=["cofounder"])
 
@@ -86,11 +83,6 @@ def _notify_user(user_id: str, ntype: str, title: str, body: str, data: Optional
     except Exception as exc:
         print(f"[cofounder] failed to notify {user_id}: {exc}")
         return False
-
-
-def _prefers(profile: dict, key: str, default: bool = True) -> bool:
-    prefs = profile.get("notification_preferences") or {}
-    return bool(prefs.get(key, default))
 
 
 def _normalize_prefs(raw) -> dict:
@@ -232,12 +224,16 @@ async def save_preferences(payload: SavePrefsIn, user_id: str = Depends(get_user
 
 
 @router.get("/preferences/{user_id}")
-async def get_preferences(user_id: str):
+async def get_preferences(user_id: str, current_user: str = Depends(get_user_id)):
+    if user_id != current_user:
+        raise HTTPException(status_code=403, detail="You can only access your own preferences")
     return _get_prefs(user_id) or None
 
 
 @router.get("/matches/{user_id}")
-async def get_matches(user_id: str, role: Optional[str] = None):
+async def get_matches(user_id: str, role: Optional[str] = None, current_user: str = Depends(get_user_id)):
+    if user_id != current_user:
+        raise HTTPException(status_code=403, detail="You can only view your own matches")
     try:
         result = (
             service_supabase.table("profiles")
@@ -313,7 +309,9 @@ async def get_matches(user_id: str, role: Optional[str] = None):
 
 
 @router.get("/requests/{user_id}")
-async def get_requests(user_id: str):
+async def get_requests(user_id: str, current_user: str = Depends(get_user_id)):
+    if user_id != current_user:
+        raise HTTPException(status_code=403, detail="You can only view your own requests")
     received = (
         service_supabase.table("cofounder_requests")
         .select(f"*, requester:profiles!cofounder_requests_requester_id_fkey({PROFILE_FIELDS})")
@@ -384,16 +382,23 @@ async def send_request(payload: SendRequestIn, user_id: str = Depends(get_user_i
         {"requester_id": user_id, "match_score": score},
     )
 
-    target_email = user_email(payload.target_id)
-    if target_email and _prefers(target, "email_new_match"):
-        send_cofounder_request_email(
-            target_email,
-            target.get("full_name") or "there",
-            requester,
-            score,
-            payload.message,
-            f"{settings_frontend_url()}/co-founder",
-        )
+    notify(
+        payload.target_id,
+        "cofounder_request",
+        f"{requester_name} wants to co-found with you",
+        payload.message or f"{score}% match — check out their profile.",
+        {"requester_id": user_id, "match_score": score},
+        email=True,
+        template="cofounder_request",
+        template_data={
+            "user_name": target.get("full_name") or "there",
+            "from_name": requester_name,
+            "match_score": score,
+            "message": payload.message or "",
+            "action_url": settings.frontend_url_for("/co-founder"),
+        },
+        dedupe_key=f"cofounder_request:{payload.target_id}:{user_id}",
+    )
     return {"success": True, "request": row}
 
 
@@ -447,19 +452,20 @@ async def respond_request(request_id: str, payload: RespondRequestIn, user_id: s
             "You're now connected — say hi and start building!",
             {"requester_id": row["target_id"]},
         )
-        requester_email = user_email(row["requester_id"])
-        if requester_email:
-            send_cofounder_accepted_email(
-                requester_email,
-                requester_name,
-                accepter or {},
-                f"{settings_frontend_url()}/co-founder",
-            )
+        notify(
+            row["requester_id"],
+            "cofounder_accepted",
+            f"{accepter_name} accepted your co-founder request",
+            "You're now connected — say hi and start building!",
+            {"requester_id": row["target_id"]},
+            email=True,
+            template="cofounder_accepted",
+            template_data={
+                "user_name": requester_name,
+                "from_name": accepter_name,
+                "action_url": settings.frontend_url_for("/co-founder"),
+            },
+            dedupe_key=f"cofounder_accepted:{row['requester_id']}:{row['target_id']}",
+        )
 
     return {"success": True, "request_id": request_id, "status": payload.status, "chat_with": row["requester_id"]}
-
-
-def settings_frontend_url() -> str:
-    from app.core.config import settings
-
-    return settings.frontend_url

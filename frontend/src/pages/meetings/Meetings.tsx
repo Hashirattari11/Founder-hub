@@ -14,6 +14,10 @@ import {
   Clock,
   Search,
   Link2,
+  Users2,
+  Target,
+  Briefcase,
+  GraduationCap,
 } from 'lucide-react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
@@ -436,6 +440,55 @@ interface ProfileOption {
   username: string | null
 }
 
+interface MeetingTemplate {
+  id: string
+  name: string
+  description: string
+  icon: 'intro' | 'pitch' | 'interview' | 'mentorship'
+  title: string
+  agenda: string
+  duration: number
+}
+
+const MEETING_TEMPLATES: MeetingTemplate[] = [
+  {
+    id: 'intro',
+    name: '1:1 Intro',
+    description: 'Get to know a founder, investor or new contact.',
+    icon: 'intro',
+    title: 'Intro call',
+    agenda: 'Quick intro to get to know each other, backgrounds, and what each of us is working on.',
+    duration: 30,
+  },
+  {
+    id: 'pitch',
+    name: 'Investor pitch',
+    description: 'Walk through your startup, traction and the ask.',
+    icon: 'pitch',
+    title: 'Pitch — {company}',
+    agenda: 'Product demo, traction & metrics, market opportunity, the ask, and Q&A.',
+    duration: 45,
+  },
+  {
+    id: 'interview',
+    name: 'Hiring call',
+    description: 'Interview a candidate for an open role.',
+    icon: 'interview',
+    title: 'Interview — {candidate}',
+    agenda: 'Role overview, candidate background, role-specific questions, and next steps.',
+    duration: 45,
+  },
+  {
+    id: 'mentorship',
+    name: 'Mentorship check-in',
+    description: 'Regular coaching or advisor session.',
+    icon: 'mentorship',
+    title: 'Mentorship check-in',
+    agenda: 'Progress since last session, current blockers, priorities for the coming week.',
+    duration: 30,
+  },
+]
+
 function MeetingFormModal({
   mode,
   initial,
@@ -474,6 +527,14 @@ function MeetingFormModal({
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<ProfileOption[]>([])
   const [saving, setSaving] = useState(false)
+  const [templateId, setTemplateId] = useState('')
+
+  const applyTemplate = (t: MeetingTemplate) => {
+    setTemplateId(t.id)
+    setTitle(t.title.replace('{company}', withProfile?.full_name ?? '').replace('{candidate}', withProfile?.full_name ?? ''))
+    setDescription(t.agenda)
+    setDuration(t.duration)
+  }
 
   // Derived: scheduled time and validity
   const scheduled = useMemo(() => new Date(`${date}T${time}`), [date, time])
@@ -579,6 +640,32 @@ function MeetingFormModal({
         </div>
 
         <div className="space-y-5 p-6">
+          {!isEdit && (
+            <Field label="Start from a template (optional)">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {MEETING_TEMPLATES.map((t) => {
+                  const Icon = t.icon === 'intro' ? Users2 : t.icon === 'pitch' ? Target : t.icon === 'interview' ? Briefcase : GraduationCap
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => applyTemplate(t)}
+                      className={`flex flex-col items-start gap-1.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                        templateId === t.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-gray-200 hover:border-primary/50 dark:border-dark-300'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold">{t.name}</span>
+                      <span className="line-clamp-2 text-[10px] leading-snug text-gray-500">{t.description}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </Field>
+          )}
+
           <Field label="Meeting name">
             <TextInput
               value={title}

@@ -112,9 +112,10 @@ export default function CompleteProfile() {
 
     setSubmitting(true)
     try {
+      const roleAlreadySet = Boolean(profile?.role)
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
-        role,
+        ...(roleAlreadySet ? {} : { role }),
         full_name: fullName.trim(),
         username: username.trim().toLowerCase(),
         bio: bio.trim() || null,

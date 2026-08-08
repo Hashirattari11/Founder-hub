@@ -4,7 +4,14 @@ from app.core.config import settings
 
 
 def get_user_id(authorization: str | None = Header(default=None)) -> str:
-    """Extract the authenticated user id from a Bearer JWT."""
+    """Extract the authenticated user id from a Bearer JWT.
+
+    The token is verified server-side (never blindly trusted):
+    - If SUPABASE_JWT_SECRET is configured, the signature is checked locally
+      with HS256 and the audience must be ``authenticated``.
+    - Otherwise the token is validated by calling GoTrue (``/auth/v1/user``),
+      which rejects forged or expired tokens.
+    """
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
 
@@ -15,11 +22,18 @@ def get_user_id(authorization: str | None = Header(default=None)) -> str:
     try:
         import jwt as pyjwt
 
-        payload = pyjwt.decode(
-            token,
-            options={"verify_signature": False, "verify_aud": False},
-        )
-        user_id = payload.get("sub")
+        if settings.supabase_jwt_secret:
+            payload = pyjwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",
+                options={"require": ["exp", "sub"]},
+            )
+            user_id = payload.get("sub")
+        else:
+            client = create_client(settings.supabase_url, settings.supabase_anon_key)
+            user_id = client.auth.get_user(token).user.id
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Invalid token") from exc
 

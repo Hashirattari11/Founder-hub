@@ -17,8 +17,8 @@ from app.core.auth import get_user_id
 from app.core.config import settings
 from app.core.supabase import service_supabase
 from app.core.users import user_email, user_full_name
-from app.services.email_service import send_meeting_confirmation_email
 from app.services.google_meet import create_google_meet_link
+from app.services.notification_service import notify
 
 logger = logging.getLogger("founderhub.meetings")
 router = APIRouter(prefix="/api", tags=["meetings"])
@@ -325,9 +325,21 @@ async def create_meeting(payload: CreateMeetingIn, user_id: str = Depends(get_us
             f"{organizer_name} invited you: {payload.title}",
             {"meeting_id": meeting["id"], "scheduled_at": start_dt.isoformat()},
         )
-        email = user_email(participant_id)
-        if email:
-            send_meeting_confirmation_email(email, user_full_name(participant_id) or "There", meeting, organizer_name)
+        notify(
+            participant_id,
+            "meeting_invite",
+            "You're invited to a meeting",
+            f"{organizer_name} invited you: {payload.title}",
+            {"meeting_id": meeting["id"], "scheduled_at": start_dt.isoformat()},
+            template="meeting_invite",
+            template_data={
+                "meeting_title": payload.title,
+                "other_name": organizer_name,
+                "meeting_time": start_dt.isoformat(),
+                "action_url": settings.frontend_url_for("/meetings"),
+            },
+            dedupe_key=f"meeting_invite:{meeting['id']}:{participant_id}",
+        )
 
     return {"meeting": meeting}
 
@@ -401,12 +413,24 @@ async def book_meeting(payload: BookMeetingIn, user_id: str = Depends(get_user_i
         {"meeting_id": meeting["id"], "scheduled_at": scheduled_at},
     )
 
-    # Confirmation emails to both sides (best-effort).
+    # Confirmation emails to both sides (best-effort, via queue).
     for uid, display_name in ((user_id, organizer_name), (host_id, host_name)):
-        email = user_email(uid)
-        if email:
-            other = host_name if uid == user_id else organizer_name
-            send_meeting_confirmation_email(email, display_name, meeting, other)
+        other = host_name if uid == user_id else organizer_name
+        notify(
+            uid,
+            "meeting_accepted",
+            "Meeting confirmed",
+            f"Your meeting with {other} is confirmed: {payload.title}",
+            {"meeting_id": meeting["id"], "scheduled_at": scheduled_at},
+            template="meeting_accepted",
+            template_data={
+                "meeting_title": payload.title,
+                "other_name": other,
+                "meeting_time": scheduled_at,
+                "action_url": settings.frontend_url_for("/meetings"),
+            },
+            dedupe_key=f"meeting_confirmed:{meeting['id']}:{uid}",
+        )
 
     return {"meeting": meeting, "host": {"id": host_id, "full_name": host_name}}
 
@@ -595,9 +619,22 @@ async def update_meeting(
             f"{name} updated the meeting: {updated.get('title', meeting.get('title'))}",
             {"meeting_id": meeting_id, "scheduled_at": updated.get("scheduled_at")},
         )
-        email = user_email(pid)
-        if email:
-            send_meeting_confirmation_email(email, user_full_name(pid) or "There", updated, name)
+        is_cancel = updates.get("status") == "cancelled"
+        notify(
+            pid,
+            "meeting_cancelled" if is_cancel else "meeting_rescheduled",
+            "Meeting cancelled" if is_cancel else "Meeting updated",
+            f"{name} {'cancelled' if is_cancel else 'updated'} the meeting: {updated.get('title', meeting.get('title'))}",
+            {"meeting_id": meeting_id, "scheduled_at": updated.get("scheduled_at")},
+            template="meeting_cancelled" if is_cancel else "meeting_rescheduled",
+            template_data={
+                "meeting_title": updated.get("title", meeting.get("title")),
+                "other_name": name,
+                "meeting_time": updated.get("scheduled_at"),
+                "action_url": settings.frontend_url_for("/meetings"),
+            },
+            dedupe_key=f"meeting_update:{meeting_id}:{pid}:{updates.get('status', 'rescheduled')}",
+        )
 
     return {"meeting": updated}
 
@@ -761,9 +798,21 @@ async def create_meeting_full(payload: CreateMeetingFullIn, user_id: str = Depen
             f"{organizer_name} invited you: {payload.title}",
             {"meeting_id": meeting["id"], "scheduled_at": start_dt.isoformat()},
         )
-        email = user_email(pid)
-        if email:
-            send_meeting_confirmation_email(email, user_full_name(pid) or "There", meeting, organizer_name)
+        notify(
+            pid,
+            "meeting_invite",
+            "You're invited to a meeting",
+            f"{organizer_name} invited you: {payload.title}",
+            {"meeting_id": meeting["id"], "scheduled_at": start_dt.isoformat()},
+            template="meeting_invite",
+            template_data={
+                "meeting_title": payload.title,
+                "other_name": organizer_name,
+                "meeting_time": start_dt.isoformat(),
+                "action_url": settings.frontend_url_for("/meetings"),
+            },
+            dedupe_key=f"meeting_invite:{meeting['id']}:{pid}",
+        )
 
     return {"meeting": meeting, "participants": _fetch_participants(meeting["id"])}
 

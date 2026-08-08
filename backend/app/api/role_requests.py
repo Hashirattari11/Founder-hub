@@ -53,6 +53,16 @@ async def create_role_request(
         )
         .execute()
     )
+    from app.services.notification_service import notify_admin
+
+    notify_admin(
+        "New role change request",
+        f"A user requested a change to {payload.requested_role}.",
+        {"requested_role": payload.requested_role, "user_id": user_id},
+        email=False,
+        template_data={"role": payload.requested_role},
+        dedupe_key=f"role_request:{user_id}:{payload.requested_role}",
+    )
     return result.data[0]
 
 

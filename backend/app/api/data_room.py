@@ -8,13 +8,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.core.auth import get_user_id
+from app.core.config import settings
 from app.core.supabase import service_supabase
-from app.core.users import user_email
-from app.services.email_service import (
-    send_data_room_access_approved_email,
-    send_data_room_access_requested_email,
-    send_document_viewed_email,
-)
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/api/data-room", tags=["data-room"])
 
@@ -100,11 +96,6 @@ def _notify_user(user_id: str, ntype: str, title: str, body: str, data: Optional
     except Exception as exc:
         print(f"[data-room] failed to notify {user_id}: {exc}")
         return False
-
-
-def _prefers(profile: dict, key: str, default: bool = True) -> bool:
-    prefs = profile.get("notification_preferences") or {}
-    return bool(prefs.get(key, default))
 
 
 def _get_profile(user_id: str) -> dict:
@@ -489,21 +480,29 @@ async def log_document_action(document_id: str, payload: LogActionIn, user_id: s
     if payload.action == "viewed" and not is_owner:
         viewer = _get_profile(user_id)
         founder = _get_profile(room["founder_id"])
+        viewer_name = _granted_by_name(viewer)
         _notify_user(
             room["founder_id"],
             "data_room_document_viewed",
             "Document viewed",
-            f"{_granted_by_name(viewer)} viewed your {doc.get('name') or 'document'}",
+            f"{viewer_name} viewed your {doc.get('name') or 'document'}",
             {"document_id": document_id, "startup_id": room["startup_id"]},
         )
-        founder_email = user_email(room["founder_id"])
-        if founder_email and _prefers(founder, "email_new_match"):
-            send_document_viewed_email(
-                founder_email,
-                _granted_by_name(founder),
-                _granted_by_name(viewer),
-                doc.get("name") or "document",
-            )
+        notify(
+            room["founder_id"],
+            "data_room_document_viewed",
+            "Document viewed",
+            f"{viewer_name} viewed your {doc.get('name') or 'document'}",
+            {"document_id": document_id, "startup_id": room["startup_id"]},
+            email=True,
+            template="data_room_viewed",
+            template_data={
+                "user_name": _granted_by_name(founder),
+                "from_name": viewer_name,
+                "document_name": doc.get("name") or "document",
+            },
+            dedupe_key=f"data_room_viewed:{room['founder_id']}:{document_id}",
+        )
 
     return {"success": True}
 
@@ -612,15 +611,22 @@ async def request_access(data_room_id: str, payload: RequestAccessIn, user_id: s
         f"{requester_name} requested access to your {startup_name} data room",
         {"data_room_id": data_room_id, "startup_id": room["startup_id"]},
     )
-    founder_email = user_email(room["founder_id"])
-    if founder_email and _prefers(founder, "email_new_match"):
-        send_data_room_access_requested_email(
-            founder_email,
-            _granted_by_name(founder),
-            requester_name,
-            startup_name,
-            f"{settings_frontend_url()}/startups/{room['startup_id']}/data-room",
-        )
+    notify(
+        room["founder_id"],
+        "data_room_access_requested",
+        "Data room access requested",
+        f"{requester_name} requested access to your {startup_name} data room",
+        {"data_room_id": data_room_id, "startup_id": room["startup_id"]},
+        email=True,
+        template="data_room_access_requested",
+        template_data={
+            "user_name": _granted_by_name(founder),
+            "from_name": requester_name,
+            "startup_name": startup_name,
+            "action_url": settings.frontend_url_for(f"/startups/{room['startup_id']}/data-room"),
+        },
+        dedupe_key=f"data_room_access_requested:{room['founder_id']}:{requester_name}:{startup_name}",
+    )
     return {"success": True}
 
 
@@ -679,14 +685,21 @@ async def respond_to_request(request_id: str, payload: RespondRequestIn, user_id
             f"You now have access to the {startup_name} data room",
             {"data_room_id": req["data_room_id"], "startup_id": room["startup_id"]},
         )
-        requester_email = user_email(req["requester_id"])
-        if requester_email:
-            send_data_room_access_approved_email(
-                requester_email,
-                _granted_by_name(requester),
-                startup_name,
-                f"{settings_frontend_url()}/startups/{room['startup_id']}/data-room",
-            )
+        notify(
+            req["requester_id"],
+            "data_room_access_approved",
+            "Data room access granted",
+            f"You now have access to the {startup_name} data room",
+            {"data_room_id": req["data_room_id"], "startup_id": room["startup_id"]},
+            email=True,
+            template="data_room_access_approved",
+            template_data={
+                "user_name": _granted_by_name(requester),
+                "startup_name": startup_name,
+                "action_url": settings.frontend_url_for(f"/startups/{room['startup_id']}/data-room"),
+            },
+            dedupe_key=f"data_room_access_approved:{req['requester_id']}:{room['startup_id']}",
+        )
     else:
         _notify_user(
             req["requester_id"],
@@ -762,9 +775,3 @@ async def sign_nda(data_room_id: str, user_id: str = Depends(get_user_id)):
         {"nda_signed": True, "nda_signed_at": datetime.now(timezone.utc).isoformat()}
     ).eq("id", access["id"]).execute()
     return {"success": True}
-
-
-def settings_frontend_url() -> str:
-    from app.core.config import settings
-
-    return settings.frontend_url

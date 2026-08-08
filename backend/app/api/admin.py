@@ -568,6 +568,123 @@ async def admin_delete_startup(
 
 
 # ---------------------------------------------------------------------------
+# Meetings moderation
+# ---------------------------------------------------------------------------
+
+
+@router.get("/meetings")
+async def admin_meetings(
+    request: Request,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    admin_id: str = Depends(RequireAdmin()),
+):
+    limit, offset = _page_query(limit, offset)
+    query = (
+        service_supabase.table("meetings")
+        .select(
+            "id, title, description, scheduled_at, status, duration_minutes, meet_link, "
+            "organizer_id, participant_id, startup_id, created_at, started_at, ended_at, "
+            "transcript, ai_summary, recording_url"
+        )
+        .order("scheduled_at", desc=True)
+        .range(offset, offset + limit - 1)
+    )
+    if search:
+        query = query.or_(f"title.ilike.%{search}%")
+    if status in ("scheduled", "completed", "cancelled", "in_progress"):
+        query = query.eq("status", status)
+
+    rows = (query.execute().data) or []
+    user_ids = list(
+        dict.fromkeys(
+            str(r.get("organizer_id")) for r in rows if r.get("organizer_id")
+        )
+        + [str(r.get("participant_id")) for r in rows if r.get("participant_id")]
+    )
+    names: dict[str, str] = {}
+    if user_ids:
+        try:
+            users = (
+                service_supabase.table("profiles")
+                .select("id, full_name, username, role")
+                .in_("id", user_ids)
+                .execute()
+            )
+            for u in users.data or []:
+                names[u["id"]] = u.get("full_name") or u.get("username") or u["id"]
+        except Exception:
+            pass
+
+    return {
+        "meetings": [
+            {
+                **{k: r.get(k) for k in r.keys()},
+                "organizer_name": names.get(str(r.get("organizer_id"))) or r.get("organizer_id"),
+                "participant_name": names.get(str(r.get("participant_id"))) or r.get("participant_id"),
+                "has_transcript": bool((r.get("transcript") or "").strip()),
+                "has_summary": bool(r.get("ai_summary")),
+            }
+            for r in rows
+        ]
+    }
+
+
+@router.patch("/meetings/{meeting_id}")
+async def admin_update_meeting(
+    meeting_id: str,
+    payload: dict,
+    request: Request,
+    admin_id: str = Depends(RequireAdmin()),
+):
+    row = single_row(
+        service_supabase.table("meetings")
+        .select("id, title")
+        .eq("id", meeting_id)
+        .maybe_single()
+        .execute()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    allowed = {"status", "title", "description", "scheduled_at", "duration_minutes", "startup_id"}
+    updates = {k: v for k, v in payload.items() if k in allowed and v is not None}
+    if not updates:
+        return {"success": True, "updated": {}}
+    if "status" in updates and updates["status"] not in ("scheduled", "completed", "cancelled"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    service_supabase.table("meetings").update(updates).eq("id", meeting_id).execute()
+    ip, ua = _client_info(request)
+    log_audit(
+        admin_id, _email(admin_id), "meeting.update", "meeting", meeting_id,
+        new_value=updates, ip=ip, user_agent=ua,
+    )
+    return {"success": True, "updated": updates}
+
+
+@router.delete("/meetings/{meeting_id}")
+async def admin_delete_meeting(
+    meeting_id: str,
+    request: Request,
+    admin_id: str = Depends(RequireAdmin(super_admin=True)),
+):
+    row = single_row(
+        service_supabase.table("meetings")
+        .select("id")
+        .eq("id", meeting_id)
+        .maybe_single()
+        .execute()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    service_supabase.table("meetings").delete().eq("id", meeting_id).execute()
+    ip, ua = _client_info(request)
+    log_audit(admin_id, _email(admin_id), "meeting.delete", "meeting", meeting_id, ip=ip, user_agent=ua)
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
 # Investors
 # ---------------------------------------------------------------------------
 
@@ -700,6 +817,18 @@ async def admin_approve_role_request(
         f"Your {new_role} role request was approved.",
         {"request_id": request_id, "user_id": req["user_id"]},
     )
+    from app.services.notification_service import notify
+
+    notify(
+        req["user_id"],
+        "role_approved",
+        "Role request approved",
+        f"Your {new_role} role request was approved.",
+        {"request_id": request_id},
+        template="role_approved",
+        template_data={"role": new_role},
+        dedupe_key=f"role_approved:{request_id}",
+    )
     return {"success": True}
 
 
@@ -730,6 +859,18 @@ async def admin_reject_role_request(
     log_audit(
         admin_id, _email(admin_id), "role_request.reject", "role_request", request_id,
         new_value={"status": "rejected"}, ip=ip, user_agent=ua,
+    )
+    from app.services.notification_service import notify
+
+    notify(
+        req["user_id"],
+        "role_rejected",
+        "Role request not approved",
+        f"Your {req.get('requested_role')} role request was not approved.",
+        {"request_id": request_id},
+        template="role_rejected",
+        template_data={"role": req.get("requested_role")},
+        dedupe_key=f"role_rejected:{request_id}",
     )
     return {"success": True}
 

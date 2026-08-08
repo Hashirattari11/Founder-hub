@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.auth import get_user_client, get_user_id
+from app.core.config import settings
 from app.core.supabase import service_supabase
-from app.core.email import email_for_application, email_for_status_update
 from app.core.users import user_email, user_full_name
 from app.schemas.application import ApplicationIn, ApplicationOut, StatusUpdateIn
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
@@ -24,33 +25,22 @@ def notify_founder(startup_id: str, applicant_name: str, role: str, applicant_id
     if not founder_id:
         return
 
-    body = f"{applicant_name} applied for {role}"
-    try:
-        service_supabase.table("notifications").insert(
-            {
-                "user_id": founder_id,
-                "type": "new_application",
-                "title": "New application received",
-                "body": body,
-                "data": {"startup_id": startup_id, "applicant_id": applicant_id},
-            }
-        ).execute()
-    except Exception as exc:
-        print(f"[notifications] failed to notify founder: {exc}")
-
-    # Email founder (Resend)
-    founder_email = user_email(founder_id)
-    if founder_email:
-        email_for_application(
-            founder_email,
-            user_full_name(founder_id) or "there",
-            startup_name,
-            applicant_name,
-            role,
-        )
-
-    # Stub for Day 11 full pipeline
-    print("notifyFounder() →", founder_id, "for application to", startup_id)
+    notify(
+        founder_id,
+        "new_application",
+        "New application received",
+        f"{applicant_name} applied for {role}",
+        {"startup_id": startup_id, "applicant_id": applicant_id, "role": role},
+        template="broadcast",
+        template_data={
+            "user_name": user_full_name(founder_id) or "there",
+            "title": "New application received",
+            "body": f"{applicant_name} applied for {role} at {startup_name}",
+            "action_url": settings.frontend_url_for(f"/startups/{startup_id}"),
+            "action_label": "Review Application",
+        },
+        dedupe_key=f"new_application:{startup_id}:{applicant_id}",
+    )
 
 
 @router.get("", response_model=list[ApplicationOut])
@@ -195,15 +185,21 @@ async def update_application_status(
     except Exception as exc:
         print(f"[notifications] failed to notify applicant: {exc}")
 
-    # Email applicant (Resend)
-    applicant_email = user_email(applicant_id)
-    if applicant_email:
-        email_for_status_update(
-            applicant_email,
-            user_full_name(applicant_id) or "there",
-            startup_name,
-            role,
-            payload.status,
+    # Email applicant through the unified pipeline (queue + templates).
+    if payload.status in ("accepted", "rejected", "shortlisted"):
+        notify(
+            applicant_id,
+            f"application_{payload.status}",
+            f"Application {payload.status}",
+            f"Your application for {role} at {startup_name} was {payload.status}",
+            {"application_id": application_id, "status": payload.status, "startup_id": app.get("startup_id"), "role": role},
+            template="application_accepted" if payload.status == "accepted" else "application_shortlisted" if payload.status == "shortlisted" else "application_rejected",
+            template_data={
+                "startup_name": startup_name,
+                "role": role,
+                "action_url": settings.frontend_url_for(f"/startups/{app.get('startup_id')}"),
+            },
+            dedupe_key=f"application_status:{application_id}:{payload.status}",
         )
 
     return app

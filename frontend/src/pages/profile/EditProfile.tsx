@@ -8,6 +8,7 @@ import { Avatar } from '../../components/Avatar'
 import { SkillsSelector } from '../../components/SkillsSelector'
 import { useUsernameCheck } from '../../hooks/useUsernameCheck'
 import { Field, TextInput } from '../../components/FormInput'
+import RoleRequestCard from '../../components/profile/RoleRequestCard'
 import { ROLE_OPTIONS, ROLE_SKILLS, INVESTOR_INTERESTS } from '../../types'
 import type { Role } from '../../types'
 
@@ -76,8 +77,9 @@ export default function EditProfile() {
     setSaving(true)
     const prevProfile = profile
     try {
+      const roleWasSet = Boolean(prevProfile?.role)
       const optimistic = await updateProfile(user.id, {
-        role,
+        ...(roleWasSet ? {} : { role }),
         full_name: fullName.trim(),
         username: username.trim().toLowerCase(),
         bio: bio.trim() || null,
@@ -158,32 +160,39 @@ export default function EditProfile() {
             </div>
 
             <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-5">
-              <Field label="I am a...">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {ROLE_OPTIONS.map((option) => {
-                    const active = role === option.value
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setRole(option.value)
-                          setSkills([])
-                          setInvestorInterests([])
-                        }}
-                        className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                          active
-                            ? 'border-primary bg-primary/5 text-primary ring-2 ring-primary/30'
-                            : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary dark:border-dark-300 dark:bg-dark dark:text-gray-300'
-                        }`}
-                      >
-                        {option.label}
-                        {active && <Check className="h-4 w-4" />}
-                      </button>
-                    )
-                  })}
-                </div>
-              </Field>
+              {!profile?.role ? (
+                <Field label="I am a...">
+                  <p className="mb-2 text-xs text-gray-500">
+                    Choose the role that best describes you. After this, role changes require admin review.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {ROLE_OPTIONS.map((option) => {
+                      const active = role === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setRole(option.value)
+                            setSkills([])
+                            setInvestorInterests([])
+                          }}
+                          className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                            active
+                              ? 'border-primary bg-primary/5 text-primary ring-2 ring-primary/30'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary dark:border-dark-300 dark:bg-dark dark:text-gray-300'
+                          }`}
+                        >
+                          {option.label}
+                          {active && <Check className="h-4 w-4" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </Field>
+              ) : (
+                <RoleRequestCard currentRole={profile.role} />
+              )}
 
               <Field label="Full Name">
                 <TextInput

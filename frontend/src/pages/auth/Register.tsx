@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { supabase, APP_URL } from '../../lib/supabase'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput, SelectInput } from '../../components/FormInput'
+import { Seo } from '../../components/Seo'
 import type { Role } from '../../types'
 
 const roles: { value: Role; label: string }[] = [
@@ -77,10 +78,12 @@ export default function Register() {
   }
 
   return (
-    <AuthLayout
-      title="Create your account"
-      subtitle="Start building your startup in minutes."
-    >
+    <>
+      <Seo title="Create account — FounderHub AI" description="Join FounderHub AI to find co-founders, investors, and AI tools for your startup." />
+      <AuthLayout
+        title="Create your account"
+        subtitle="Start building your startup in minutes."
+      >
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <Field label="Full Name" error={errors.fullName?.message}>
           <TextInput
@@ -142,5 +145,6 @@ export default function Register() {
         </Link>
       </p>
     </AuthLayout>
+    </>
   )
 }

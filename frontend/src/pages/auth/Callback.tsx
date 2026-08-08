@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { supabase, popAuthRedirect } from '../../lib/supabase'
 import { isAdminProfile } from '../../lib/admin'
 import type { Profile } from '../../types'
 
@@ -53,7 +53,7 @@ export default function Callback() {
         if (isAdminProfile(p)) {
           navigate('/admin/dashboard', { replace: true })
         } else if (p?.full_name) {
-          navigate('/dashboard', { replace: true })
+          navigate(popAuthRedirect('/dashboard'), { replace: true })
         } else {
           navigate('/complete-profile', { replace: true })
         }

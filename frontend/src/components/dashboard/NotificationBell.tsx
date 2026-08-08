@@ -213,6 +213,17 @@ export function NotificationBell() {
                   {!n.is_read && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-primary" />}
                 </button>
               ))}
+              {notifications.length > 0 && (
+                <button
+                  onClick={() => {
+                    setOpen(false)
+                    navigate('/notifications')
+                  }}
+                  className="w-full border-t border-gray-100 px-4 py-2.5 text-center text-xs font-semibold text-primary transition-colors hover:bg-gray-50 dark:border-dark-300 dark:hover:bg-dark-200"
+                >
+                  View all notifications
+                </button>
+              )}
             </div>
           </motion.div>
         )}

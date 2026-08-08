@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom'
+import { useState, Suspense } from 'react'
+import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Rocket,
@@ -35,6 +35,7 @@ import { Avatar } from '../Avatar'
 import { NotificationBell } from './NotificationBell'
 import { MessagesButton } from '../MessagesButton'
 import { MobileBottomNav } from '../MobileBottomNav'
+import { PageLoader } from '../PageLoader'
 import { ROLE_LABELS } from '../../types'
 import type { Role } from '../../types'
 
@@ -176,8 +177,8 @@ function SidebarContent({
 
   return (
     <div className="flex h-full flex-col">
-      <Link to="/" className="flex items-center gap-2 px-6 py-6" onClick={onNavigate}>
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white">
+      <Link to="/" className="group flex items-center gap-2 px-6 py-6" onClick={onNavigate}>
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white shadow-lg shadow-primary/30 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
           <Rocket className="h-5 w-5" />
         </span>
         <span className="text-xl font-bold tracking-tight">FounderHub</span>
@@ -190,19 +191,30 @@ function SidebarContent({
             to={link.to}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              `group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? 'bg-primary/10 text-primary'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-200 dark:hover:text-white'
+                  : 'text-gray-600 hover:translate-x-0.5 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-200 dark:hover:text-white'
               }`
             }
           >
-            <link.icon className="h-5 w-5" />
-            <span className="flex-1 truncate">{link.label}</span>
-            {link.to === '/messages' && unreadCount > 0 && (
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.span
+                    layoutId="sidebar-active"
+                    className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-brand"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <link.icon className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-primary' : ''}`} />
+                <span className="flex-1 truncate">{link.label}</span>
+                {link.to === '/messages' && unreadCount > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </>
             )}
           </NavLink>
         ))}
@@ -211,15 +223,26 @@ function SidebarContent({
           to="/ai-studio"
           onClick={onNavigate}
           className={({ isActive }) =>
-            `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+            `group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               isActive
                 ? 'bg-primary/10 text-primary'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-200 dark:hover:text-white'
+                : 'text-gray-600 hover:translate-x-0.5 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-200 dark:hover:text-white'
             }`
           }
         >
-          <Sparkles className="h-5 w-5" />
-          <span className="flex-1 truncate">AI Studio</span>
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <motion.span
+                  layoutId="sidebar-active-ai"
+                  className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-brand"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Sparkles className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-primary' : ''}`} />
+              <span className="flex-1 truncate">AI Studio</span>
+            </>
+          )}
         </NavLink>
       </nav>
 
@@ -245,6 +268,7 @@ export function DashboardLayout() {
   const { sidebarOpen, toggleSidebar, closeSidebar } = useDashboardStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const unreadCount = useUnreadChatsCount()
   const isAdmin = Boolean(
     profile?.is_admin ||
@@ -458,7 +482,16 @@ export function DashboardLayout() {
         </header>
 
         <main className="p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">
-          <Outlet />
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          </motion.div>
         </main>
       </div>
 
