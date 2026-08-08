@@ -1,13 +1,15 @@
-"""Transactional email transport — Brevo only.
+"""Transactional email transport — Brevo primary, Resend fallback.
 
 All FounderHub transactional email is delivered through Brevo
 (`BREVO_API_KEY`). The Brevo `messageId` returned on acceptance is captured
 so the webhook endpoint can map delivery events (delivered / opened /
 clicked / bounced / blocked) back to queue + log rows.
 
-Sending never raises: every attempt returns a structured result
-{ok, error, message_id, http_status} so the queue worker can decide whether
-to retry and the admin panel can surface real delivery status.
+If Brevo is not configured (or its key is rejected), delivery falls back to
+Resend (`RESEND_API_KEY`) so email keeps flowing even when one provider is
+misconfigured. Sending never raises: every attempt returns a structured
+result {ok, error, message_id, http_status} so the queue worker can decide
+whether to retry and the admin panel can surface real delivery status.
 """
 import logging
 from typing import Dict, List, Optional, Tuple
@@ -22,9 +24,25 @@ BREVO_API = "https://api.brevo.com/v3/smtp/email"
 
 
 def resolve_email_provider() -> str | None:
-    """Return "brevo" when a Brevo API key is configured, else None."""
+    """Resolve the effective provider based on config + available keys.
+
+    "brevo" wins when a Brevo key exists; otherwise "resend" when a Resend
+    key exists; otherwise None. The chosen provider is pinned on the queue
+    row so the admin panel can see where each message was sent.
+    """
+    chosen = (settings.email_provider or "auto").lower()
+    if chosen not in ("auto", "brevo", "resend"):
+        logger.warning("Unknown EMAIL_PROVIDER %r — falling back to auto", chosen)
+        chosen = "auto"
+    if chosen == "brevo":
+        return "brevo" if settings.brevo_api_key else None
+    if chosen == "resend":
+        return "resend" if settings.resend_api_key else None
+    # auto: first configured key wins
     if settings.brevo_api_key:
         return "brevo"
+    if settings.resend_api_key:
+        return "resend"
     return None
 
 
@@ -86,6 +104,81 @@ def send_brevo_email(
     return {"ok": True, "error": None, "message_id": message_id, "http_status": resp.status_code}
 
 
+def send_resend_email(
+    to: str,
+    subject: str,
+    html: str,
+    text: str | None = None,
+) -> dict:
+    """Send one transactional email via Resend and return a structured result.
+
+    Returns the same {ok, error, message_id, http_status} shape as
+    send_brevo_email so callers can treat both providers identically.
+    """
+    if not settings.resend_api_key:
+        return {"ok": False, "error": "RESEND_API_KEY not set", "message_id": None, "http_status": None}
+    if not to:
+        return {"ok": False, "error": "Missing recipient", "message_id": None, "http_status": None}
+    try:
+        import resend
+
+        resend.api_key = settings.resend_api_key
+        payload = {
+            "from": settings.resend_from_email,
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        }
+        if text:
+            payload["text"] = text
+        resp = resend.Emails.send(payload)
+        message_id = None
+        if isinstance(resp, dict):
+            message_id = resp.get("id")
+        elif isinstance(resp, str):
+            message_id = resp
+        return {"ok": True, "error": None, "message_id": message_id, "http_status": 200}
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Resend failed for %s: %s", to, exc)
+        return {"ok": False, "error": f"Resend error: {exc}", "message_id": None, "http_status": None}
+
+
+def _send_with_fallback(
+    to: str,
+    subject: str,
+    html: str,
+    text: str | None,
+    provider: str | None,
+) -> dict:
+    """Route a send through the requested provider, falling back to the other.
+
+    Brevo is attempted first when a Brevo key exists; if it rejects the
+    message (4xx/5xx/network) and a Resend key exists, Resend is tried so a
+    bad Brevo key never silently kills delivery.
+    """
+    requested = (provider or resolve_email_provider() or "none").lower()
+    result = None
+
+    if requested == "brevo":
+        result = send_brevo_email(to, subject, html, text)
+        if not result["ok"] and settings.resend_api_key:
+            logger.warning("Brevo failed (%s) — falling back to Resend for %s", result["error"], to)
+            fallback = send_resend_email(to, subject, html, text)
+            if fallback["ok"]:
+                return fallback
+    elif requested == "resend":
+        result = send_resend_email(to, subject, html, text)
+        if not result["ok"] and settings.brevo_api_key:
+            logger.warning("Resend failed (%s) — falling back to Brevo for %s", result["error"], to)
+            fallback = send_brevo_email(to, subject, html, text)
+            if fallback["ok"]:
+                return fallback
+    else:
+        return {"ok": False, "error": "No email provider configured (missing BREVO_API_KEY / RESEND_API_KEY)", "message_id": None, "http_status": None}
+
+    return result or {"ok": False, "error": "Unknown provider error", "message_id": None, "http_status": None}
+
+
 def send_email(
     to: str,
     subject: str,
@@ -93,11 +186,11 @@ def send_email(
     text: str | None = None,
     provider: str | None = None,
 ) -> bool:
-    """Send a transactional email via Brevo.
+    """Send a transactional email. Returns True when a provider accepted it.
 
-    Returns True when Brevo accepted the email. Never raises.
+    Never raises.
     """
-    return send_brevo_email(to, subject, html, text)["ok"]
+    return _send_with_fallback(to, subject, html, text, provider)["ok"]
 
 
 def send_email_ex(
@@ -108,8 +201,19 @@ def send_email_ex(
     provider: str | None = None,
 ) -> Tuple[bool, Optional[str]]:
     """Like send_email but also returns the error message (for queue retry)."""
-    result = send_brevo_email(to, subject, html, text)
+    result = _send_with_fallback(to, subject, html, text, provider)
     return result["ok"], result["error"]
+
+
+def send_email_full(
+    to: str,
+    subject: str,
+    html: str,
+    text: str | None = None,
+    provider: str | None = None,
+) -> dict:
+    """Send and return the full structured result (message_id, http_status)."""
+    return _send_with_fallback(to, subject, html, text, provider)
 
 
 def send_email_many(emails: List[dict]) -> int:

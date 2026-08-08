@@ -268,15 +268,15 @@ class TestEmailRequest(BaseModel):
 
 @router.post("/api/admin/email/test")
 async def admin_send_test_email(payload: TestEmailRequest, admin_id: str = Depends(RequireAdmin())):
-    """Send a test transactional email through Brevo (admin self-check)."""
-    from app.core.email import send_brevo_email
+    """Send a test transactional email (Brevo primary, Resend fallback)."""
+    from app.core.email import send_email_full
     from app.services.email_templates import render_template
 
     rendered = render_template("welcome", {"user_name": "FounderHub Admin"})
     subject = f"[FounderHub test] {rendered['subject']}"
-    result = send_brevo_email(payload.to_email, subject, rendered["html"])
+    result = send_email_full(payload.to_email, subject, rendered["html"])
     if not result["ok"]:
-        raise HTTPException(status_code=502, detail=result["error"] or "Brevo send failed")
+        raise HTTPException(status_code=502, detail=result["error"] or "Email send failed")
 
     try:
         service_supabase.table("email_logs").insert(
@@ -286,9 +286,9 @@ async def admin_send_test_email(payload: TestEmailRequest, admin_id: str = Depen
                 "status": "sent",
                 "subject": subject,
                 "template": "welcome",
-                "provider": "brevo",
+                "provider": result.get("provider") or "brevo",
                 "message_id": result["message_id"],
-                "http_status": result["http_status"],
+                "http_status": result.get("http_status"),
                 "sent_at": "now",
             }
         ).execute()

@@ -21,7 +21,7 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from app.core.email import send_brevo_email
+from app.core.email import send_brevo_email  # noqa: F401  (legacy admin test path)
 from app.core.supabase import service_supabase
 from app.services.email_templates import render_template
 
@@ -110,9 +110,11 @@ def enqueue_email(
     if not service_supabase.available:
         return False
 
-    # All transactional email goes through Brevo — pin the provider on the row
-    # so the admin panel can see where each message was sent.
-    provider = "brevo"
+    # Pin the resolved provider on the row so the admin panel can see where
+    # each message was sent. Falls back to Resend when no Brevo key exists.
+    from app.core.email import resolve_email_provider
+
+    provider = resolve_email_provider() or ""
 
     try:
         payload = {
@@ -286,7 +288,7 @@ def _record_log(
                 "subject": row.get("subject"),
                 "template": row.get("template"),
                 "template_data": row.get("template_data"),
-                "provider": "brevo",
+                "provider": row.get("provider") or "brevo",
                 "error": (error or None)[:500] if error else None,
                 "message_id": message_id,
                 "http_status": http_status,
@@ -298,18 +300,17 @@ def _record_log(
 
 
 def _send_one(row: dict) -> None:
-    result = send_brevo_email(
+    from app.core.email import send_email_full
+
+    result = send_email_full(
         row.get("to_email", ""),
         row.get("subject", ""),
         row.get("html_body", ""),
         row.get("text_body"),
+        row.get("provider") or None,
     )
-    ok, error, message_id, http_status = (
-        result["ok"],
-        result["error"],
-        result["message_id"],
-        result["http_status"],
-    )
+    ok, error = result["ok"], result["error"]
+    message_id, http_status = result.get("message_id"), result.get("http_status")
 
     if ok:
         try:

@@ -439,6 +439,19 @@ export function subscribeToChats(userId: string, onChange: () => void): () => vo
   }
 }
 
+/** Subscribe to message changes (new messages + read-state updates) so the
+ * unread badge stays live. RLS on the `messages` table scopes deliveries to
+ * chats the current user participates in. Returns an unsubscribe fn. */
+export function subscribeToMessages(userId: string, onChange: () => void): () => void {
+  const channel = supabase
+    .channel(uniqueChannel(`chat-msg-${userId}`))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onChange)
+    .subscribe()
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
+
 /** Debounced user search for the "New Message" modal. */
 export async function searchUsers(query: string, excludeUserId: string, limit = 8): Promise<Profile[]> {
   const q = query.trim()

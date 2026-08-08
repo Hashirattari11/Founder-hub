@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '../context/AuthContext'
-import { getMyChats, getUnreadCounts, subscribeToChats } from '../lib/chat'
+import { getMyChats, getUnreadCounts, subscribeToChats, subscribeToMessages } from '../lib/chat'
 
 /** Total unread message count across all chats, kept live via realtime. */
 export function useUnreadChatsCount(): number {
@@ -27,8 +27,15 @@ export function useUnreadChatsCount(): number {
 
   useEffect(() => {
     if (!user) return
-    const unsubscribe = subscribeToChats(user.id, () => void refresh())
-    return unsubscribe
+    // Listen to both chats (new chat / last_message_at) and messages
+    // (new incoming message + read-state updates) so the badge clears the
+    // moment the user reads a conversation instead of going stale.
+    const unsubscribeChats = subscribeToChats(user.id, () => void refresh())
+    const unsubscribeMessages = subscribeToMessages(user.id, () => void refresh())
+    return () => {
+      unsubscribeChats()
+      unsubscribeMessages()
+    }
   }, [user, refresh])
 
   return count
