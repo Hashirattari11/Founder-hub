@@ -18,7 +18,7 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from app.core.email import send_email_ex
+from app.core.email import resolve_email_provider, send_email_ex
 from app.core.supabase import service_supabase
 from app.services.email_templates import render_template
 
@@ -107,6 +107,11 @@ def enqueue_email(
     if not service_supabase.available:
         return False
 
+    # Resolve the real provider at enqueue time so queued rows use whatever
+    # provider has a configured API key (resend → brevo), instead of blindly
+    # pinning "brevo" and failing when only a Resend key is provisioned.
+    provider = resolve_email_provider() or ""
+
     try:
         payload = {
             "recipient_id": (data or {}).get("user_id"),
@@ -120,7 +125,7 @@ def enqueue_email(
             "status": "pending",
             "attempts": 0,
             "max_attempts": 3,
-            "provider": "brevo",
+            "provider": provider,
         }
         service_supabase.table("email_queue").insert(payload).execute()
     except Exception as exc:  # pragma: no cover
@@ -261,7 +266,7 @@ def _record_log(row: dict, ok: bool, error: str | None = None) -> None:
                 "subject": row.get("subject"),
                 "template": row.get("template"),
                 "template_data": row.get("template_data"),
-                "provider": row.get("provider") or "brevo",
+                "provider": row.get("provider") or "",
                 "error": (error or None)[:500] if error else None,
                 "sent_at": "now" if ok else None,
             }
@@ -277,7 +282,7 @@ def _send_one(row: dict) -> None:
             row.get("subject", ""),
             row.get("html_body", ""),
             row.get("text_body"),
-            row.get("provider") or "brevo",
+            row.get("provider") or None,
         )
     except Exception as exc:  # pragma: no cover
         ok, error = False, str(exc)
