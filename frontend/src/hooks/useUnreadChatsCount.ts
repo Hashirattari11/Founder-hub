@@ -38,5 +38,21 @@ export function useUnreadChatsCount(): number {
     }
   }, [user, refresh])
 
+  // Backstops for the realtime stream: refresh when the tab regains focus
+  // and on a 30s interval, so a stale badge never sticks around.
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) void refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    const interval = window.setInterval(() => void refresh(), 30_000)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+      window.clearInterval(interval)
+    }
+  }, [refresh])
+
   return count
 }

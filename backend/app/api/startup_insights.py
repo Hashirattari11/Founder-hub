@@ -2,8 +2,9 @@
 Explainable Matching.
 
 Access model:
-- Founder of the startup (or admin) can view/regenerate analyses + run matching.
-- Any authenticated user can view matches that target them (GET /matches/me).
+- Any authenticated user can VIEW health analyses (e.g. the investor AI
+  Startup Analyzer) and view matches that target them (GET /matches/me).
+- Founder of the startup (or admin) can regenerate/refresh analyses + run matching.
 - All reads/writes are done via the service role AFTER server-side ownership
   checks (same pattern as the rest of the backend).
 """
@@ -75,7 +76,11 @@ async def _with_narrative(kind: str, sd: dict, user_id: str, deterministic: dict
 @router.get("/startups/{startup_id}/health")
 async def get_health(startup_id: str, refresh: bool = False, user_id: str = Depends(get_user_id)):
     startup = _get_startup(startup_id)
-    _require_founder_or_admin(startup, user_id)
+    # Any authenticated user may VIEW a startup's health analysis (used by the
+    # investor AI Startup Analyzer). Only refresh/regenerate writes a fresh
+    # cached score, so that stays founder/admin-only.
+    if refresh:
+        _require_founder_or_admin(startup, user_id)
 
     cached = si._fetch_cached("startup_health_scores", startup_id)
     if si._fresh(cached, refresh):

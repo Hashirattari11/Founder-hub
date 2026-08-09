@@ -92,6 +92,8 @@ const CoFounderPreferences = lazy(() => import('./pages/cofounder/CoFounderPrefe
 const StartupInvestors = lazy(() => import('./pages/investor/StartupInvestors'))
 const InvestorRequests = lazy(() => import('./pages/investor/InvestorRequests'))
 const InvestorProfileSetup = lazy(() => import('./pages/investor/InvestorProfileSetup'))
+const StartupAnalyzer = lazy(() => import('./pages/investor/StartupAnalyzer'))
+const InvestorAnalytics = lazy(() => import('./pages/investor/InvestorAnalytics'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
@@ -273,6 +275,26 @@ function App() {
                   <ProtectedRoute>
                     <Suspense fallback={<PageLoader />}>
                       <Matching />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/startup-analyzer"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <StartupAnalyzer />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/investor/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <InvestorAnalytics />
                     </Suspense>
                   </ProtectedRoute>
                 }

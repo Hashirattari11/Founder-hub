@@ -15,7 +15,6 @@ import {
   Mail,
   Cpu,
   Shield,
-  TrendingUp,
   Sparkles,
   Activity,
 } from 'lucide-react'
@@ -58,11 +57,11 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   investor: [
     { label: 'Home', to: '/dashboard', icon: Home },
     { label: 'Startup Discovery', to: '/explore', icon: Compass },
-    { label: 'AI Startup Analyzer', to: '/ai-studio', icon: Sparkles },
+    { label: 'AI Startup Analyzer', to: '/startup-analyzer', icon: Sparkles },
     { label: 'AI Matching', to: '/ai-studio/matching', icon: Handshake },
     { label: 'Investment Pipeline', to: '/investor/requests', icon: Wallet },
     { label: 'Saved Startups', to: '/dashboard/saved', icon: Bookmark },
-    { label: 'Portfolio Tracker', to: '/portfolio', icon: TrendingUp },
+    { label: 'Analytics', to: '/investor/analytics', icon: BarChart3 },
     { label: 'Investor Profile', to: '/investor/profile/setup', icon: Wallet },
     { label: 'Jobs', to: '/jobs', icon: Briefcase },
     { label: 'Community', to: '/community', icon: Users },

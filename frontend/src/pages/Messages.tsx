@@ -10,6 +10,7 @@ import {
   getMyChats,
   getUnreadCounts,
   markChatRead,
+  markMessagesRead,
   startChat,
   subscribeToChats,
 } from '../lib/chat'
@@ -74,6 +75,7 @@ export default function Messages() {
         const found = data?.find((c) => c.id === chat.id)
         setActiveChat(found ?? chat)
         setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
+        void markMessagesRead(chat.id, user.id)
         markChatRead(chat.id).catch(() => {})
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Could not open this conversation')
@@ -85,8 +87,12 @@ export default function Messages() {
   }, [user, loadChats])
 
   const handleSelectChat = (chat: Chat) => {
+    if (!user) return
     setActiveChat(chat)
     setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
+    // Direct supabase RLS update is the reliable path for clearing unread
+    // state (backend markChatRead has been flaky); keep both for redundancy.
+    void markMessagesRead(chat.id, user.id)
     markChatRead(chat.id).catch(() => {})
   }
 
