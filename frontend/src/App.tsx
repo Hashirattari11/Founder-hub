@@ -67,6 +67,10 @@ const NotificationSettings = lazy(() => import('./pages/NotificationSettings'))
 const NotificationsPage = lazy(() => import('./pages/Notifications'))
 const AISettings = lazy(() => import('./pages/AISettings'))
 const AIStudio = lazy(() => import('./pages/AIStudio'))
+const StartupHealth = lazy(() => import('./pages/studio/StartupHealth'))
+const TeamGapFinder = lazy(() => import('./pages/studio/TeamGapFinder'))
+const InvestorReadiness = lazy(() => import('./pages/studio/InvestorReadiness'))
+const Matching = lazy(() => import('./pages/studio/Matching'))
 const AIStudioAdmin = lazy(() => import('./pages/admin/AIStudioAdmin'))
 const EmailLogs = lazy(() => import('./pages/EmailLogs'))
 const Community = lazy(() => import('./pages/Community'))
@@ -229,6 +233,46 @@ function App() {
                   <ProtectedRoute>
                     <Suspense fallback={<PageLoader />}>
                       <AIStudio />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-studio/health"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <StartupHealth />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-studio/team-gap"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <TeamGapFinder />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-studio/investor-readiness"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <InvestorReadiness />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-studio/matching"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <Matching />
                     </Suspense>
                   </ProtectedRoute>
                 }

@@ -135,7 +135,44 @@ function AiAnalyticsTab() {
           </div>
         )}
       </Card>
+
+      <AiInsightsStats />
     </div>
+  )
+}
+
+function AiInsightsStats() {
+  const [stats, setStats] = useState<{
+    matches_total: number
+    health_analyses: number
+    team_gap_analyses: number
+    investor_readiness_analyses: number
+  } | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch('/api/ai-insights/admin/summary', {
+          headers: { Authorization: `Bearer ${(await import('../../lib/supabase').then((m) => m.supabase.auth.getSession())).data.session?.access_token ?? ''}` },
+        })
+        if (res.ok) setStats(await res.json())
+      } catch {
+        // ignore — stats are best-effort
+      }
+    })()
+  }, [])
+
+  if (!stats) return null
+  return (
+    <Card className="p-5">
+      <h3 className="mb-4 text-sm font-bold text-gray-900 dark:text-white">AI Startup Insights</h3>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard label="Matches created" value={stats.matches_total} icon={<Activity className="h-4 w-4" />} />
+        <StatCard label="Health scores" value={stats.health_analyses} icon={<Activity className="h-4 w-4" />} />
+        <StatCard label="Team gap analyses" value={stats.team_gap_analyses} icon={<Activity className="h-4 w-4" />} />
+        <StatCard label="Investor readiness" value={stats.investor_readiness_analyses} icon={<Activity className="h-4 w-4" />} />
+      </div>
+    </Card>
   )
 }
 

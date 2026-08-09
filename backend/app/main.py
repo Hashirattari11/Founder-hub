@@ -27,6 +27,7 @@ from app.api.cap_table import router as cap_table_router
 from app.api.equity import router as equity_router
 from app.api.business_plan import router as business_plan_router
 from app.api.ai_studio import router as ai_studio_router
+from app.api.startup_insights import router as startup_insights_router
 from app.api.admin import router as admin_router
 from app.api.role_requests import router as role_requests_router
 from app.api.reports import router as reports_router
@@ -136,6 +137,7 @@ app.include_router(cap_table_router)
 app.include_router(equity_router)
 app.include_router(business_plan_router)
 app.include_router(ai_studio_router)
+app.include_router(startup_insights_router)
 app.include_router(admin_router)
 app.include_router(role_requests_router)
 app.include_router(reports_router)
