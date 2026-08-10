@@ -136,6 +136,13 @@ export default function Register() {
         <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
           {submitting ? 'Creating account...' : 'Create Account'}
         </button>
+
+        <p className="mt-2 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+          By creating an account, you agree to our{' '}
+          <Link to="/terms" className="font-semibold text-primary hover:underline">Terms of Service</Link>
+          {' '}and{' '}
+          <Link to="/privacy" className="font-semibold text-primary hover:underline">Privacy Policy</Link>.
+        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">

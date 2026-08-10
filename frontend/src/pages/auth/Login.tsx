@@ -172,6 +172,13 @@ export default function Login() {
         {oauthLoading ? 'Redirecting to Google...' : 'Continue with Google'}
       </button>
 
+      <p className="mt-4 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+        By continuing with Google, you agree to our{' '}
+        <Link to="/terms" className="font-semibold text-primary hover:underline">Terms of Service</Link>
+        {' '}and{' '}
+        <Link to="/privacy" className="font-semibold text-primary hover:underline">Privacy Policy</Link>.
+      </p>
+
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         New to FounderHub?{' '}
         <Link to="/register" className="font-semibold text-primary hover:underline">

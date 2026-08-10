@@ -123,6 +123,14 @@ const TermsPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({
 const CookiePage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.CookiePage })))
 const AboutPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.AboutPage })))
 const ContactPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.ContactPage })))
+const CommunityGuidelinesPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.CommunityGuidelinesPage })))
+const AcceptableUsePage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.AcceptableUsePage })))
+const IntellectualPropertyPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.IntellectualPropertyPage })))
+const SecurityPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.SecurityPage })))
+const DisclaimerPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.DisclaimerPage })))
+const InvestorDisclaimerPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.InvestorDisclaimerPage })))
+const RefundPolicyPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.RefundPolicyPage })))
+const LegalCenterPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.LegalCenterPage })))
 
 function LandingPage() {
   const [waitlistOpen, setWaitlistOpen] = useState(false)
@@ -173,11 +181,19 @@ function App() {
               <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
               <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
-              <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><PrivacyPage /></Suspense>} />
-              <Route path="/terms" element={<Suspense fallback={<PageLoader />}><TermsPage /></Suspense>} />
-              <Route path="/cookies" element={<Suspense fallback={<PageLoader />}><CookiePage /></Suspense>} />
-              <Route path="/about" element={<Suspense fallback={<PageLoader />}><AboutPage /></Suspense>} />
-              <Route path="/contact" element={<Suspense fallback={<PageLoader />}><ContactPage /></Suspense>} />
+      <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><PrivacyPage /></Suspense>} />
+      <Route path="/terms" element={<Suspense fallback={<PageLoader />}><TermsPage /></Suspense>} />
+      <Route path="/cookies" element={<Suspense fallback={<PageLoader />}><CookiePage /></Suspense>} />
+      <Route path="/about" element={<Suspense fallback={<PageLoader />}><AboutPage /></Suspense>} />
+      <Route path="/contact" element={<Suspense fallback={<PageLoader />}><ContactPage /></Suspense>} />
+      <Route path="/legal" element={<Suspense fallback={<PageLoader />}><LegalCenterPage /></Suspense>} />
+      <Route path="/community-guidelines" element={<Suspense fallback={<PageLoader />}><CommunityGuidelinesPage /></Suspense>} />
+      <Route path="/acceptable-use" element={<Suspense fallback={<PageLoader />}><AcceptableUsePage /></Suspense>} />
+      <Route path="/intellectual-property" element={<Suspense fallback={<PageLoader />}><IntellectualPropertyPage /></Suspense>} />
+      <Route path="/security" element={<Suspense fallback={<PageLoader />}><SecurityPage /></Suspense>} />
+      <Route path="/disclaimer" element={<Suspense fallback={<PageLoader />}><DisclaimerPage /></Suspense>} />
+      <Route path="/investor-disclaimer" element={<Suspense fallback={<PageLoader />}><InvestorDisclaimerPage /></Suspense>} />
+      <Route path="/refund-policy" element={<Suspense fallback={<PageLoader />}><RefundPolicyPage /></Suspense>} />
               <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><Callback /></Suspense>} />
               <Route path="/profile/:username" element={<Suspense fallback={<PageLoader />}><ProfileView /></Suspense>} />
               <Route path="/403" element={<Suspense fallback={<PageLoader />}><Forbidden /></Suspense>} />
