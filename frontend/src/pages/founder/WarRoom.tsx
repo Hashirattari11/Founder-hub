@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Radar, Plus, RefreshCw, Trash2, Calendar, User, Target } from 'lucide-react'
+import { Radar, Plus, RefreshCw, Trash2, Calendar, User, Target, LayoutDashboard } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { StartupPicker } from '../../components/studio/StartupPicker'
 import { ScoreRing, ScoreBar } from '../../components/studio/ScoreRing'
@@ -231,13 +232,21 @@ export default function WarRoom() {
             </p>
           </div>
         </div>
-        <button
-          onClick={refreshInsights}
-          disabled={refreshing || !startupId}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
-        >
-          <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} /> Refresh insights
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={refreshInsights}
+            disabled={refreshing || !startupId}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
+          >
+            <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} /> Refresh insights
+          </button>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
+          >
+            <LayoutDashboard size={15} /> Back to Dashboard
+          </Link>
+        </div>
       </div>
 
       <StartupPicker

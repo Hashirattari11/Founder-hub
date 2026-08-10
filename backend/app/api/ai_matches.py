@@ -56,7 +56,7 @@ def _attach_startups(rows: list[dict]) -> list[dict]:
     ids = {r.get("startup_id") for r in rows if r.get("startup_id")}
     if not ids:
         return rows
-    res = service_supabase.table("startups").select("id, name, tagline, industry, stage, location, is_published, logo_url").in_("id", list(ids)).execute()
+    res = service_supabase.table("startups").select("id, name, tagline, industry, stage, location, is_published").in_("id", list(ids)).execute()
     by_id = {s["id"]: s for s in res.data or []}
     out = []
     for r in rows:
@@ -181,7 +181,7 @@ async def dismiss_match(match_id: str, user_id: str = Depends(get_user_id)):
 @router.get("/discover")
 async def discover(user_id: str = Depends(get_user_id)):
     """Published startups the caller could match with (picker for founders)."""
-    res = service_supabase.table("startups").select("id, name, tagline, industry, stage, location, logo_url, is_published").eq("is_published", True).order("created_at", desc=True).limit(200).execute()
+    res = service_supabase.table("startups").select("id, name, tagline, industry, stage, location, is_published").eq("is_published", True).order("created_at", desc=True).limit(200).execute()
     return {"startups": res.data or []}
 
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Target, Play, Bookmark, X, Sparkles, TrendingUp } from 'lucide-react'
+import { Target, Play, Bookmark, X, Sparkles, TrendingUp, LayoutDashboard } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useSession } from '../../context/AuthContext'
 import { api } from '../../lib/api'
 import { ScoreRing } from '../../components/studio/ScoreRing'
@@ -97,16 +98,24 @@ export default function Matches() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Target size={22} />
-        </span>
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">AI Matches</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Explainable matching between startups and people — every score shows its reasons.
-          </p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Target size={22} />
+          </span>
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">AI Matches</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Explainable matching between startups and people — every score shows its reasons.
+            </p>
+          </div>
         </div>
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
+        >
+          <LayoutDashboard size={15} /> Back to Dashboard
+        </Link>
       </div>
 
       <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-dark-300 dark:bg-dark sm:flex-row sm:items-end">

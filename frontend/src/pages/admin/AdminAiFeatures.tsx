@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Radar, ClipboardCheck, Target, RefreshCw } from 'lucide-react'
+import { Radar, ClipboardCheck, Target, RefreshCw, LayoutDashboard } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 
 interface DdSummary {
@@ -81,12 +82,20 @@ export default function AdminAiFeatures() {
             Usage and health of Due-Diligence, War Room and AI Matches.
           </p>
         </div>
-        <button
-          onClick={load}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
-        >
-          <RefreshCw size={15} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
+          >
+            <RefreshCw size={15} /> Refresh
+          </button>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-300"
+          >
+            <LayoutDashboard size={15} /> Back to Dashboard
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

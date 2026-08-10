@@ -20,6 +20,7 @@ import {
   Shield,
   ShieldAlert,
   Sparkles,
+  Radar,
   UserCog,
   Users,
   Users2,
