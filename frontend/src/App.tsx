@@ -107,6 +107,7 @@ const AdminHealth = lazy(() => import('./pages/admin/AdminHealth'))
 const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs'))
 const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications'))
 const AdminCms = lazy(() => import('./pages/admin/AdminCms'))
+const AdminPolicies = lazy(() => import('./pages/admin/AdminPolicies'))
 const AdminAi = lazy(() => import('./pages/admin/AdminAi'))
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'))
 const AdminSecurity = lazy(() => import('./pages/admin/AdminSecurity'))
@@ -427,6 +428,7 @@ function App() {
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="cms" element={<AdminCms />} />
+      <Route path="policies" element={<AdminPolicies />} />
                 <Route path="ai" element={<AdminAi />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="security" element={<AdminSecurity />} />

@@ -75,6 +75,7 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     title: 'Content & AI',
     items: [
       { label: 'CMS', to: '/admin/cms', icon: FileText },
+      { label: 'Policies & Trust Center', to: '/admin/policies', icon: Scale },
       { label: 'AI Management', to: '/admin/ai', icon: Cpu },
       { label: 'AI Studio Tools', to: '/admin/ai-studio', icon: Sparkles },
       { label: 'AI Features', to: '/admin/ai-features', icon: Radar },
