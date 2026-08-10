@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Rocket, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface AuthLayoutProps {
@@ -15,9 +15,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
         <div className="pointer-events-none absolute inset-0 bg-gradient-brand opacity-20 blur-3xl" />
         <div className="relative flex h-full flex-col justify-between p-12">
           <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white">
-              <Rocket className="h-5 w-5" />
-            </span>
+            <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
             <span className="text-xl font-bold tracking-tight text-white">FounderHub</span>
           </Link>
 
@@ -44,9 +42,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
       <div className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
         <div className="w-full max-w-md">
           <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white">
-              <Rocket className="h-5 w-5" />
-            </span>
+            <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
             <span className="text-xl font-bold tracking-tight">FounderHub</span>
           </Link>
 

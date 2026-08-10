@@ -2,7 +2,6 @@ import { useState, Suspense } from 'react'
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Rocket,
   Home,
   Settings,
   Search,
@@ -59,9 +58,11 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       <Link to="/" className="group flex items-center gap-2 px-6 py-6" onClick={onNavigate}>
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white shadow-lg shadow-primary/30 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
-          <Rocket className="h-5 w-5" />
-        </span>
+        <img
+          src="/logo.png"
+          alt="FounderHub"
+          className="h-9 w-auto transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
+        />
         <span className="text-xl font-bold tracking-tight">FounderHub</span>
       </Link>
 

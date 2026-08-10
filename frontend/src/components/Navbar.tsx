@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion'
-import { Rocket, Menu, X, Moon, Sun, ArrowRight, Sparkles } from 'lucide-react'
+import { Menu, X, Moon, Sun, ArrowRight, Sparkles } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { MagneticButton } from './ui/MagneticButton'
 
@@ -57,10 +57,11 @@ export function Navbar({ onJoinWaitlist }: NavbarProps) {
       >
         <nav className="container-x flex h-16 items-center justify-between">
           <a href="#top" className="group flex items-center gap-2">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white shadow-lg shadow-primary/30 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110">
-              <Rocket className="h-5 w-5" />
-              <span className="absolute -inset-1 rounded-lg bg-gradient-brand opacity-30 blur transition-opacity duration-300 group-hover:opacity-60" />
-            </span>
+            <img
+              src="/logo.png"
+              alt="FounderHub"
+              className="h-9 w-auto transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
+            />
             <span className="text-xl font-bold tracking-tight">FounderHub</span>
           </a>
 

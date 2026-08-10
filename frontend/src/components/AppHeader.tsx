@@ -41,9 +41,7 @@ export function AppHeader({ title, backTo, backLabel }: AppHeaderProps) {
           </button>
         ) : (
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white">
-              <Rocket className="h-5 w-5" />
-            </span>
+            <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
             <span className="hidden text-sm font-bold text-gray-600 sm:block dark:text-gray-400">
               Back to Dashboard
             </span>

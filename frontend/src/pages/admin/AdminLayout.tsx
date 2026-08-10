@@ -17,7 +17,6 @@ import {
   Scale,
   ScrollText,
   Settings,
-  Shield,
   ShieldAlert,
   Sparkles,
   Radar,
@@ -99,9 +98,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-5 py-6">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand text-white">
-          <Shield className="h-5 w-5" />
-        </span>
+        <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
         <div className="min-w-0">
           <p className="text-sm font-bold tracking-tight">Admin Console</p>
           <p className="text-[11px] text-gray-400">
