@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     # missing/invalid Brevo key never silently kills delivery. In "auto" the
     # first provider with a configured key wins (brevo → resend).
     email_provider: str = "brevo"
-    email_from_name: str = "FounderHub AI"
-    email_from_email: str = "hashirattari73@11839374.brevosend.com"
-    resend_from_email: str = "FounderHub AI <onboarding@resend.dev>"
+    email_from_name: str = "FounderHub"
+    email_from_email: str = "notifications@founderhub.site"
+    resend_from_email: str = "FounderHub <notifications@founderhub.site>"
     # Shared secret used to verify Brevo webhook signatures (HMAC-SHA256).
     brevo_webhook_secret: str = ""
     anthropic_api_key: str = ""
