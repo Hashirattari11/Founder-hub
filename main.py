@@ -34,7 +34,16 @@ def _static_path(name: str) -> str:
 # matched first, so /api/* keeps working.
 app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")
 
-for _name in ("favicon.svg", "icons.svg"):
+for _name in (
+    "favicon.svg",
+    "icons.svg",
+    "logo.png",
+    "favicon.ico",
+    "icon-192.png",
+    "icon-512.png",
+    "apple-touch-icon.png",
+    "manifest.webmanifest",
+):
     if os.path.exists(_static_path(_name)):
         app.add_api_route(
             "/" + _name,
