@@ -113,6 +113,10 @@ const AdminSecurity = lazy(() => import('./pages/admin/AdminSecurity'))
 const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'))
 const AdminStartupMembers = lazy(() => import('./pages/admin/AdminStartupMembers'))
 const AdminMessages = lazy(() => import('./pages/admin/AdminMessages'))
+const DueDiligence = lazy(() => import('./pages/investor/DueDiligence'))
+const WarRoom = lazy(() => import('./pages/founder/WarRoom'))
+const AIMatches = lazy(() => import('./pages/ai/Matches'))
+const AdminAiFeatures = lazy(() => import('./pages/admin/AdminAiFeatures'))
 
 const PrivacyPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.PrivacyPage })))
 const TermsPage = lazy(() => import('./pages/static/StaticPages').then((m) => ({ default: m.TermsPage })))
@@ -290,6 +294,40 @@ function App() {
                 }
               />
               <Route
+                path="/ai-matches"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <AIMatches />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/investor/due-diligence"
+                element={
+                  <ProtectedRoute>
+                    <InvestorGuard>
+                      <Suspense fallback={<PageLoader />}>
+                        <DueDiligence />
+                      </Suspense>
+                    </InvestorGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/war-room"
+                element={
+                  <ProtectedRoute>
+                    <FounderGuard>
+                      <Suspense fallback={<PageLoader />}>
+                        <WarRoom />
+                      </Suspense>
+                    </FounderGuard>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/investor/analytics"
                 element={
                   <ProtectedRoute>
@@ -381,6 +419,7 @@ function App() {
                 <Route path="equity" element={<CapTableAdmin />} />
                 <Route path="emails" element={<EmailLogs />} />
                 <Route path="ai-studio" element={<AIStudioAdmin />} />
+                <Route path="ai-features" element={<AdminAiFeatures />} />
                 <Route path="messages" element={<AdminMessages />} />
               </Route>
 

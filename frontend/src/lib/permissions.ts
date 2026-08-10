@@ -62,6 +62,9 @@ export type Permission =
   | 'meetings.manage'
   | 'chat.message'
   | 'ai.studio'
+  | 'ai.due_diligence'
+  | 'ai.war_room'
+  | 'ai.matches'
   | 'cofounder.match'
   | 'business_plan'
   | 'team.manage'
@@ -101,6 +104,7 @@ const INVESTOR = new Set<Permission>([
   'investor.compare',
   'investor.notes',
   'investor.portfolio_tracker',
+  'ai.due_diligence',
 ])
 const TALENT = new Set<Permission>([
   'talent.apply',
@@ -165,6 +169,7 @@ const COMMON = new Set<Permission>([
   'meetings.manage',
   'chat.message',
   'ai.studio',
+  'ai.matches',
   'cofounder.match',
 ])
 const ADMIN = new Set<Permission>([
@@ -193,6 +198,7 @@ const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
     'business_plan',
     'team.manage',
     'analytics.founder',
+    'ai.war_room',
   ]),
   investor: new Set<Permission>([...INVESTOR, ...COMMON]),
   developer: new Set<Permission>([...TALENT, ...COMMON]),
@@ -287,6 +293,10 @@ export function canAccess(
     ['/funding-requests', 'startup.funding_requests'],
     ['/business-plan', 'business_plan'],
     ['/data-room', 'startup.data_room'],
+    ['/investor/due-diligence', 'ai.due_diligence'],
+    ['/war-room', 'ai.war_room'],
+    ['/ai-matches', 'ai.matches'],
+    ['/admin/ai-features', 'admin.ai'],
     ['/investors', 'investor.discover'],
     ['/investor/requests', 'investor.pipeline'],
     ['/investor/preferences', 'investor.preferences'],

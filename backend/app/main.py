@@ -32,6 +32,9 @@ from app.api.admin import router as admin_router
 from app.api.role_requests import router as role_requests_router
 from app.api.reports import router as reports_router
 from app.api.analytics import router as analytics_router
+from app.api.due_diligence import router as due_diligence_router
+from app.api.war_room import router as war_room_router
+from app.api.ai_matches import router as ai_matches_router
 from app.core.request_tracking import RequestTrackingMiddleware
 from app.core.security import bootstrap_super_admin
 from app.services.reminder_service import reminder_loop
@@ -142,3 +145,6 @@ app.include_router(admin_router)
 app.include_router(role_requests_router)
 app.include_router(reports_router)
 app.include_router(analytics_router)
+app.include_router(due_diligence_router)
+app.include_router(war_room_router)
+app.include_router(ai_matches_router)
