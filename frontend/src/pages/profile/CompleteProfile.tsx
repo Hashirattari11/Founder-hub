@@ -8,6 +8,7 @@ import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
 import { SkillsSelector } from '../../components/SkillsSelector'
 import { useUsernameCheck } from '../../hooks/useUsernameCheck'
+import { findAvailableUsername } from '../../lib/username'
 import { ROLE_OPTIONS, ROLE_SKILLS, INVESTOR_INTERESTS } from '../../types'
 import type { Role } from '../../types'
 
@@ -50,6 +51,20 @@ export default function CompleteProfile() {
   const [twitter, setTwitter] = useState(profile?.twitter_url ?? '')
 
   const usernameStatus = useUsernameCheck(username, user?.id).status
+
+  const suggestUsernameFromName = async () => {
+    if (fullName.trim().length < 2) {
+      toast.error('Enter your full name first')
+      return
+    }
+    try {
+      const suggestion = await findAvailableUsername(fullName)
+      setUsername(suggestion)
+      toast.success('Username suggested — feel free to change it')
+    } catch {
+      toast.error('Could not suggest a username right now')
+    }
+  }
 
   const stepValid = () => {
     if (step === 1) {
@@ -112,7 +127,11 @@ export default function CompleteProfile() {
 
     setSubmitting(true)
     try {
-      const roleAlreadySet = Boolean(profile?.role)
+      // Role is permanent once an account exists (username is set) — the DB
+      // trigger protect_role_columns enforces this server-side. New users (no
+      // username yet) can pick their role here; everyone else keeps their role
+      // and uses the role-request flow to change it.
+      const roleAlreadySet = Boolean(profile?.username)
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         ...(roleAlreadySet ? {} : { role }),
@@ -145,9 +164,9 @@ export default function CompleteProfile() {
 
   return (
     <AuthLayout
-      title={profile ? 'Update your profile' : 'Complete your profile'}
+      title={profile?.username ? 'Update your profile' : 'Create your account'}
       subtitle={
-        profile
+        profile?.username
           ? 'Keep your profile up to date so matching stays sharp.'
           : 'Tell us about yourself so our matching engine finds the right people.'
       }
@@ -249,6 +268,15 @@ export default function CompleteProfile() {
               onChange={(e) => setUsername(e.target.value)}
               className={input}
             />
+            {!username && fullName.trim().length >= 2 && (
+              <button
+                type="button"
+                onClick={suggestUsernameFromName}
+                className="mt-1 text-xs font-semibold text-primary hover:underline"
+              >
+                ✨ Suggest a username from my name
+              </button>
+            )}
             {username && (
               <p
                 className={`text-xs ${

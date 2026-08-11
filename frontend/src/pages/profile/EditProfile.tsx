@@ -77,7 +77,9 @@ export default function EditProfile() {
     setSaving(true)
     const prevProfile = profile
     try {
-      const roleWasSet = Boolean(prevProfile?.role)
+      // Role is permanent once an account exists (username set). New users who
+      // skipped onboarding can still pick their role here.
+      const roleWasSet = Boolean(prevProfile?.username)
       const optimistic = await updateProfile(user.id, {
         ...(roleWasSet ? {} : { role }),
         full_name: fullName.trim(),
@@ -160,7 +162,7 @@ export default function EditProfile() {
             </div>
 
             <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-5">
-              {!profile?.role ? (
+              {!profile?.username ? (
                 <Field label="I am a...">
                   <p className="mb-2 text-xs text-gray-500">
                     Choose the role that best describes you. After this, role changes require admin review.

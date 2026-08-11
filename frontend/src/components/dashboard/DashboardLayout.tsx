@@ -29,6 +29,8 @@ import { MessagesButton } from '../MessagesButton'
 import { MobileBottomNav } from '../MobileBottomNav'
 import { PageLoader } from '../PageLoader'
 import { PreviewBar } from './PreviewBar'
+import ProfileCompletionCard from '../ProfileCompletionCard'
+import { calculateProfileCompletion } from '../../lib/profileCompletion'
 import { ROLE_LABELS } from '../../types'
 import type { Role } from '../../types'
 
@@ -365,6 +367,11 @@ export function DashboardLayout() {
         </header>
 
         <main className="p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">
+          {profile && (
+            <div className="mx-auto mb-6 max-w-6xl">
+              <ProfileCompletionCard completion={calculateProfileCompletion(profile)} />
+            </div>
+          )}
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 12 }}

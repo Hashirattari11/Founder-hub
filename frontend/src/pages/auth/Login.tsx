@@ -80,7 +80,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${APP_URL}/auth/callback`,
+          redirectTo: `${APP_URL}/auth/callback?intent=signin`,
         },
       })
       if (error) throw error

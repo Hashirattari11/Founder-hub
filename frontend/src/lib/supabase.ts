@@ -43,7 +43,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // IMPORTANT: We exchange the OAuth code explicitly in /auth/callback
+    // (pages/auth/Callback.tsx). If detectSessionInUrl stays true, the client
+    // auto-exchanges during createClient() init and CONSUMES the PKCE verifier,
+    // causing the manual exchange to fail with
+    // "PKCE code verifier not found in storage". So we disable it here and let
+    // the callback page own the single exchange.
+    detectSessionInUrl: false,
     storageKey: 'founderhub-auth',
     flowType: 'pkce',
   },

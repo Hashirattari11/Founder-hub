@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
+import ProfileGateRoute from './components/ProfileGateRoute'
 import { FounderGuard, InvestorGuard } from './components/RoleGuard'
 import { OnlinePresence } from './components/OnlinePresence'
 import { DashboardLayout } from './components/dashboard/DashboardLayout'
@@ -211,6 +212,17 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Onboarding is the account-creation wizard — same component. */}
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <CompleteProfile />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/settings/profile"
                 element={
@@ -369,9 +381,11 @@ function App() {
                 path="/book-meeting/:userId"
                 element={
                   <ProtectedRoute>
-                    <Suspense fallback={<PageLoader />}>
-                      <BookMeeting />
-                    </Suspense>
+                    <ProfileGateRoute>
+                      <Suspense fallback={<PageLoader />}>
+                        <BookMeeting />
+                      </Suspense>
+                    </ProfileGateRoute>
                   </ProtectedRoute>
                 }
               />
@@ -468,9 +482,11 @@ function App() {
                 path="/connections"
                 element={
                   <ProtectedRoute>
-                    <Suspense fallback={<PageLoader />}>
-                      <Connections />
-                    </Suspense>
+                    <ProfileGateRoute>
+                      <Suspense fallback={<PageLoader />}>
+                        <Connections />
+                      </Suspense>
+                    </ProfileGateRoute>
                   </ProtectedRoute>
                 }
               />
@@ -620,9 +636,11 @@ function App() {
                 path="/jobs/post"
                 element={
                   <ProtectedRoute>
-                    <Suspense fallback={<PageLoader />}>
-                      <PostJob />
-                    </Suspense>
+                    <ProfileGateRoute>
+                      <Suspense fallback={<PageLoader />}>
+                        <PostJob />
+                      </Suspense>
+                    </ProfileGateRoute>
                   </ProtectedRoute>
                 }
               />
@@ -692,9 +710,11 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FounderGuard>
-                      <Suspense fallback={<PageLoader />}>
-                        <CreateStartup />
-                      </Suspense>
+                      <ProfileGateRoute>
+                        <Suspense fallback={<PageLoader />}>
+                          <CreateStartup />
+                        </Suspense>
+                      </ProfileGateRoute>
                     </FounderGuard>
                   </ProtectedRoute>
                 }

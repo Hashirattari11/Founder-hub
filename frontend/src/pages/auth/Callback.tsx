@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
 import { supabase, popAuthRedirect } from '../../lib/supabase'
 import { isAdminProfile } from '../../lib/admin'
 import type { Profile } from '../../types'
 
+type CallbackState = 'loading' | 'error' | 'accountNotFound'
+
 export default function Callback() {
+  const [state, setState] = useState<CallbackState>('loading')
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -17,20 +20,30 @@ export default function Callback() {
         const url = new URL(window.location.href)
         const code = url.searchParams.get('code')
         const next = url.searchParams.get('next')
+        const intent = url.searchParams.get('intent')
 
-        if (code) {
-          const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(code)
-          if (exchangeError) throw exchangeError
+        if (!code) {
+          setState('error')
+          setError('Missing authorization code. Please try signing in again.')
+          return
         }
 
-        const { data: { session }, error: sessionError } =
-          await supabase.auth.getSession()
+        // Single explicit exchange. The client was created with
+        // detectSessionInUrl: false so nothing else consumes the PKCE verifier.
+        const { error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code)
+        if (exchangeError) throw exchangeError
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession()
         if (sessionError) throw sessionError
 
         if (cancelled) return
 
         if (!session) {
+          setState('error')
           setError('We could not verify your account. The link may be invalid or expired.')
           return
         }
@@ -42,24 +55,57 @@ export default function Callback() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, role, is_admin')
+          .select('full_name, username, role, is_admin')
           .eq('id', session.user.id)
           .maybeSingle()
 
         if (cancelled) return
 
-        const p = profile as (Profile & { full_name?: string }) | null
+        const p = profile as (Profile & { full_name?: string; username?: string | null }) | null
 
+        // Admin always goes to the admin area.
         if (isAdminProfile(p)) {
           navigate('/admin/dashboard', { replace: true })
-        } else if (p?.full_name) {
+          return
+        }
+
+        // A real FounderHub account has a username — it was set during onboarding.
+        // A profile row created by the handle_new_user trigger (Google OAuth) has
+        // full_name but NO username, which means the account was never created.
+        const isOnboarded = Boolean(p?.username)
+
+        if (intent === 'signin') {
+          if (isOnboarded) {
+            navigate(popAuthRedirect('/dashboard'), { replace: true })
+          } else {
+            // Google account authenticated but no FounderHub account exists.
+            // Show "Account not found" and clean up the orphaned session so a
+            // later Create Account / Sign In starts from a clean state.
+            setState('accountNotFound')
+            await supabase.auth.signOut()
+          }
+          return
+        }
+
+        if (intent === 'register') {
+          navigate('/onboarding', { replace: true })
+          return
+        }
+
+        // No intent (e.g. email verification links): an onboarded user goes
+        // straight to the dashboard, everyone else completes onboarding.
+        if (isOnboarded) {
           navigate(popAuthRedirect('/dashboard'), { replace: true })
         } else {
-          navigate('/complete-profile', { replace: true })
+          navigate('/onboarding', { replace: true })
         }
       } catch (err) {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Verification failed')
+        const message = err instanceof Error ? err.message : 'Verification failed'
+        setError(message.includes('PKCE')
+          ? `${message} Please try signing in again — the login link may be stale.`
+          : message)
+        setState('error')
       }
     }
 
@@ -71,7 +117,7 @@ export default function Callback() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 dark:bg-dark">
-      {error ? (
+      {state === 'error' ? (
         <div className="w-full max-w-md rounded-2xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-500/30 dark:bg-red-500/10">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
             <span className="text-2xl font-bold">!</span>
@@ -81,6 +127,7 @@ export default function Callback() {
           <div className="mt-6 flex flex-col gap-3">
             <button
               onClick={() => {
+                setState('loading')
                 setError(null)
                 window.location.reload()
               }}
@@ -94,6 +141,25 @@ export default function Callback() {
             >
               Back to Sign In
             </button>
+          </div>
+        </div>
+      ) : state === 'accountNotFound' ? (
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-dark-300 dark:bg-dark">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+            <span className="text-2xl font-bold">?</span>
+          </div>
+          <h1 className="mt-4 text-xl font-bold">Account not found</h1>
+          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            No FounderHub account is linked to this Google account yet. Create one
+            to get started.
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <Link to="/register" className="btn-primary w-full">
+              Create account
+            </Link>
+            <Link to="/login" className="btn-ghost w-full">
+              Back to sign in
+            </Link>
           </div>
         </div>
       ) : (

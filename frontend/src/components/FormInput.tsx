@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react'
+import { useId, cloneElement, isValidElement } from 'react'
 
 interface FieldProps {
   label: string
@@ -7,13 +8,23 @@ interface FieldProps {
 }
 
 export function Field({ label, error, children }: FieldProps) {
+  const id = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label htmlFor={id} className="text-sm font-medium text-gray-700 dark:text-gray-300">
         {label}
       </label>
-      {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {isValidElement(children)
+        ? cloneElement(
+            children as React.ReactElement<{ id?: string; 'aria-describedby'?: string }>,
+            { id, ...(error ? { 'aria-describedby': `${id}-error` } : {}) },
+          )
+        : children}
+      {error && (
+        <p id={`${id}-error`} className="text-xs text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

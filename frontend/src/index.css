@@ -6,6 +6,14 @@ html {
   scroll-behavior: smooth;
 }
 
+/* WCAG AA: #7C3AED (primary) on dark surfaces is 3.17:1 (fails 4.5:1).
+   Brighten primary TEXT in dark mode only; light mode keeps brand color.
+   #A78BFA (primary-400) on dark-100 is ~6.5:1 (passes AA). */
+.dark .text-primary,
+.dark .hover\:text-primary:hover {
+  color: #a78bfa;
+}
+
 body {
   @apply bg-white text-gray-900 antialiased dark:bg-dark dark:text-[#FAFAFA];
 }
