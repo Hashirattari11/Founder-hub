@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Loader2, RefreshCw, Search, Star, Trash2, Eye, EyeOff, CheckCircle2, Rocket } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { adminDeleteStartup, adminListStartups, adminUpdateStartup } from '../../api/admin'
 import { isSuperAdminProfile } from '../../lib/admin'
 import type { AdminStartup } from '../../types/admin'
@@ -17,6 +18,7 @@ import {
 
 export default function AdminStartups() {
   const { realProfile } = useSession()
+  const { confirm, dialog } = useConfirm()
   const superAdmin = isSuperAdminProfile(realProfile)
   const [startups, setStartups] = useState<AdminStartup[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,8 +57,13 @@ export default function AdminStartups() {
     }
   }
 
-  const remove = (startup: AdminStartup) => {
-    if (!window.confirm(`Delete "${startup.name}" and all its data? This cannot be undone.`)) return
+  const remove = async (startup: AdminStartup) => {
+    const ok = await confirm({
+      title: `Delete "${startup.name}"?`,
+      message: 'This will permanently delete the startup and all its data. This cannot be undone.',
+      confirmLabel: 'Delete Startup',
+    })
+    if (!ok) return
     setBusyId(startup.id)
     adminDeleteStartup(startup.id)
       .then(() => {
@@ -193,6 +200,7 @@ export default function AdminStartups() {
           </tbody>
         </TableShell>
       )}
+      {dialog}
     </div>
   )
 }

@@ -114,6 +114,7 @@ const AdminSecurity = lazy(() => import('./pages/admin/AdminSecurity'))
 const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'))
 const AdminStartupMembers = lazy(() => import('./pages/admin/AdminStartupMembers'))
 const AdminMessages = lazy(() => import('./pages/admin/AdminMessages'))
+const AdminWaitlist = lazy(() => import('./pages/admin/AdminWaitlist'))
 const DueDiligence = lazy(() => import('./pages/investor/DueDiligence'))
 const WarRoom = lazy(() => import('./pages/founder/WarRoom'))
 const AIMatches = lazy(() => import('./pages/ai/Matches'))
@@ -439,6 +440,7 @@ function App() {
                 <Route path="ai-studio" element={<AIStudioAdmin />} />
                 <Route path="ai-features" element={<AdminAiFeatures />} />
                 <Route path="messages" element={<AdminMessages />} />
+                <Route path="waitlist" element={<AdminWaitlist />} />
               </Route>
 
               {/* Public app pages (logged-in) */}

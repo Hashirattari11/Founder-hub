@@ -28,6 +28,7 @@ import {
   adminUsageLogs,
 } from '../../lib/aiStudio'
 import { useSession } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ConfirmDialog'
 import type {
   AdminUsersResponse,
   AIToolInfo,
@@ -101,6 +102,7 @@ function emptyEditor(): ToolEditorState {
 }
 
 function ToolsTab() {
+  const { confirm, dialog } = useConfirm()
   const [tools, setTools] = useState<AIToolInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -154,7 +156,12 @@ function ToolsTab() {
   }
 
   const removeTool = async (tool: AIToolInfo) => {
-    if (!window.confirm(`Delete "${tool.name}"? This cannot be undone.`)) return
+    const ok = await confirm({
+      title: `Delete "${tool.name}"?`,
+      message: 'This will permanently delete the tool. This cannot be undone.',
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
     try {
       await adminDeleteTool(tool.slug)
       setTools((prev) => prev.filter((t) => t.slug !== tool.slug))
@@ -559,6 +566,7 @@ function ToolsTab() {
           </div>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

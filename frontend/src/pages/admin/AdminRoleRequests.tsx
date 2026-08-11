@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Check, RefreshCw, X } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { adminApproveRoleRequest, adminListRoleRequests, adminRejectRoleRequest } from '../../api/admin'
 import { isSuperAdminProfile } from '../../lib/admin'
 import type { RoleRequest } from '../../types/admin'
@@ -19,6 +20,7 @@ import {
 
 export default function AdminRoleRequests() {
   const { realProfile } = useSession()
+  const { confirm, dialog } = useConfirm()
   const superAdmin = isSuperAdminProfile(realProfile)
   const [requests, setRequests] = useState<RoleRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,7 +45,13 @@ export default function AdminRoleRequests() {
 
   const review = async (req: RoleRequest, action: 'approve' | 'reject') => {
     if (action === 'approve') {
-      if (!window.confirm(`Approve this request and change ${req.user_name ?? 'this user'}'s primary role to "${req.requested_role}"?`)) return
+      const ok = await confirm({
+        title: 'Approve role change?',
+        message: `Approve this request and change ${req.user_name ?? 'this user'}'s primary role to "${req.requested_role}"?`,
+        confirmLabel: 'Approve',
+        danger: false,
+      })
+      if (!ok) return
     }
     setBusyId(req.id)
     try {
@@ -158,6 +166,7 @@ export default function AdminRoleRequests() {
           </tbody>
         </TableShell>
       )}
+      {dialog}
     </div>
   )
 }

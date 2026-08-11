@@ -51,6 +51,7 @@ import {
   updateDataRoom,
   uploadDocument,
 } from '../../lib/dataRoom'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { formatDate, formatFileSize } from '../../lib/helpers'
 import type {
   DataRoom,
@@ -133,6 +134,7 @@ function Modal({
 
 export default function DataRoomPage() {
   const { id } = useParams<{ id: string }>()
+  const { confirm: confirmDialog, dialog: confirmDialogEl } = useConfirm()
 
   const [data, setData] = useState<DataRoomResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -195,7 +197,12 @@ export default function DataRoomPage() {
   }
 
   const handleDeleteDoc = async (doc: DataRoomDocument) => {
-    if (!window.confirm(`Delete "${doc.name}"? This cannot be undone.`)) return
+    const ok = await confirmDialog({
+      title: `Delete "${doc.name}"?`,
+      message: 'This will permanently delete the document. This cannot be undone.',
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
     await deleteDocument(doc.id)
     toast.success('Document deleted')
     load()
@@ -468,6 +475,7 @@ export default function DataRoomPage() {
           </div>
         )}
       </Modal>
+      {confirmDialogEl}
     </div>
   )
 }
@@ -805,6 +813,7 @@ function ManageAccessModal({
   room: DataRoom
   onChanged: () => void
 }) {
+  const { confirm, dialog } = useConfirm()
   const [requests, setRequests] = useState<DataRoomAccessRequest[]>([])
   const [accessList, setAccessList] = useState<
     (DataRoomAccess & { user?: { full_name: string | null; avatar_url: string | null; role: string | null } | null })[]
@@ -845,7 +854,12 @@ function ManageAccessModal({
   }
 
   const revoke = async (accessId: string) => {
-    if (!window.confirm('Revoke this user’s access?')) return
+    const ok = await confirm({
+      title: 'Revoke access?',
+      message: 'This will revoke this user’s access to the data room.',
+      confirmLabel: 'Revoke',
+    })
+    if (!ok) return
     await revokeAccess(accessId)
     toast.success('Access revoked')
     load()
@@ -872,7 +886,8 @@ function ManageAccessModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Manage Access" subtitle={room.name} wide>
+    <>
+      <Modal open={open} onClose={onClose} title="Manage Access" subtitle={room.name} wide>
       <div className="flex flex-col gap-6">
         <div>
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-400">Grant access</h3>
@@ -983,7 +998,9 @@ function ManageAccessModal({
           )}
         </div>
       </div>
-    </Modal>
+      </Modal>
+      {dialog}
+    </>
   )
 }
 

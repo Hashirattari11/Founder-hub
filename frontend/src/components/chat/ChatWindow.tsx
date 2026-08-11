@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { Avatar } from '../Avatar'
+import { useConfirm } from '../ConfirmDialog'
 import { ChatInput } from './ChatInput'
 import { MessageBubble } from './MessageBubble'
 import { MessageActionsMenu } from './MessageActionsMenu'
@@ -20,7 +21,6 @@ import type { MenuAction } from './MessageActionsMenu'
 import { ForwardModal } from './ForwardModal'
 import { TypingIndicator } from './TypingIndicator'
 import { supabase } from '../../lib/supabase'
-import { api } from '../../lib/api'
 import {
   deleteMessageForEveryone,
   deleteMessageForMe,
@@ -52,6 +52,7 @@ interface MenuState {
 }
 
 export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
+  const { confirm, dialog } = useConfirm()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingOlder, setLoadingOlder] = useState(false)
@@ -295,14 +296,10 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
     (msg: ChatMessage) => {
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
       requestAnimationFrame(() => scrollToBottom(true))
-      // Best-effort email notification to the other participant.
-      if (other?.id) {
-        void api
-          .post('/api/notify/message', { receiver_id: other.id, chat_id: chat.id }, { auth: true })
-          .catch(() => {})
-      }
+      // Email + push notification to the other participant is fired inside
+      // sendChatMessage (lib/chat.ts) so every send path is covered.
     },
-    [scrollToBottom, other?.id, chat.id],
+    [scrollToBottom],
   )
 
   const handleReaction = async (messageId: string, emoji: string) => {
@@ -358,7 +355,14 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   }
 
   const handleDelete = async (msg: ChatMessage, scope: 'everyone' | 'me') => {
-    if (scope === 'everyone' && !window.confirm('Delete this message for everyone?')) return
+    if (scope === 'everyone') {
+      const ok = await confirm({
+        title: 'Delete for everyone?',
+        message: 'This will delete the message for everyone in the chat.',
+        confirmLabel: 'Delete',
+      })
+      if (!ok) return
+    }
     try {
       if (scope === 'everyone') await deleteMessageForEveryone(msg.id)
       else await deleteMessageForMe(msg.id, userId)
@@ -406,7 +410,14 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   const handleDeleteSelected = async () => {
     const targets = visibleMessages.filter((m) => selectedIds.has(m.id))
     if (targets.length === 0) return
-    if (targets.length > 1 && !window.confirm(`Delete ${targets.length} messages?`)) return
+    if (targets.length > 1) {
+      const ok = await confirm({
+        title: `Delete ${targets.length} messages?`,
+        message: 'This will permanently delete the selected messages.',
+        confirmLabel: 'Delete',
+      })
+      if (!ok) return
+    }
     for (const m of targets) {
       if (m.sender_id === userId) await deleteMessageForEveryone(m.id)
       else await deleteMessageForMe(m.id, userId)
@@ -725,6 +736,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
         onForwardTo={handleForward}
         onClose={() => setForwardOpen(false)}
       />
+      {dialog}
     </div>
   )
 }

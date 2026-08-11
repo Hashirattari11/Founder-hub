@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, FileText, Plus, RefreshCw, Share2, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { deleteBusinessPlan, listBusinessPlans } from '../../lib/businessPlan'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { EmptyState } from '../../components/EmptyState'
 import { SkeletonRow } from '../../components/dashboard/Skeleton'
 import { timeAgo } from '../../lib/helpers'
@@ -18,6 +19,7 @@ function readinessColor(score?: number) {
 
 export default function BusinessPlanDashboard() {
   const navigate = useNavigate()
+  const { confirm, dialog } = useConfirm()
   const [plans, setPlans] = useState<BusinessPlanSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -40,7 +42,12 @@ export default function BusinessPlanDashboard() {
   }, [load])
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Delete the business plan for "${name}"? This cannot be undone.`)) return
+    const ok = await confirm({
+      title: `Delete business plan for "${name}"?`,
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
     try {
       await deleteBusinessPlan(id)
       setPlans((p) => p.filter((x) => x.id !== id))
@@ -151,6 +158,7 @@ export default function BusinessPlanDashboard() {
         <RefreshCw className="h-3.5 w-3.5" />
         Refresh
       </button>
+      {dialog}
     </div>
   )
 }

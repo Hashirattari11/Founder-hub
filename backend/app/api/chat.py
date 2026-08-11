@@ -117,15 +117,26 @@ async def mark_chat_read(
     user_id: str = Depends(get_user_id),
     user_client=Depends(get_user_client),
 ):
-    """Mark every message in a chat as read for the current user."""
+    """Mark every message in a chat as read for the current user.
+
+    Uses the SECURITY DEFINER RPC `mark_chat_messages_read` (runs as the
+    service role) because the plain RLS-scoped update silently failed and
+    left messages unread even after the user opened the chat.
+    """
     result = (
-        user_client.table("messages")
-        .update({"is_read": True})
-        .eq("chat_id", chat_id)
-        .neq("sender_id", user_id)
+        user_client.rpc(
+            "mark_chat_messages_read",
+            {"p_chat_id": chat_id, "p_user_id": user_id},
+        )
         .execute()
     )
-    return {"updated": len(result.data or [])}
+    updated = 0
+    if result.data is not None:
+        if isinstance(result.data, list):
+            updated = int((result.data[0] or {}).get("mark_chat_messages_read") or 0) if result.data else 0
+        else:
+            updated = int(result.data)
+    return {"updated": updated}
 
 
 @router.post("/messages/{chat_id}/send", response_model=ChatMessageOut)

@@ -35,6 +35,7 @@ import {
   updateRound,
 } from '../../lib/capTable'
 import { API_URL } from '../../lib/config'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { formatDate } from '../../lib/helpers'
 import type { CapTableEntry, CapTableResponse, FundingRound, HolderType, ShareClass } from '../../types'
 import type { LucideIcon } from 'lucide-react'
@@ -167,6 +168,7 @@ function StatCard({ icon: Icon, label, value, tint }: { icon: LucideIcon; label:
 
 export default function CapTablePage() {
   const { id } = useParams<{ id: string }>()
+  const { confirm, dialog } = useConfirm()
 
   const [data, setData] = useState<CapTableResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -501,7 +503,12 @@ export default function CapTablePage() {
                           {canManage && (
                             <button
                               onClick={async () => {
-                                if (!window.confirm(`Remove ${e.holder_name} from the cap table?`)) return
+                                const ok = await confirm({
+                                  title: 'Remove holder?',
+                                  message: `Remove ${e.holder_name} from the cap table?`,
+                                  confirmLabel: 'Remove',
+                                })
+                                if (!ok) return
                                 await deleteEntry(e.id)
                                 toast.success('Entry removed')
                                 load()
@@ -574,6 +581,7 @@ export default function CapTablePage() {
           <EquitySplitModal open={splitOpen} onClose={() => setSplitOpen(false)} sessionToken={undefined} />
         </>
       )}
+      {dialog}
     </div>
   )
 }
@@ -996,6 +1004,7 @@ function RoundCard({
   canManage: boolean
   onChanged: () => void
 }) {
+  const { confirm, dialog } = useConfirm()
   const target = round.target_amount ?? 0
   const raised = round.raised_amount ?? 0
   const pct = target > 0 ? Math.min(100, Math.max(0, (raised / target) * 100)) : 0
@@ -1077,7 +1086,12 @@ function RoundCard({
           )}
           <button
             onClick={async () => {
-              if (!window.confirm(`Delete the ${round.round_name}?`)) return
+              const ok = await confirm({
+                title: 'Delete funding round?',
+                message: `Delete the ${round.round_name}?`,
+                confirmLabel: 'Delete',
+              })
+              if (!ok) return
               await deleteRound(round.id)
               toast.success('Round deleted')
               onChanged()
@@ -1088,6 +1102,7 @@ function RoundCard({
           </button>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

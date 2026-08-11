@@ -14,6 +14,7 @@ import {
   adminUpdateBlogPost,
 } from '../../api/admin'
 import type { Announcement, BlogPost, SiteContent } from '../../types/admin'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { Badge, Card, EmptyRow, formatDate, LoadingBlock, PageHeader, TableHead, TableShell, statusTone } from './adminUi'
 
 type Tab = 'content' | 'blog' | 'announcements'
@@ -247,6 +248,7 @@ function SiteContentTab() {
 // ---------------------------------------------------------------------------
 
 function BlogTab() {
+  const { confirm, dialog } = useConfirm()
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [editor, setEditor] = useState<BlogEditor>(emptyBlogEditor)
@@ -306,7 +308,12 @@ function BlogTab() {
   }
 
   const remove = async (post: BlogPost) => {
-    if (!window.confirm(`Delete "${post.title}"?`)) return
+    const ok = await confirm({
+      title: `Delete "${post.title}"?`,
+      message: 'This will permanently delete this blog post.',
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
     try {
       await adminDeleteBlogPost(post.id)
       setPosts((prev) => prev.filter((p) => p.id !== post.id))
@@ -473,6 +480,7 @@ function BlogTab() {
           </Card>
         </div>
       )}
+      {dialog}
     </div>
   )
 }
@@ -482,6 +490,7 @@ function BlogTab() {
 // ---------------------------------------------------------------------------
 
 function AnnouncementsTab() {
+  const { confirm, dialog } = useConfirm()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [editor, setEditor] = useState<AnnouncementEditor>(emptyAnnouncementEditor)
@@ -543,7 +552,12 @@ function AnnouncementsTab() {
   }
 
   const remove = async (announcement: Announcement) => {
-    if (!window.confirm(`Delete "${announcement.title}"?`)) return
+    const ok = await confirm({
+      title: `Delete "${announcement.title}"?`,
+      message: 'This will permanently delete this announcement.',
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
     try {
       await adminDeleteAnnouncement(announcement.id)
       setAnnouncements((prev) => prev.filter((a) => a.id !== announcement.id))
@@ -670,6 +684,7 @@ function AnnouncementsTab() {
           </Card>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

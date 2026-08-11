@@ -29,6 +29,7 @@ import {
   deleteMeeting,
 } from '../../lib/meetings'
 import { Avatar } from '../../components/Avatar'
+import { useConfirm } from '../../components/ConfirmDialog'
 import type { Meeting, MeetingActionItem, MeetingParticipant } from '../../types/meetings'
 
 function formatWhen(iso: string): string {
@@ -52,6 +53,7 @@ export default function MeetingDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useSession()
+  const { confirm, dialog } = useConfirm()
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [loading, setLoading] = useState(true)
   const [transcript, setTranscript] = useState('')
@@ -195,7 +197,12 @@ export default function MeetingDetail() {
 
   const handleDelete = async () => {
     if (!meeting) return
-    if (!window.confirm('Delete this meeting? This cannot be undone.')) return
+    const ok = await confirm({
+      title: 'Delete this meeting?',
+      message: 'This will delete the meeting and all its notes/action items. This cannot be undone.',
+      confirmLabel: 'Delete',
+    })
+    if (!ok) return
     try {
       await deleteMeeting(meeting.id)
       toast.success('Meeting deleted')
@@ -585,6 +592,7 @@ export default function MeetingDetail() {
           </section>
         </div>
       </div>
+      {dialog}
     </div>
   )
 }

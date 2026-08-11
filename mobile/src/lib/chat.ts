@@ -102,6 +102,28 @@ export async function getChatMessages(
   return hydrateReplyTos((data ?? []).reverse() as ChatMessage[])
 }
 
+/** Fire-and-forget email + push to the OTHER participant when a message lands. */
+async function notifyMessageParticipant(chatId: string, senderId: string): Promise<void> {
+  try {
+    const { data: chat } = await supabase
+      .from('chats')
+      .select('participant_1, participant_2')
+      .eq('id', chatId)
+      .maybeSingle()
+    if (!chat) return
+    const receiverId =
+      chat.participant_1 === senderId ? chat.participant_2 : chat.participant_1
+    if (!receiverId || receiverId === senderId) return
+    await api.post(
+      '/api/notify/message',
+      { receiver_id: receiverId, chat_id: chatId },
+      { auth: true },
+    )
+  } catch {
+    /* best-effort — never block sending on the notification */
+  }
+}
+
 export async function sendChatMessage(params: {
   chatId: string
   senderId: string
@@ -130,6 +152,8 @@ export async function sendChatMessage(params: {
     .single()
   if (error) throw error
   const hydrated = await hydrateReplyTos([data as ChatMessage])
+  // Notify the other participant (email + push) in the background.
+  void notifyMessageParticipant(params.chatId, params.senderId)
   return hydrated[0]
 }
 
@@ -202,12 +226,13 @@ export function messagePreview(message: {
 }
 
 export async function markMessagesRead(chatId: string, userId: string): Promise<void> {
-  await supabase
-    .from('messages')
-    .update({ is_read: true })
-    .eq('chat_id', chatId)
-    .neq('sender_id', userId)
-    .eq('is_read', false)
+  // SECURITY DEFINER RPC (runs as service role) — the RLS-based update silently
+  // failed and left messages unread even after the user opened the chat.
+  const { error } = await supabase.rpc('mark_chat_messages_read', {
+    p_chat_id: chatId,
+    p_user_id: userId,
+  })
+  if (error) throw error
 }
 
 export async function uploadChatAttachment(

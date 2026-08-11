@@ -40,6 +40,7 @@ import {
   saveEquityCapTable,
   updateInvestmentRound,
 } from '../../lib/equity'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { formatDate } from '../../lib/helpers'
 import type {
   DilutionResult,
@@ -182,6 +183,7 @@ const inputCls =
 
 export default function EquityDashboardPage() {
   const { id } = useParams<{ id: string }>()
+  const { confirm, dialog } = useConfirm()
   const [data, setData] = useState<EquityDashboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -523,12 +525,17 @@ export default function EquityDashboardPage() {
                     </div>
                     {canManage && (
                       <button
-                        onClick={async () => {
-                          if (!window.confirm(`Delete the "${c.name}" share class?`)) return
-                          try {
-                            await deleteShareClass(c.id)
-                            toast.success('Share class deleted')
-                            load()
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: 'Delete share class?',
+                              message: `Delete the "${c.name}" share class?`,
+                              confirmLabel: 'Delete',
+                            })
+                            if (!ok) return
+                            try {
+                              await deleteShareClass(c.id)
+                              toast.success('Share class deleted')
+                              load()
                           } catch (err) {
                             toast.error(err instanceof Error ? err.message : 'Failed to delete')
                           }
@@ -613,7 +620,12 @@ export default function EquityDashboardPage() {
                         {canManage && (
                           <button
                             onClick={async () => {
-                              if (!window.confirm(`Remove ${h.name} from the cap table?`)) return
+                              const ok = await confirm({
+                                title: 'Remove holder?',
+                                message: `Remove ${h.name} from the cap table?`,
+                                confirmLabel: 'Remove',
+                              })
+                              if (!ok) return
                               await deleteHolder(h.id)
                               toast.success('Holder removed')
                               load()
@@ -698,6 +710,7 @@ export default function EquityDashboardPage() {
           You're viewing this cap table through data room access. Only the startup founder can make changes.
         </div>
       )}
+      {dialog}
     </div>
   )
 }
@@ -1293,6 +1306,7 @@ function RoundCard({
   canManage: boolean
   onChanged: () => void
 }) {
+  const { confirm, dialog } = useConfirm()
   const target = round.target_amount ?? 0
   const raised = round.raised_amount ?? 0
   const pct = target > 0 ? Math.min(100, Math.max(0, (raised / target) * 100)) : 0
@@ -1364,7 +1378,12 @@ function RoundCard({
           )}
           <button
             onClick={async () => {
-              if (!window.confirm(`Delete the ${round.round_name}?`)) return
+              const ok = await confirm({
+                title: 'Delete funding round?',
+                message: `Delete the ${round.round_name}?`,
+                confirmLabel: 'Delete',
+              })
+              if (!ok) return
               await deleteInvestmentRound(round.id)
               toast.success('Round deleted')
               onChanged()
@@ -1375,6 +1394,7 @@ function RoundCard({
           </button>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

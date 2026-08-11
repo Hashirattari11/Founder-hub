@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Loader2, RefreshCw, Search, Trash2, Video, Ban, CalendarDays, FileText, Sparkles } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { adminListMeetings, adminUpdateMeeting, adminDeleteMeeting } from '../../api/admin'
 import { isSuperAdminProfile } from '../../lib/admin'
 import type { AdminMeeting } from '../../types/admin'
@@ -34,6 +35,7 @@ const STATUS_TONES: Record<string, 'green' | 'gray' | 'red' | 'purple'> = {
 
 export default function AdminMeetings() {
   const { realProfile } = useSession()
+  const { confirm, dialog } = useConfirm()
   const superAdmin = isSuperAdminProfile(realProfile)
   const [meetings, setMeetings] = useState<AdminMeeting[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,7 +61,13 @@ export default function AdminMeetings() {
   }, [load])
 
   const cancel = async (m: AdminMeeting) => {
-    if (!window.confirm(`Cancel "${m.title}"? The participants will still see it but it will be marked cancelled.`)) return
+    const ok = await confirm({
+      title: `Cancel "${m.title}"?`,
+      message: 'The participants will still see it but it will be marked cancelled.',
+      confirmLabel: 'Cancel Meeting',
+      danger: false,
+    })
+    if (!ok) return
     setBusyId(m.id)
     try {
       await adminUpdateMeeting(m.id, { status: 'cancelled' })
@@ -72,8 +80,13 @@ export default function AdminMeetings() {
     }
   }
 
-  const remove = (m: AdminMeeting) => {
-    if (!window.confirm(`Delete "${m.title}" and all its notes/action items? This cannot be undone.`)) return
+  const remove = async (m: AdminMeeting) => {
+    const ok = await confirm({
+      title: `Delete "${m.title}"?`,
+      message: 'This will delete the meeting and all its notes/action items. This cannot be undone.',
+      confirmLabel: 'Delete Meeting',
+    })
+    if (!ok) return
     setBusyId(m.id)
     adminDeleteMeeting(m.id)
       .then(() => {
@@ -226,6 +239,7 @@ export default function AdminMeetings() {
           </tbody>
         </TableShell>
       )}
+      {dialog}
     </div>
   )
 }

@@ -119,6 +119,33 @@ export async function getChatMessages(
   return hydrateReplyTos((data ?? []).reverse() as ChatMessage[])
 }
 
+/**
+ * Fire-and-forget email + push to the OTHER participant when a message lands.
+ * Lives inside `sendChatMessage` so EVERY send path (chat input, forwarded
+ * messages, web and mobile) triggers it — previously only ChatWindow called
+ * `/api/notify/message`, so sends from other entry points never emailed.
+ */
+async function notifyMessageParticipant(chatId: string, senderId: string): Promise<void> {
+  try {
+    const { data: chat } = await supabase
+      .from('chats')
+      .select('participant_1, participant_2')
+      .eq('id', chatId)
+      .maybeSingle()
+    if (!chat) return
+    const receiverId =
+      chat.participant_1 === senderId ? chat.participant_2 : chat.participant_1
+    if (!receiverId || receiverId === senderId) return
+    await api.post(
+      '/api/notify/message',
+      { receiver_id: receiverId, chat_id: chatId },
+      { auth: true },
+    )
+  } catch {
+    /* best-effort — never block sending on the notification */
+  }
+}
+
 /** Insert a new message (the DB trigger updates chats.last_message / last_message_at). */
 export async function sendChatMessage(params: {
   chatId: string
@@ -148,6 +175,8 @@ export async function sendChatMessage(params: {
     .single()
   if (error) throw error
   const hydrated = await hydrateReplyTos([data as ChatMessage])
+  // Notify the other participant (email + push) in the background.
+  void notifyMessageParticipant(params.chatId, params.senderId)
   return hydrated[0]
 }
 
@@ -224,14 +253,15 @@ export function messagePreview(message: {
   }
 }
 
-/** Mark every message in a chat as read for the current user (direct, RLS-protected). */
+/** Mark every message in a chat as read for the current user.
+ * Uses the SECURITY DEFINER RPC (runs as service role) because the RLS-based
+ * update silently failed — messages stayed unread after opening the chat. */
 export async function markMessagesRead(chatId: string, userId: string): Promise<void> {
-  await supabase
-    .from('messages')
-    .update({ is_read: true })
-    .eq('chat_id', chatId)
-    .neq('sender_id', userId)
-    .eq('is_read', false)
+  const { error } = await supabase.rpc('mark_chat_messages_read', {
+    p_chat_id: chatId,
+    p_user_id: userId,
+  })
+  if (error) throw error
 }
 
 /** Upload a chat attachment (image → chat-images, otherwise → chat-files). */

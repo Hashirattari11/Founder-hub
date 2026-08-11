@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Rocket, Eye, EyeOff, Pencil, BarChart3, Trash2, Loader2, Handshake } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ConfirmDialog'
 import { getMyStartups, updateStartup, deleteStartup } from '../../lib/startups'
 import { Avatar } from '../../components/Avatar'
 import { EmptyState } from '../../components/EmptyState'
@@ -12,6 +13,7 @@ import type { Startup } from '../../types'
 
 export default function MyStartups() {
   const { user } = useSession()
+  const { confirm, dialog } = useConfirm()
   const [startups, setStartups] = useState<Startup[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -48,7 +50,12 @@ export default function MyStartups() {
   }
 
   const remove = async (startup: Startup) => {
-    if (!window.confirm(`Delete "${startup.name}" permanently? This cannot be undone.`)) return
+    const ok = await confirm({
+      title: `Delete "${startup.name}"?`,
+      message: 'This will permanently delete the startup and all its data. This cannot be undone.',
+      confirmLabel: 'Delete Startup',
+    })
+    if (!ok) return
     setBusyId(startup.id)
     try {
       await deleteStartup(startup.id)
@@ -175,6 +182,7 @@ export default function MyStartups() {
           ))}
         </div>
       )}
+      {dialog}
     </div>
   )
 }

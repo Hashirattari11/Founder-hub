@@ -849,6 +849,41 @@ async def admin_messages(
 
 
 # ---------------------------------------------------------------------------
+# Waitlist (landing page signups)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/waitlist")
+async def admin_waitlist(
+    request: Request,
+    search: Optional[str] = None,
+    country: Optional[str] = None,
+    limit: int = 100,
+    admin_id: str = Depends(RequireAdmin()),
+):
+    """Admin view of landing-page waitlist signups (email, country, city).
+
+    RLS on `waitlist` only permits INSERT (public signup), so reads go
+    through the service role.
+    """
+    query = (
+        service_supabase.table("waitlist")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(min(limit, 500))
+    )
+    if country:
+        query = query.eq("country", country)
+    if search:
+        query = query.ilike("email", f"%{search}%")
+    rows = query.execute().data or []
+    return {
+        "waitlist": rows,
+        "total": len(rows),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Role requests (admin side)
 # ---------------------------------------------------------------------------
 

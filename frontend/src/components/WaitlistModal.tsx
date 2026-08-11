@@ -1,25 +1,85 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Rocket, Check } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 interface WaitlistModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
+/** Real country list (ISO 3166 names) — users pick their country, no free text. */
+const COUNTRIES = [
+  'Afghanistan', 'Albania', 'Algeria', 'Argentina', 'Australia', 'Austria',
+  'Azerbaijan', 'Bahrain', 'Bangladesh', 'Belgium', 'Brazil', 'Bulgaria',
+  'Canada', 'Chile', 'China', 'Colombia', 'Croatia', 'Czechia',
+  'Denmark', 'Egypt', 'Finland', 'France', 'Germany', 'Ghana',
+  'Greece', 'Hong Kong', 'Hungary', 'Iceland', 'India', 'Indonesia',
+  'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Japan', 'Jordan',
+  'Kazakhstan', 'Kenya', 'Kuwait', 'Lebanon', 'Malaysia', 'Mexico',
+  'Morocco', 'Netherlands', 'New Zealand', 'Nigeria', 'Norway', 'Oman',
+  'Pakistan', 'Palestine', 'Philippines', 'Poland', 'Portugal', 'Qatar',
+  'Romania', 'Russia', 'Saudi Arabia', 'Serbia', 'Singapore', 'Slovakia',
+  'South Africa', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden',
+  'Switzerland', 'Taiwan', 'Thailand', 'Turkey', 'UAE', 'Ukraine',
+  'United Kingdom', 'United States', 'Uzbekistan', 'Vietnam', 'Other',
+]
+
 export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
   const [email, setEmail] = useState('')
+  const [country, setCountry] = useState('')
+  const [city, setCity] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setEmail('')
+    setCountry('')
+    setCity('')
+    setError('')
+    setSubmitted(false)
+  }
+
+  const close = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Please enter a valid email address.')
       return
     }
+    if (!country) {
+      setError('Please select your country.')
+      return
+    }
     setError('')
-    setSubmitted(true)
+    setSubmitting(true)
+    try {
+      const { error: insertError } = await supabase.from('waitlist').insert({
+        email: email.trim().toLowerCase(),
+        country,
+        city: city.trim(),
+        source: 'landing',
+      })
+      if (insertError) {
+        // Unique constraint hit → already on the list; treat as success.
+        if (insertError.code === '23505' || /duplicate/i.test(insertError.message)) {
+          setSubmitted(true)
+          return
+        }
+        setError(insertError.message || 'Could not join the waitlist. Please try again.')
+        return
+      }
+      setSubmitted(true)
+    } catch {
+      setError('Could not join the waitlist. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -33,7 +93,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
         >
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={close}
           />
 
           <motion.div
@@ -44,7 +104,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
             className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-dark-300 dark:bg-dark-100"
           >
             <button
-              onClick={onClose}
+              onClick={close}
               aria-label="Close modal"
               className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-dark-200 dark:hover:text-white"
             >
@@ -83,9 +143,35 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
                     placeholder="you@startup.com"
                     className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-dark-300 dark:bg-dark"
                   />
+
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className={`w-full appearance-none rounded-lg border bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-dark-300 dark:bg-dark ${
+                      country ? 'text-gray-900 dark:text-white' : 'text-gray-400'
+                    }`}
+                  >
+                    <option value="" disabled>
+                      Select your country
+                    </option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c} className="text-gray-900 dark:bg-dark-100 dark:text-white">
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="City (optional)"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-dark-300 dark:bg-dark"
+                  />
+
                   {error && <p className="text-sm text-red-500">{error}</p>}
-                  <button type="submit" className="btn-primary w-full">
-                    Reserve My Spot
+                  <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
+                    {submitting ? 'Reserving…' : 'Reserve My Spot'}
                   </button>
                 </form>
 

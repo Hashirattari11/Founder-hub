@@ -14,6 +14,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ConfirmDialog'
 import {
   adminBanUser,
   adminChangeRole,
@@ -60,6 +61,7 @@ interface PasswordModalState {
 
 export default function AdminUsers() {
   const { realProfile } = useSession()
+  const { confirm, dialog } = useConfirm()
   const superAdmin = isSuperAdminProfile(realProfile)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -107,8 +109,13 @@ export default function AdminUsers() {
     }
   }
 
-  const confirmDelete = (user: AdminUser) => {
-    if (!window.confirm(`Permanently delete ${user.full_name ?? user.email ?? user.id}? This cannot be undone.`)) return
+  const confirmDelete = async (user: AdminUser) => {
+    const ok = await confirm({
+      title: `Delete ${user.full_name ?? user.email ?? user.id}?`,
+      message: 'This will permanently delete the user account. This cannot be undone.',
+      confirmLabel: 'Delete User',
+    })
+    if (!ok) return
     run(() => adminDeleteUser(user.id), 'User deleted', user.id)
   }
 
@@ -456,6 +463,7 @@ export default function AdminUsers() {
           </Card>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

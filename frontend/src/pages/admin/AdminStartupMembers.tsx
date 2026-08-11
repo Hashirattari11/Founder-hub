@@ -8,6 +8,7 @@ import {
   adminRemoveStartupMember,
   adminStartupMembers,
 } from '../../api/admin'
+import { useConfirm } from '../../components/ConfirmDialog'
 import type { AdminStartup, AdminUser, StartupMemberAdmin } from '../../types/admin'
 import { Badge, Card, EmptyRow, formatDate, LoadingBlock, PageHeader, TableHead, TableShell } from './adminUi'
 
@@ -20,6 +21,7 @@ const PERMISSION_TONES = {
 } as const
 
 export default function AdminStartupMembers() {
+  const { confirm, dialog } = useConfirm()
   const [members, setMembers] = useState<StartupMemberAdmin[]>([])
   const [startups, setStartups] = useState<AdminStartup[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,7 +84,12 @@ export default function AdminStartupMembers() {
   }
 
   const remove = async (m: StartupMemberAdmin) => {
-    if (!window.confirm('Remove this member from the startup?')) return
+    const ok = await confirm({
+      title: 'Remove member?',
+      message: 'This will remove this member from the startup.',
+      confirmLabel: 'Remove',
+    })
+    if (!ok) return
     try {
       await adminRemoveStartupMember(m.startup_id, m.user_id)
       setMembers((prev) => prev.filter((x) => x.startup_id !== m.startup_id || x.user_id !== m.user_id))
@@ -290,6 +297,7 @@ export default function AdminStartupMembers() {
           </Card>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

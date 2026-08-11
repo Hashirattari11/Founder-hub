@@ -161,6 +161,28 @@ export function adminListMessages(params?: { search?: string; chatId?: string; l
 }
 
 // ---------------------------------------------------------------------------
+// Waitlist (landing page signups)
+// ---------------------------------------------------------------------------
+
+export function adminListWaitlist(params?: { search?: string; country?: string; limit?: number }) {
+  const qs = new URLSearchParams()
+  if (params?.search) qs.set('search', params.search)
+  if (params?.country) qs.set('country', params.country)
+  if (params?.limit) qs.set('limit', String(params.limit))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return api.get<{ waitlist: WaitlistEntry[]; total: number }>(`/api/admin/waitlist${suffix}`, auth)
+}
+
+export interface WaitlistEntry {
+  id: string
+  email: string
+  country: string
+  city: string
+  source: string
+  created_at: string
+}
+
+// ---------------------------------------------------------------------------
 // Role requests
 // ---------------------------------------------------------------------------
 
