@@ -67,7 +67,15 @@ export default function Login() {
         navigate(from, { replace: true })
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to sign in')
+      const message = error instanceof Error ? error.message : 'Failed to sign in'
+      const lower = message.toLowerCase()
+      if (lower.includes('invalid login credentials')) {
+        toast.error('Wrong email or password. Please try again.')
+      } else if (lower.includes('email not confirmed')) {
+        toast.error('Please verify your email first. Check your inbox.')
+      } else {
+        toast.error(message)
+      }
     } finally {
       setSubmitting(false)
     }

@@ -519,6 +519,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 autoFocus
+                name="search-in-chat"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search in chat..."

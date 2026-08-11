@@ -156,11 +156,9 @@ export default function CompleteProfile() {
     } catch (error) {
       // supabase errors (PostgrestError) are not Error instances — surface the
       // real message instead of masking it as a generic failure.
-      const message =
-        error instanceof Error
-          ? error.message
-          : (error as { message?: string } | null)?.message || 'Failed to save profile'
-      toast.error(message)
+      const err = error as { message?: string; code?: string } | null
+      const message = error instanceof Error ? error.message : err?.message || 'Failed to save profile'
+      toast.error(err?.code === '42501' ? `${message} — Please log out and log back in.` : message)
     } finally {
       setSubmitting(false)
     }

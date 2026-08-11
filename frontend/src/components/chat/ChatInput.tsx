@@ -312,6 +312,7 @@ export function ChatInput({
         </button>
         <input
           ref={fileRef}
+          name="file-upload"
           type="file"
           multiple
           className="hidden"
@@ -323,6 +324,7 @@ export function ChatInput({
 
         <textarea
           ref={textareaRef}
+          name="message"
           value={text}
           onChange={(e) => {
             setText(e.target.value)

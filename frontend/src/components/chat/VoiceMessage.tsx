@@ -71,6 +71,7 @@ export function VoiceMessage({ url }: { url: string }) {
           />
         </div>
         <input
+          name="seek"
           type="range"
           min={0}
           max={duration || 0}
