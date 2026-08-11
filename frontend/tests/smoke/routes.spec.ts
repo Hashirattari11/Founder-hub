@@ -6,9 +6,15 @@ test.describe('Route smoke — public, protected and admin routes', () => {
   // other routes (earlier single-test/40-step version produced ERR_ABORTED).
   for (const route of ROUTES) {
     test(`GET ${route.path} (${route.visibility}) resolves without crash`, async ({ page }) => {
+      // The heavy 3D landing (/ and legal pages) can take 1-2 min to transform
+      // under dev-mode Vite on first hit. Give the page room to load.
+      test.setTimeout(120_000)
       const { pageErrors } = attachErrorCollectors(page)
 
-      const response = await page.goto(route.path, { waitUntil: 'domcontentloaded' })
+      const response = await page.goto(route.path, {
+        waitUntil: 'domcontentloaded',
+        timeout: 90_000,
+      })
 
       // SPA always serves 200 (or redirect for /reset-password / admin).
       expect(response?.status(), `${route.path} HTTP status`).toBeLessThan(400)

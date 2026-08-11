@@ -3,10 +3,14 @@ import { attachErrorCollectors } from '../helpers'
 
 test.describe('Application load — homepage', () => {
   test('page loads with branding, navbar, hero and working buttons; no console/page errors', async ({ page }) => {
+    // The landing page embeds a heavy three.js scene; dev-mode Vite transforms it
+    // on first hit (can take 1-2 min). networkidle is unreliable here (the scene
+    // keeps the network busy), so we settle with a fixed wait instead.
+    test.setTimeout(150_000)
     const { consoleErrors, pageErrors } = attachErrorCollectors(page)
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
-    await page.waitForLoadState('networkidle')
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 120_000 })
+    await page.waitForTimeout(2_000)
 
     // No blank screen — the page must actually render content.
     await expect(page.locator('body')).not.toBeEmpty()
@@ -38,7 +42,8 @@ test.describe('Application load — homepage', () => {
   })
 
   test('navigation links work (navbar links resolve to real pages)', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    test.setTimeout(90_000)
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     // Landing footer/nav links to legal pages must not 404.
     for (const link of ['/terms', '/privacy', '/login']) {
       const response = await page.request.get(link)
