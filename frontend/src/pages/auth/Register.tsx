@@ -90,13 +90,21 @@ export default function Register() {
       }
 
       // Email confirmation is required. Supabase returns 200 (not an error) when
-      // the email already belongs to an account created via Google OAuth — it just
-      // re-sends a confirmation. A real new signup has a fresh `created_at`, so an
-      // old `created_at` means the account already exists: tell them to sign in.
-      const createdAt = data.user?.created_at ? new Date(data.user.created_at).getTime() : 0
-      if (createdAt && Date.now() - createdAt > 120_000) {
-        setExistingEmail(values.email)
-        return
+      // the email already belongs to an account — for anti-enumeration it returns
+      // a placeholder user that has NO real row (and therefore no profile). A
+      // genuine new signup has a real id whose profile was just created by the
+      // handle_new_user trigger, so checking for a profile by id tells them apart.
+      if (data.user?.id) {
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', data.user.id)
+          .maybeSingle()
+        if (!profileError && !userProfile) {
+          // Placeholder id -> the account already exists -> ask them to sign in.
+          setExistingEmail(values.email)
+          return
+        }
       }
 
       // Genuine new account awaiting email verification.
