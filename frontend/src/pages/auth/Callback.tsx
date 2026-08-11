@@ -88,7 +88,14 @@ export default function Callback() {
         }
 
         if (intent === 'register') {
-          navigate('/onboarding', { replace: true })
+          // The user clicked "Continue with Google" on the Create Account page.
+          // If they already have an onboarded account (username set), don't push
+          // them through the onboarding wizard again — go straight to the app.
+          if (isOnboarded) {
+            navigate(popAuthRedirect('/dashboard'), { replace: true })
+          } else {
+            navigate('/onboarding', { replace: true })
+          }
           return
         }
 

@@ -101,7 +101,13 @@ export default function EditProfile() {
       await refreshProfile()
       navigate('/dashboard', { replace: true })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save profile')
+      // supabase errors (PostgrestError) are not Error instances — surface the
+      // real message instead of masking it as a generic failure.
+      const message =
+        error instanceof Error
+          ? error.message
+          : (error as { message?: string } | null)?.message || 'Failed to save profile'
+      toast.error(message)
       void prevProfile
     } finally {
       setSaving(false)
