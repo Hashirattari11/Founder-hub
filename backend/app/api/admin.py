@@ -255,22 +255,12 @@ async def admin_users(
 
 
 class UpdateUserRequest(BaseModel):
-    full_name: Optional[str] = None
-    username: Optional[str] = None
-    bio: Optional[str] = None
-    location: Optional[str] = None
-    company: Optional[str] = None
-    country: Optional[str] = None
-    city: Optional[str] = None
+    # MODERATION-ONLY FIELDS. Personal account settings (full_name, username,
+    # bio, skills, investor profile, etc.) are owner-only: they must be changed
+    # through the authenticated profile update endpoint, never by an admin.
+    # See profiles.protect_role_columns trigger for DB-level enforcement.
     is_verified: Optional[bool] = None
     is_premium: Optional[bool] = None
-    is_open_to_work: Optional[bool] = None
-    skills: Optional[list[str]] = None
-    investor_interests: Optional[list[str]] = None
-    investment_range_min: Optional[int] = None
-    investment_range_max: Optional[int] = None
-    investment_stage: Optional[list[str]] = None
-    portfolio_companies: Optional[list[str]] = None
 
 
 @router.patch("/users/{user_id}")
