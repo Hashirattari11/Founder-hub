@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { supabase, popAuthRedirect } from '../../lib/supabase'
 import { isAdminProfile } from '../../lib/admin'
 import type { Profile } from '../../types'
@@ -92,6 +93,7 @@ export default function Callback() {
           // If they already have an onboarded account (username set), don't push
           // them through the onboarding wizard again — go straight to the app.
           if (isOnboarded) {
+            toast.success('Welcome back! We found your existing FounderHub account.')
             navigate(popAuthRedirect('/dashboard'), { replace: true })
           } else {
             navigate('/onboarding', { replace: true })
