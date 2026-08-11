@@ -281,14 +281,14 @@ export function ContactPage() {
               <Users className="h-6 w-6 text-primary" />
               <div>
                 <h4 className="font-bold">Community</h4>
-                <p className="text-sm text-gray-500">Join the discussion <ArrowRight className="inline h-3 w-3 transition-transform group-hover:translate-x-0.5" /></p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Join the discussion <ArrowRight className="inline h-3 w-3 transition-transform group-hover:translate-x-0.5" /></p>
               </div>
             </Link>
             <Link to="/legal" className="group flex items-center gap-3">
               <Scale className="h-6 w-6 text-primary" />
               <div>
                 <h4 className="font-bold">Legal Center</h4>
-                <p className="text-sm text-gray-500">Policies & trust documents <ArrowRight className="inline h-3 w-3 transition-transform group-hover:translate-x-0.5" /></p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Policies & trust documents <ArrowRight className="inline h-3 w-3 transition-transform group-hover:translate-x-0.5" /></p>
               </div>
             </Link>
           </div>

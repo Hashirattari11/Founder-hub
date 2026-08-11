@@ -16,13 +16,15 @@ test.describe('Admin', () => {
     '/admin/settings',
   ]
 
-  test('all admin routes are blocked for unauthenticated users (redirect to /login)', async ({ page }) => {
-    for (const path of adminRoutes) {
+  // One test per admin route: unauth users must be bounced to /login.
+  // (A single loop over 11 routes exceeded the 60s test timeout.)
+  for (const path of adminRoutes) {
+    test(`unauthenticated ${path} redirects to /login`, async ({ page }) => {
       await page.goto(path, { waitUntil: 'domcontentloaded' })
-      await page.waitForTimeout(1_200)
+      await page.waitForURL('**/login**', { timeout: 15_000 })
       expect(page.url(), `${path} should redirect to /login`).toContain('/login')
-    }
-  })
+    })
+  }
 
   test('admin functionality requires an admin account', async ({ page }, testInfo) => {
     const adminEmail = process.env.E2E_ADMIN_EMAIL

@@ -10,6 +10,8 @@ const PUBLIC_PAGES = ['/', '/login', '/register', '/forgot-password', '/terms', 
 test.describe('Accessibility (axe-core)', () => {
   for (const path of PUBLIC_PAGES) {
     test(`a11y: ${path} has no critical/serious violations`, async ({ page }) => {
+      // axe on large pages (landing 3D scene, legal docs) can exceed 60s.
+      test.setTimeout(180_000)
       await page.goto(path, { waitUntil: 'domcontentloaded' })
       await page.waitForLoadState('networkidle').catch(() => {})
       await page.waitForTimeout(800)

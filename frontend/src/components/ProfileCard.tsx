@@ -38,7 +38,7 @@ export function ProfileCard({ profile, onConnect }: ProfileCardProps) {
       </p>
 
       {profile.city && (
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-500">
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
           <MapPin className="h-3.5 w-3.5" />
           {profile.city}
           {profile.country ? `, ${profile.country}` : ''}

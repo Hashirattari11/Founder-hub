@@ -626,7 +626,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
               This is the beginning of your conversation
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-gray-400 dark:text-gray-400">
               Say hi 👋 and start the conversation
             </p>
           </div>

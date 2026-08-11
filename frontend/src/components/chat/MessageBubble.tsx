@@ -233,7 +233,7 @@ export function MessageBubble({
           {renderContent()}
         </div>
 
-        <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] text-gray-400 dark:text-gray-500">
+        <div className="mt-0.5 flex items-center gap-1 px-1 text-[10px] text-gray-400 dark:text-gray-400">
           <span>{formatTime(message.created_at)}</span>
           {message.edited_at && <span>edited</span>}
           {isOwn && !isDeleted && message.type === 'text' && message.content && (

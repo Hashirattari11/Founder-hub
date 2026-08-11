@@ -112,7 +112,7 @@ export function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 sm:flex-row dark:border-dark-300">
-          <p className="text-sm text-gray-500 dark:text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             © {new Date().getFullYear()} FounderHub AI. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -120,16 +120,16 @@ export function Footer() {
               <Scale className="h-3.5 w-3.5" /> Legal Center
             </Link>
             <span className="text-gray-300 dark:text-dark-400">·</span>
-            <Link to="/privacy" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+            <Link to="/privacy" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-400">
               Privacy
             </Link>
-            <Link to="/terms" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+            <Link to="/terms" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-400">
               Terms
             </Link>
-            <Link to="/cookies" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+            <Link to="/cookies" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-400">
               Cookies
             </Link>
-            <Link to="/contact" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-500">
+            <Link to="/contact" className="text-sm text-gray-500 transition-colors hover:text-primary dark:text-gray-400">
               Contact
             </Link>
           </div>

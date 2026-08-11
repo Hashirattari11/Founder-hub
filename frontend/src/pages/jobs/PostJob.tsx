@@ -160,7 +160,7 @@ export default function PostJob() {
                 <div className="flex flex-col items-center gap-1.5">
                   <span
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors ${
-                      i < step ? 'bg-primary text-white' : i === step ? 'bg-gradient-brand text-white ring-4 ring-primary/20' : 'bg-gray-100 text-gray-400 dark:bg-dark-200 dark:text-gray-500'
+                      i < step ? 'bg-primary text-white' : i === step ? 'bg-gradient-brand text-white ring-4 ring-primary/20' : 'bg-gray-100 text-gray-400 dark:bg-dark-200 dark:text-gray-400'
                     }`}
                   >
                     {i < step ? <Check className="h-4 w-4" /> : i + 1}

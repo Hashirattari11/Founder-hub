@@ -183,7 +183,7 @@ export default function CompleteProfile() {
                       ? 'bg-primary text-white'
                       : i === step
                         ? 'bg-gradient-brand text-white ring-4 ring-primary/20'
-                        : 'bg-gray-100 text-gray-400 dark:bg-dark-200 dark:text-gray-500'
+                        : 'bg-gray-100 text-gray-400 dark:bg-dark-200 dark:text-gray-400'
                   }`}
                 >
                   {i < step ? <Check className="h-4 w-4" /> : i + 1}

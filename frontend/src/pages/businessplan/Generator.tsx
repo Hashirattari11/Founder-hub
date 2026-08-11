@@ -132,13 +132,13 @@ export default function BusinessPlanGenerator() {
                         ? 'bg-green-500 text-white'
                         : i === step
                           ? 'bg-primary text-white'
-                          : 'bg-gray-200 text-gray-400 dark:bg-dark-300 dark:text-gray-500'
+                          : 'bg-gray-200 text-gray-400 dark:bg-dark-300 dark:text-gray-400'
                     }`}
                   >
                     {i < step ? '✓' : i + 1}
                   </span>
                   <span
-                    className={i <= step ? 'font-medium text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}
+                    className={i <= step ? 'font-medium text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-400'}
                   >
                     {label}
                   </span>

@@ -30,8 +30,8 @@ test.describe('Application load — homepage', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page.getByRole('heading', { name: /From Idea to/i })).toBeVisible()
 
-    // Buttons work — "Start for Free" opens the waitlist modal.
-    const startForFree = page.getByRole('button', { name: /Start for Free/i })
+    // Buttons work — "Start for Free" appears in hero + pricing; use the first.
+    const startForFree = page.getByRole('button', { name: /Start for Free/i }).first()
     await expect(startForFree).toBeVisible()
     await startForFree.click()
     await expect(page.getByText(/Join the Waitlist|waitlist/i).first()).toBeVisible({ timeout: 10_000 })
