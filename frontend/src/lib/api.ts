@@ -6,6 +6,20 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean
 }
 
+/**
+ * Parse a JSON body safely. When the API host is unreachable the request may
+ * resolve to an HTML page (e.g. the SPA index.html fallback), which would make
+ * `response.json()` throw "Unexpected token '<' ...". Surface a friendly
+ * message instead of the raw parse error.
+ */
+async function parseJson<T>(response: Response): Promise<T> {
+  const type = (response.headers.get('content-type') ?? '').toLowerCase()
+  if (!type.includes('application/json')) {
+    throw new Error('Service temporarily unavailable. Please try again in a moment.')
+  }
+  return response.json() as Promise<T>
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, auth = false, headers, ...rest } = options
 
@@ -48,7 +62,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  return parseJson<T>(response)
 }
 
 export const api = {
