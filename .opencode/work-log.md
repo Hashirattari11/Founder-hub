@@ -21,3 +21,15 @@
 - None (frontend build check in progress, no code change)
 
 ## Mission: Auth Spec (2026-08-11 05:41)`n| File | Action | Status | Session | Unit Test | Timestamp | Issue |`n|------|--------|--------|---------|-----------|-----------|-------|`n| frontend/src/lib/supabase.ts | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/pages/auth/Callback.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/pages/auth/Login.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/pages/auth/Register.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/lib/username.ts | CREATE | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/lib/profileCompletion.ts | CREATE | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/components/ProfileGate.tsx | CREATE | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/components/ProfileGateRoute.tsx | CREATE | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/components/ProfileCompletionCard.tsx | CREATE | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/pages/profile/CompleteProfile.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/pages/profile/EditProfile.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/App.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |`n| frontend/src/components/dashboard/DashboardLayout.tsx | MODIFY | done | ses_cmd_1 | pass (build) | 2026-08-11T05:40 | - |
+
+## Mission: QA Fix + Deploy (2026-08-11 06:14-10:45)
+| File | Action | Status | Session | Unit Test | Timestamp | Issue |
+|------|--------|--------|---------|-----------|-----------|-------|
+| frontend/src/index.css | MODIFY | done | ses_cmd_1 | pass (a11y 8/8) | 2026-08-11T06:20 | - |
+| frontend/src/components/FormInput.tsx | MODIFY | done | ses_cmd_1 | pass (a11y labeled) | 2026-08-11T06:20 | - |
+| frontend/src/components/Footer.tsx + 8 files | MODIFY | done | ses_cmd_1 | pass (a11y 8/8) | 2026-08-11T06:20 | - |
+| frontend/src/pages/static/StaticPages.tsx | MODIFY | done | ses_cmd_1 | pass | 2026-08-11T06:20 | - |
+| tests: routes/app-load/auth/roles/admin/a11y | MODIFY | done | ses_cmd_1 | pass (73/73) | 2026-08-11T10:42 | - |
+| git commits b96f62d + 5288e27 + 4f532c7 + push | CREATE | done | ses_cmd_1 | pass | 2026-08-11T10:39 | - |
+| Vercel prod deploy dpl_EPNVXUMonViUCWJdLMADRhbA4jrP | CREATE | done | ses_cmd_1 | pass (founder-hub-0.vercel.app live) | 2026-08-11T10:13 | - |
+| .opencode/qa-report.md | CREATE | done | ses_cmd_1 | pass | 2026-08-11T10:44 | - |
