@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { MailCheck } from 'lucide-react'
+import { MailCheck, CircleAlert } from 'lucide-react'
 import { supabase, APP_URL } from '../../lib/supabase'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput, SelectInput } from '../../components/FormInput'
@@ -38,6 +38,7 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
   const [createdEmail, setCreatedEmail] = useState<string | null>(null)
+  const [existingEmail, setExistingEmail] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const {
@@ -67,8 +68,7 @@ export default function Register() {
       if (error) {
         const message = (error.message ?? '').toLowerCase()
         if (message.includes('already registered') || error.code === 'user_already_exists') {
-          toast.error('An account already exists for this email. Please sign in instead.')
-          navigate('/login')
+          setExistingEmail(values.email)
           return
         }
         if (message.includes('rate limit') || error.code === 'over_email_send_rate_limit') {
@@ -89,8 +89,17 @@ export default function Register() {
         return
       }
 
-      // Email confirmation is required — show a clear next step instead of a
-      // bare toast, so the user knows the account was created.
+      // Email confirmation is required. Supabase returns 200 (not an error) when
+      // the email already belongs to an account created via Google OAuth — it just
+      // re-sends a confirmation. A real new signup has a fresh `created_at`, so an
+      // old `created_at` means the account already exists: tell them to sign in.
+      const createdAt = data.user?.created_at ? new Date(data.user.created_at).getTime() : 0
+      if (createdAt && Date.now() - createdAt > 120_000) {
+        setExistingEmail(values.email)
+        return
+      }
+
+      // Genuine new account awaiting email verification.
       setCreatedEmail(values.email)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Something went wrong'
@@ -127,7 +136,27 @@ export default function Register() {
         title="Create your account"
         subtitle="Start building your startup in minutes."
       >
-      {createdEmail ? (
+      {existingEmail ? (
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+            <CircleAlert className="h-7 w-7" />
+          </div>
+          <h2 className="mt-4 text-lg font-bold">An account already exists</h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            It looks like <span className="font-semibold">{existingEmail}</span> is
+            already registered. Please sign in to continue.
+          </p>
+          <button onClick={() => navigate('/login')} className="btn-primary mt-6 w-full">
+            Continue to Sign In
+          </button>
+          <button
+            onClick={() => setExistingEmail(null)}
+            className="btn-ghost mt-3 w-full"
+          >
+            Use a different email
+          </button>
+        </div>
+      ) : createdEmail ? (
         <div className="flex flex-col items-center text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400">
             <MailCheck className="h-7 w-7" />
