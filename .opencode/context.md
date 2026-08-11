@@ -135,3 +135,12 @@ px playwright test (background, NO pipes — plain command, cwd frontend). Expect:
 - Windows PowerShell 5.1: glob src\**\*.tsx does NOT recurse — use grep tool. run_background executes via cmd.exe (no Out-String).
 - App facts: no /signup (use /register), no /startups (use /explore), no /dashboard/founder|investor routes (404). NotFound: bg-dark, heading '404', 'This page went to orbit'.
 - E2E creds still unset ? 13 credential-gated tests stay SKIPPED/UNVERIFIED (honest, not faked).
+
+## Current Status (2026-08-11 10:45) - QA MISSION COMPLETE
+- All 13 original failures fixed + verified: a11y 8/8, admin 11/11, auth 9/9, roles 4/4, app-load 2/2, routes 37/37 = 73/73 runnable tests PASS (0 fail).
+- App fixes (deployed LIVE): index.css .dark .text-primary #a78bfa AA override; FormInput useId+cloneElement label wiring; 13x gray-500->400 + StaticPages dark mode.
+- Test-infra fixes: routes.spec per-route split; app-load heading role + no networkidle; timeouts 120-150s (dev-mode cold transform); auth callback error-state; roles 404; admin per-route waitForURL; a11y 180s.
+- Git: 4 commits pushed (e9817c6, b96f62d, 5288e27, 4f532c7, aeb848b) to Hashirattari11/Founder-hub main.
+- PROD: founder-hub-0.vercel.app live (deploy dpl_EPNVXUMonViUCWJdLMADRhbA4jrP, verified new build). Accidental 'frontend' vercel project can be deleted.
+- .opencode/qa-report.md written. 13 credential-gated tests remain SKIPPED/UNVERIFIED (no E2E creds) - honest.
+
