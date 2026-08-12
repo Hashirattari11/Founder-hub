@@ -242,9 +242,10 @@ async function notifyMessageParticipant(chatId: string, senderId: string): Promi
       .eq('id', chatId)
       .maybeSingle()
     if (!chat) return
-    const receiverId =
-      chat.participant_1 === senderId ? chat.participant_2 : chat.participant_1
-    if (!receiverId || receiverId === senderId) return
+    const receiverId = sameUser(chat.participant_1, senderId)
+      ? chat.participant_2
+      : chat.participant_1
+    if (!receiverId || sameUser(receiverId, senderId)) return
     await api.post(
       '/api/notify/message',
       { receiver_id: receiverId, chat_id: chatId },
@@ -253,6 +254,30 @@ async function notifyMessageParticipant(chatId: string, senderId: string): Promi
   } catch {
     /* best-effort — never block sending on the notification */
   }
+}
+
+/** Merge fetched messages into local state without dropping optimistic rows. */
+export function mergeChatMessages(prev: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
+  if (incoming.length === 0) return prev
+  const byId = new Map(prev.map((m) => [m.id, m]))
+  for (const m of incoming) byId.set(m.id, m)
+  return [...byId.values()].sort(
+    (a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime(),
+  )
+}
+
+async function enrichOutgoingMessage(msg: ChatMessage, senderId: string): Promise<ChatMessage> {
+  const { data: senderRow } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', senderId)
+    .maybeSingle()
+  const base: ChatMessage = {
+    ...msg,
+    sender: senderRow ?? null,
+    reactions: msg.reactions ?? [],
+  }
+  return (await hydrateReplyTos([base]))[0]
 }
 
 /** Insert a new message (the DB trigger updates chats.last_message / last_message_at). */
@@ -281,8 +306,9 @@ export async function sendChatMessage(params: {
       { content: params.content },
       { auth: true },
     )
-    const hydrated = await hydrateReplyTos([msg])
-    return hydrated[0]
+    const enriched = await enrichOutgoingMessage(msg, params.senderId)
+    void notifyMessageParticipant(params.chatId, params.senderId)
+    return enriched
   }
 
   const { data, error } = await supabase

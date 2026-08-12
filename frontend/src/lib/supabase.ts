@@ -53,4 +53,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'founderhub-auth',
     flowType: 'pkce',
   },
+  realtime: {
+    params: { eventsPerSecond: 20 },
+  },
 })

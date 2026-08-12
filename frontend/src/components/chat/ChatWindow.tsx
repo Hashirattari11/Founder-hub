@@ -26,6 +26,7 @@ import {
   deleteMessageForMe,
   getChatMessages,
   getChatOtherProfile,
+  mergeChatMessages,
   resolveChatPartner,
   hydrateReplyTo,
   markMessagesRead,
@@ -45,6 +46,7 @@ interface ChatWindowProps {
   chat: Chat
   userId: string
   onBack: () => void
+  onChatUpdated?: () => void
 }
 
 interface MenuState {
@@ -53,7 +55,7 @@ interface MenuState {
   y: number
 }
 
-export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
+export function ChatWindow({ chat, userId, onBack, onChatUpdated }: ChatWindowProps) {
   const { confirm, dialog } = useConfirm()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,8 +80,10 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   const [resolvedOther, setResolvedOther] = useState<ChatProfile | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const nearBottomRef = useRef(true)
+  const otherNameRef = useRef<string | null>(null)
   const other = resolvedOther ?? resolveChatPartner(resolvedChat, userId)?.profile ?? null
   const displayOther = liveStatus && other ? { ...other, ...liveStatus } : other
+  otherNameRef.current = displayOther?.full_name ?? null
 
   // Hide messages the current user deleted "for me".
   const visibleMessages = useMemo(() => {
@@ -170,7 +174,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
     }
   }, [chat.id, userId, scrollToBottom])
 
-  // Live messages + typing
+  // Live messages + typing (stable deps — do not reconnect when header name loads)
   useEffect(() => {
     const cleanupMessages = subscribeToChatMessages(
       chat.id,
@@ -193,7 +197,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
           markMessagesRead(chat.id, userId).catch(() => {})
           if (!document.hasFocus()) {
             showDesktopNotification(
-              displayOther?.full_name ?? 'New message',
+              otherNameRef.current ?? 'New message',
               messagePreview(msg),
             )
             playMessageSound()
@@ -210,7 +214,35 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
       cleanupMessages()
       cleanupTyping()
     }
-  }, [chat.id, userId, displayOther?.full_name, scrollToBottom, showDesktopNotification])
+  }, [chat.id, userId, scrollToBottom, showDesktopNotification])
+
+  // Poll fallback when realtime misses an insert (e.g. API send path).
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const fresh = await getChatMessages(chat.id)
+        if (cancelled) return
+        setMessages((prev) => {
+          const merged = mergeChatMessages(prev, fresh)
+          if (
+            merged.length === prev.length &&
+            merged[merged.length - 1]?.id === prev[prev.length - 1]?.id
+          ) {
+            return prev
+          }
+          return merged
+        })
+      } catch {
+        /* ignore transient poll errors */
+      }
+    }
+    const interval = window.setInterval(() => void poll(), 4000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [chat.id])
 
   // Live online status for the other participant
   useEffect(() => {
@@ -322,10 +354,9 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
     (msg: ChatMessage) => {
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
       requestAnimationFrame(() => scrollToBottom(true))
-      // Email + push notification to the other participant is fired inside
-      // sendChatMessage (lib/chat.ts) so every send path is covered.
+      onChatUpdated?.()
     },
-    [scrollToBottom],
+    [scrollToBottom, onChatUpdated],
   )
 
   const handleReaction = async (messageId: string, emoji: string) => {

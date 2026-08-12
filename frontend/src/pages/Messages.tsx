@@ -191,6 +191,7 @@ export default function Messages() {
               chat={activeChat}
               userId={user?.id ?? ''}
               onBack={() => setActiveChat(null)}
+              onChatUpdated={() => void loadChats()}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
