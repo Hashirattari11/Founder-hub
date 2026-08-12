@@ -8,10 +8,13 @@ import { ChatWindow } from '../components/chat/ChatWindow'
 import { NewMessageModal } from '../components/chat/NewMessageModal'
 import { useSession } from '../context/AuthContext'
 import {
+  getChatOtherProfile,
   getMyChats,
+  getOtherParticipantId,
   getUnreadCounts,
   markChatRead,
   markMessagesRead,
+  resolveChatPartner,
   sameUser,
   startChat,
   subscribeToChats,
@@ -38,7 +41,21 @@ export default function Messages() {
       setChats(data)
       setActiveChat((prev) => {
         if (!prev) return prev
-        return data.find((c) => c.id === prev.id) ?? prev
+        const fromList = data.find((c) => c.id === prev.id)
+        if (!fromList) return prev
+        // Never drop a verified partner profile when the list reload races startChat.
+        if (
+          prev.other_participant_profile &&
+          resolveChatPartner(fromList, user.id)?.profile?.id !==
+            prev.other_participant_profile.id
+        ) {
+          return {
+            ...fromList,
+            other_participant_id: prev.other_participant_id,
+            other_participant_profile: prev.other_participant_profile,
+          }
+        }
+        return fromList
       })
       const counts = await getUnreadCounts(data.map((c) => c.id), user.id)
       if (id !== fetchIdRef.current) return undefined
@@ -94,9 +111,23 @@ export default function Messages() {
     }
   }, [user, loadChats])
 
-  const handleSelectChat = (chat: Chat) => {
+  const handleSelectChat = async (chat: Chat) => {
     if (!user) return
-    setActiveChat(chat)
+    let next = chat
+    if (!resolveChatPartner(chat, user.id)?.profile) {
+      const otherId = getOtherParticipantId(chat, user.id)
+      if (otherId) {
+        const other = await getChatOtherProfile(chat, user.id)
+        if (other) {
+          next = {
+            ...chat,
+            other_participant_id: otherId,
+            other_participant_profile: other,
+          }
+        }
+      }
+    }
+    setActiveChat(next)
     setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
     // Direct supabase RLS update is the reliable path for clearing unread
     // state (backend markChatRead has been flaky); keep both for redundancy.
