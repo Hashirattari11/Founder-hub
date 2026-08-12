@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, Plus, ArrowLeft, ArrowRight, Loader2, Rocket, Code2, Palette, Megaphone, Wallet, Scale, BarChart3, Lightbulb, Users, Shield } from 'lucide-react'
 import { saveOwnProfile } from '../../lib/profile'
 import { getErrorMessage } from '../../lib/errors'
+import { hasUserConsent } from '../../lib/consent'
 import { useSession } from '../../context/AuthContext'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
@@ -31,8 +32,34 @@ const ROLE_ICONS: Record<Role, typeof Rocket> = {
 export default function CompleteProfile() {
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [consentChecked, setConsentChecked] = useState(false)
   const { user, profile } = useSession()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!user?.id) return
+    let active = true
+    ;(async () => {
+      const consented = await hasUserConsent(user.id)
+      if (!active) return
+      if (!consented) {
+        navigate('/auth/consent', { replace: true })
+        return
+      }
+      setConsentChecked(true)
+    })()
+    return () => {
+      active = false
+    }
+  }, [user?.id, navigate])
+
+  if (!consentChecked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-dark">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+      </div>
+    )
+  }
 
   const [role, setRole] = useState<Role>((profile?.role as Role) ?? 'founder')
   const [fullName, setFullName] = useState(profile?.full_name ?? '')

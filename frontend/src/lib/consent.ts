@@ -36,3 +36,8 @@ export async function recordUserConsent(userId: string): Promise<void> {
   )
   if (error) throw error
 }
+
+/** Friendly message when consent is missing during onboarding. */
+export function consentRequiredMessage(): string {
+  return 'Please accept the Terms of Service and Privacy Policy to create your account.'
+}

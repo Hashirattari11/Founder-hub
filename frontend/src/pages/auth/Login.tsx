@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../lib/errors'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
 import { isAdminProfile } from '../../lib/admin'
+import { hasUserConsent } from '../../lib/consent'
 import { Seo } from '../../components/Seo'
 import type { Profile } from '../../types'
 
@@ -63,7 +64,8 @@ export default function Login() {
 
       toast.success('Welcome back!')
       if (!profile?.username) {
-        navigate('/complete-profile', { replace: true })
+        const consented = session ? await hasUserConsent(session.user.id) : false
+        navigate(consented ? '/complete-profile' : '/auth/consent', { replace: true })
       } else if (!location.state?.from && isAdminProfile(profile)) {
         navigate('/admin/dashboard', { replace: true })
       } else {

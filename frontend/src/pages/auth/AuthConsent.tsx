@@ -1,21 +1,49 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ShieldCheck } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { AuthLayout } from '../../components/AuthLayout'
+import { ConsentAgreementFields } from '../../components/auth/ConsentAgreementFields'
 import { getErrorMessage } from '../../lib/errors'
-import { recordUserConsent } from '../../lib/consent'
+import { hasUserConsent, recordUserConsent } from '../../lib/consent'
 import { Seo } from '../../components/Seo'
 
 export default function AuthConsent() {
-  const { user } = useSession()
+  const { user, profile, signOut } = useSession()
   const navigate = useNavigate()
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [checking, setChecking] = useState(true)
 
-  if (!user) return null
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    ;(async () => {
+      try {
+        const consented = await hasUserConsent(user.id)
+        if (!active) return
+        if (consented) {
+          navigate(profile?.username ? '/dashboard' : '/complete-profile', { replace: true })
+          return
+        }
+      } finally {
+        if (active) setChecking(false)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [user, profile?.username, navigate])
+
+  if (!user || checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-dark">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+      </div>
+    )
+  }
 
   const canContinue = termsAccepted && privacyAccepted
 
@@ -49,43 +77,12 @@ export default function AuthConsent() {
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-300 dark:bg-dark">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-              I agree to the{' '}
-              <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
-                Terms of Service
-              </Link>
-              <span className="text-red-500"> *</span>
-            </span>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={privacyAccepted}
-              onChange={(e) => setPrivacyAccepted(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-              I have read and agree to the{' '}
-              <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
-                Privacy Policy
-              </Link>
-              <span className="text-red-500"> *</span>
-            </span>
-          </label>
-        </div>
-
-        <p className="mt-3 text-center text-xs text-gray-500 dark:text-gray-400">
-          Both agreements are required to create your FounderHub account.
-        </p>
+        <ConsentAgreementFields
+          termsAccepted={termsAccepted}
+          privacyAccepted={privacyAccepted}
+          onTermsChange={setTermsAccepted}
+          onPrivacyChange={setPrivacyAccepted}
+        />
 
         <button
           type="button"
@@ -94,6 +91,14 @@ export default function AuthConsent() {
           className="btn-primary mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? 'Saving...' : 'Continue'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="btn-ghost mt-3 w-full text-sm"
+        >
+          Sign out
         </button>
       </AuthLayout>
     </>

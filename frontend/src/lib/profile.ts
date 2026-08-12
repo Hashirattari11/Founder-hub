@@ -1,5 +1,6 @@
 import imageCompression from 'browser-image-compression'
 import { supabase } from './supabase'
+import { hasUserConsent } from './consent'
 import type { Profile } from '../types'
 
 export interface ProfileUpdate {
@@ -139,6 +140,13 @@ export async function updateProfile(userId: string, updates: ProfileUpdate) {
 /** Create or update the signed-in user's profile (onboarding / complete-profile). */
 export async function saveOwnProfile(userId: string, updates: ProfileUpdate) {
   await assertOwnProfile(userId)
+
+  if (updates.username) {
+    const consented = await hasUserConsent(userId)
+    if (!consented) {
+      throw new Error('Please accept the Terms of Service and Privacy Policy to create your account.')
+    }
+  }
 
   const { data, error } = await supabase
     .from('profiles')

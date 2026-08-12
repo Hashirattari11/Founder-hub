@@ -9,6 +9,7 @@ import { supabase, APP_URL } from '../../lib/supabase'
 import { getErrorMessage } from '../../lib/errors'
 import { recordUserConsent } from '../../lib/consent'
 import { AuthLayout } from '../../components/AuthLayout'
+import { ConsentAgreementFields } from '../../components/auth/ConsentAgreementFields'
 import { Field, TextInput, SelectInput } from '../../components/FormInput'
 import { Seo } from '../../components/Seo'
 import type { Role } from '../../types'
@@ -52,6 +53,7 @@ export default function Register() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -128,7 +130,6 @@ export default function Register() {
     }
     setOauthLoading(true)
     try {
-      sessionStorage.setItem('founderhub:pending-consent', '1')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -137,7 +138,6 @@ export default function Register() {
       })
       if (error) throw error
     } catch (error) {
-      sessionStorage.removeItem('founderhub:pending-consent')
       toast.error(getErrorMessage(error, 'auth'))
       setOauthLoading(false)
     }
@@ -221,39 +221,13 @@ export default function Register() {
           </SelectInput>
         </Field>
 
-        <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-300 dark:bg-dark">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              {...register('termsAccepted')}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-              I agree to the{' '}
-              <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
-                Terms of Service
-              </Link>
-              <span className="text-red-500"> *</span>
-            </span>
-          </label>
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              {...register('privacyAccepted')}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-              I have read and agree to the{' '}
-              <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
-                Privacy Policy
-              </Link>
-              <span className="text-red-500"> *</span>
-            </span>
-          </label>
-          {errors.termsAccepted?.message && (
-            <p className="text-xs text-red-500">{errors.termsAccepted.message}</p>
-          )}
-        </div>
+        <ConsentAgreementFields
+          termsAccepted={termsAccepted}
+          privacyAccepted={privacyAccepted}
+          onTermsChange={(checked) => setValue('termsAccepted', checked, { shouldValidate: true })}
+          onPrivacyChange={(checked) => setValue('privacyAccepted', checked, { shouldValidate: true })}
+          errorMessage={errors.termsAccepted?.message}
+        />
 
         <button type="submit" disabled={submitting || !consentOk} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60">
           {submitting ? 'Creating account...' : 'Create Account'}

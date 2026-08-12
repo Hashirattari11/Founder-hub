@@ -49,6 +49,7 @@ const TECHNICAL_PATTERNS: Array<{ test: RegExp; message: string }> = [
   { test: /unexpected token|not valid json/i, message: CONTEXT_DEFAULTS.network },
   { test: /PGRST205|could not find the table/i, message: CONTEXT_DEFAULTS.generic },
   { test: /duplicate key|unique constraint/i, message: 'This item already exists.' },
+  { test: /terms of service and privacy policy must be accepted/i, message: 'Please accept the Terms of Service and Privacy Policy to create your account.' },
   { test: /request failed with status/i, message: CONTEXT_DEFAULTS.network },
 ]
 
