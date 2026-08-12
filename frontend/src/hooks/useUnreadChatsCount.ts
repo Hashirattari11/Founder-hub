@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '../context/AuthContext'
-import { getMyChats, getUnreadCounts, subscribeToChats, subscribeToMessages } from '../lib/chat'
+import { getMyChats, getUnreadCounts, getActiveChatForRead, setActiveChatForRead, subscribeToChats, subscribeToMessages } from '../lib/chat'
 
 /** Total unread message count across all chats, kept live via realtime. */
 export function useUnreadChatsCount(): number {
@@ -15,6 +15,8 @@ export function useUnreadChatsCount(): number {
     try {
       const chats = await getMyChats(user.id)
       const counts = await getUnreadCounts(chats.map((c) => c.id), user.id)
+      const activeId = getActiveChatForRead()
+      if (activeId) counts[activeId] = 0
       setCount(Object.values(counts).reduce((a, b) => a + b, 0))
     } catch {
       /* ignore transient errors */

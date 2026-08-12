@@ -17,8 +17,10 @@ import {
   markMessagesRead,
   resolveChatPartner,
   sameUser,
+  setActiveChatForRead,
   startChat,
   subscribeToChats,
+  subscribeToMessages,
 } from '../lib/chat'
 import type { Chat } from '../types'
 
@@ -31,6 +33,17 @@ export default function Messages() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const fetchIdRef = useRef(0)
+  const activeChatIdRef = useRef<string | null>(null)
+  activeChatIdRef.current = activeChat?.id ?? null
+
+  const clearUnreadForChat = useCallback(
+    (chatId: string) => {
+      if (!user) return
+      setUnreadCounts((prev) => ({ ...prev, [chatId]: 0 }))
+      void markMessagesRead(chatId, user.id)
+    },
+    [user],
+  )
 
   const loadChats = useCallback(async (): Promise<Chat[] | undefined> => {
     if (!user) return undefined
@@ -60,6 +73,8 @@ export default function Messages() {
       })
       const counts = await getUnreadCounts(data.map((c) => c.id), user.id)
       if (id !== fetchIdRef.current) return undefined
+      const activeId = activeChatIdRef.current
+      if (activeId) counts[activeId] = 0
       setUnreadCounts(counts)
       return data
     } catch (error) {
@@ -82,6 +97,26 @@ export default function Messages() {
     return unsubscribe
   }, [user, loadChats])
 
+  // While a chat is open, keep marking incoming messages read immediately.
+  useEffect(() => {
+    if (!user || !activeChat) {
+      setActiveChatForRead(null)
+      return
+    }
+    const chatId = activeChat.id
+    setActiveChatForRead(chatId)
+    clearUnreadForChat(chatId)
+    const interval = window.setInterval(() => clearUnreadForChat(chatId), 4000)
+    const unsubscribe = subscribeToMessages(user.id, () => {
+      if (activeChatIdRef.current === chatId) clearUnreadForChat(chatId)
+    })
+    return () => {
+      setActiveChatForRead(null)
+      window.clearInterval(interval)
+      unsubscribe()
+    }
+  }, [user, activeChat?.id, clearUnreadForChat])
+
   // Deep link: /messages?user=<uuid> opens (or starts) a conversation.
   useEffect(() => {
     if (!user) return
@@ -99,9 +134,7 @@ export default function Messages() {
         const chat = await startChat(otherId)
         if (cancelled) return
         setActiveChat(chat)
-        setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
-        void markMessagesRead(chat.id, user.id)
-        markChatRead(chat.id).catch(() => {})
+        clearUnreadForChat(chat.id)
         void loadChats()
       } catch (error) {
         toast.error(getErrorMessage(error, 'generic'))
@@ -129,20 +162,12 @@ export default function Messages() {
       }
     }
     setActiveChat(next)
-    setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
-    // Direct supabase RLS update is the reliable path for clearing unread
-    // state (backend markChatRead has been flaky); keep both for redundancy.
-    void markMessagesRead(chat.id, user.id)
-    markChatRead(chat.id).catch(() => {})
+    clearUnreadForChat(next.id)
   }
 
   const handleChatCreated = async (chat: Chat) => {
     setActiveChat(chat)
-    if (user) {
-      setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
-      void markMessagesRead(chat.id, user.id)
-      markChatRead(chat.id).catch(() => {})
-    }
+    if (user) clearUnreadForChat(chat.id)
     void loadChats()
   }
 

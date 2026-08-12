@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from app.core.auth import get_user_client, get_user_id
+from app.core.supabase import service_supabase
 from app.schemas.chat import ChatMessageIn, ChatMessageOut, ChatOut, ChatStartIn
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -198,25 +199,51 @@ async def mark_chat_read(
     user_id: str = Depends(get_user_id),
     user_client=Depends(get_user_client),
 ):
-    """Mark every message in a chat as read for the current user.
-
-    Uses the SECURITY DEFINER RPC `mark_chat_messages_read` (runs as the
-    service role) because the plain RLS-scoped update silently failed and
-    left messages unread even after the user opened the chat.
-    """
-    result = (
-        user_client.rpc(
-            "mark_chat_messages_read",
-            {"p_chat_id": chat_id, "p_user_id": user_id},
-        )
-        .execute()
-    )
+    """Mark every message in a chat as read for the current user."""
     updated = 0
-    if result.data is not None:
-        if isinstance(result.data, list):
-            updated = int((result.data[0] or {}).get("mark_chat_messages_read") or 0) if result.data else 0
-        else:
-            updated = int(result.data)
+    # Prefer service role — never silently fail because of RLS.
+    if service_supabase.available:
+        try:
+            chat = (
+                service_supabase.table("chats")
+                .select("participant_1, participant_2")
+                .eq("id", chat_id)
+                .limit(1)
+                .execute()
+            )
+            row = (chat.data or [None])[0]
+            if row and (
+                _uuid_eq(user_id, row.get("participant_1"))
+                or _uuid_eq(user_id, row.get("participant_2"))
+            ):
+                res = (
+                    service_supabase.table("messages")
+                    .update({"is_read": True})
+                    .eq("chat_id", chat_id)
+                    .neq("sender_id", user_id)
+                    .eq("is_read", False)
+                    .execute()
+                )
+                updated = len(res.data or [])
+        except Exception as exc:
+            print(f"[chat.read] service update failed: {exc}")
+
+    if updated == 0:
+        try:
+            result = user_client.rpc(
+                "mark_chat_messages_read",
+                {"p_chat_id": chat_id, "p_user_id": user_id},
+            ).execute()
+            if result.data is not None:
+                if isinstance(result.data, list):
+                    updated = int(result.data[0] or 0) if result.data else 0
+                elif isinstance(result.data, dict):
+                    updated = int(result.data.get("mark_chat_messages_read") or 0)
+                else:
+                    updated = int(result.data)
+        except Exception as exc:
+            print(f"[chat.read] rpc failed: {exc}")
+
     return {"updated": updated}
 
 

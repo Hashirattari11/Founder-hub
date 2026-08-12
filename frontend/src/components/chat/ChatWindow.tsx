@@ -233,6 +233,7 @@ export function ChatWindow({ chat, userId, onBack, onChatUpdated }: ChatWindowPr
           }
           return merged
         })
+        if (!cancelled) markMessagesRead(chat.id, userId).catch(() => {})
       } catch {
         /* ignore transient poll errors */
       }

@@ -141,21 +141,23 @@ def enqueue_email(
         logger.warning("enqueue_email insert failed: %s", exc)
         return False
 
+    inserted_id = None
+    try:
+        inserted = (
+            service_supabase.table("email_queue")
+            .select("id,created_at")
+            .eq("dedupe_key", key)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if inserted.data:
+            inserted_id = inserted.data[0]["id"]
+    except Exception:  # pragma: no cover
+        pass
+
     if send_now:
-        row = dict(payload)
-        try:
-            inserted = (
-                service_supabase.table("email_queue")
-                .select("id,created_at")
-                .eq("dedupe_key", key)
-                .order("created_at", desc=True)
-                .limit(1)
-                .execute()
-            )
-            if inserted.data:
-                row["id"] = inserted.data[0]["id"]
-        except Exception:  # pragma: no cover
-            row["id"] = None
+        row = {**payload, "id": inserted_id}
         delay = max(0, int(send_delay_seconds or 0))
         if delay > 0:
             # Serverless-safe: leave queued until cron/startup drain picks it up.
@@ -388,17 +390,19 @@ def _send_one(row: dict) -> None:
         row = {**row, "provider_used": result["provider"]}
 
     if ok:
+        patch = {
+            "status": "sent",
+            "sent_at": "now",
+            "error": None,
+            "message_id": message_id,
+            "http_status": http_status,
+            "last_error_at": None,
+        }
         try:
-            service_supabase.table("email_queue").update(
-                {
-                    "status": "sent",
-                    "sent_at": "now",
-                    "error": None,
-                    "message_id": message_id,
-                    "http_status": http_status,
-                    "last_error_at": None,
-                }
-            ).eq("id", row["id"]).execute()
+            if row.get("id"):
+                service_supabase.table("email_queue").update(patch).eq("id", row["id"]).execute()
+            elif row.get("dedupe_key"):
+                service_supabase.table("email_queue").update(patch).eq("dedupe_key", row["dedupe_key"]).eq("status", "queued").execute()
         except Exception:  # pragma: no cover
             pass
     else:

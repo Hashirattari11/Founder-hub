@@ -256,7 +256,16 @@ async function notifyMessageParticipant(chatId: string, senderId: string): Promi
   }
 }
 
-/** Merge fetched messages into local state without dropping optimistic rows. */
+let activeChatForRead: string | null = null
+
+/** Messages page sets this so global unread badges clear while a chat is open. */
+export function setActiveChatForRead(chatId: string | null): void {
+  activeChatForRead = chatId
+}
+
+export function getActiveChatForRead(): string | null {
+  return activeChatForRead
+}
 export function mergeChatMessages(prev: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
   const normalized = incoming.map(normalizeIncomingMessage).filter(Boolean) as ChatMessage[]
   if (normalized.length === 0) return prev
@@ -336,7 +345,7 @@ export async function sendChatMessage(params: {
       { auth: true },
     )
     const enriched = await enrichOutgoingMessage(msg, params.senderId)
-    void notifyMessageParticipant(params.chatId, params.senderId)
+    // Backend /send already notifies (bell + email + push) — avoid duplicate bell entries.
     return enriched
   }
 
@@ -449,11 +458,28 @@ export function messagePreview(message: {
 /** Mark every message in a chat as read for the current user. Never throws. */
 export async function markMessagesRead(chatId: string, userId: string): Promise<void> {
   try {
+    await markChatRead(chatId)
+    return
+  } catch {
+    /* fall through */
+  }
+  try {
     const { error } = await supabase.rpc('mark_chat_messages_read', {
       p_chat_id: chatId,
       p_user_id: userId,
     })
-    if (error) console.warn('[chat] markMessagesRead failed:', error.message)
+    if (!error) return
+  } catch {
+    /* fall through */
+  }
+  try {
+    const { error } = await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('chat_id', chatId)
+      .neq('sender_id', userId)
+      .eq('is_read', false)
+    if (error) console.warn('[chat] markMessagesRead direct update failed:', error.message)
   } catch (err) {
     console.warn('[chat] markMessagesRead failed:', err)
   }
