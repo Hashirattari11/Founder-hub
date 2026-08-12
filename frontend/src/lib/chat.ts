@@ -5,7 +5,7 @@ import type { Chat, ChatMessage, ChatMessageType, ChatProfile, MessageReaction, 
 
 export const CHAT_PROFILE_FIELDS = 'id, full_name, username, avatar_url, role, is_online, last_seen'
 
-function sameUser(a: string | null | undefined, b: string | null | undefined): boolean {
+export function sameUser(a: string | null | undefined, b: string | null | undefined): boolean {
   if (!a || !b) return false
   return a.toLowerCase() === b.toLowerCase()
 }
@@ -76,44 +76,51 @@ export async function hydrateReplyTo(msg: ChatMessage): Promise<ChatMessage> {
   return { ...msg, reply_to: toRepliedMessage(data as ReplyRow) }
 }
 
+/** True when both chat slots point at the same user (invalid 1:1 chat). */
+export function isSelfChat(chat: Pick<Chat, 'participant_1' | 'participant_2'>): boolean {
+  return sameUser(chat.participant_1, chat.participant_2)
+}
+
 /** UUID of the other participant in a 1:1 chat (never the viewer). */
 export function getOtherParticipantId(chat: Chat, currentUserId: string): string | null {
+  if (isSelfChat(chat)) return null
   if (sameUser(chat.participant_1, currentUserId)) return chat.participant_2
   if (sameUser(chat.participant_2, currentUserId)) return chat.participant_1
   return null
 }
 
-function profileForParticipant(
+/**
+ * Sync resolver for the chat partner — never infer "other" from embed slot order.
+ * Only returns a profile when its id matches the computed other participant UUID.
+ */
+export function resolveChatPartner(
   chat: Chat,
-  participantId: string,
-): ChatProfile | null | undefined {
-  if (sameUser(chat.participant_1, participantId)) return chat.participant_1_profile
-  if (sameUser(chat.participant_2, participantId)) return chat.participant_2_profile
+  viewerId: string,
+): { id: string; profile: ChatProfile } | null {
+  if (!viewerId || isSelfChat(chat)) return null
+
+  const otherId =
+    (chat.other_participant_id && !sameUser(chat.other_participant_id, viewerId)
+      ? chat.other_participant_id
+      : null) ?? getOtherParticipantId(chat, viewerId)
+
+  if (!otherId || sameUser(otherId, viewerId)) return null
+
+  const candidate = chat.other_participant_profile
+  if (
+    candidate &&
+    sameUser(candidate.id, otherId) &&
+    !sameUser(candidate.id, viewerId)
+  ) {
+    return { id: otherId, profile: candidate }
+  }
+
   return null
 }
 
-/** Fetch a profile row by canonical user UUID. */
-export function getOtherUser(
-  chat: Chat,
-  currentUserId: string,
-): ChatProfile | null {
-  const otherId = getOtherParticipantId(chat, currentUserId)
-  if (!otherId || sameUser(otherId, currentUserId)) return null
-
-  if (
-    chat.other_participant_profile &&
-    sameUser(chat.other_participant_profile.id, otherId) &&
-    !sameUser(chat.other_participant_profile.id, currentUserId)
-  ) {
-    return chat.other_participant_profile
-  }
-
-  const profile = profileForParticipant(chat, otherId)
-  if (profile && sameUser(profile.id, otherId) && !sameUser(profile.id, currentUserId)) {
-    return profile
-  }
-
-  return null
+/** @deprecated Prefer resolveChatPartner + getChatOtherProfile */
+export function getOtherUser(chat: Chat, currentUserId: string): ChatProfile | null {
+  return resolveChatPartner(chat, currentUserId)?.profile ?? null
 }
 
 /** @deprecated Use getChatOtherProfile */
@@ -146,17 +153,19 @@ export async function getChatOtherProfile(
 export async function getMyChats(userId: string): Promise<Chat[]> {
   const rows = await api.get<Chat[]>('/api/chats', { auth: true })
   return Promise.all(
-    rows.map(async (row) => {
-      const otherId = getOtherParticipantId(row, userId)
-      if (!otherId || sameUser(otherId, userId)) return row
-      const other = await getChatOtherProfile(row, userId)
-      if (!other) return row
-      return {
-        ...row,
-        other_participant_id: otherId,
-        other_participant_profile: other,
-      }
-    }),
+    rows
+      .filter((row) => !isSelfChat(row))
+      .map(async (row) => {
+        const otherId = getOtherParticipantId(row, userId)
+        if (!otherId || sameUser(otherId, userId)) return row
+        const other = await getChatOtherProfile(row, userId)
+        if (!other) return row
+        return {
+          ...row,
+          other_participant_id: otherId,
+          other_participant_profile: other,
+        }
+      }),
   )
 }
 
@@ -178,6 +187,10 @@ export async function startChat(receiverId: string): Promise<Chat> {
   }
 
   const chat = await api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
+
+  if (isSelfChat(chat)) {
+    throw new Error("You can't start a conversation with yourself.")
+  }
 
   const otherId = getOtherParticipantId(chat, me)
   if (!otherId || !sameUser(otherId, receiverId)) {

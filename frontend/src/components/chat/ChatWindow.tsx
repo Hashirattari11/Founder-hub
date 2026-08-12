@@ -26,7 +26,7 @@ import {
   deleteMessageForMe,
   getChatMessages,
   getChatOtherProfile,
-  getOtherUser,
+  resolveChatPartner,
   hydrateReplyTo,
   markMessagesRead,
   messagePreview,
@@ -78,7 +78,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   const [resolvedOther, setResolvedOther] = useState<ChatProfile | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const nearBottomRef = useRef(true)
-  const other = resolvedOther ?? getOtherUser(resolvedChat, userId)
+  const other = resolvedOther ?? resolveChatPartner(resolvedChat, userId)?.profile ?? null
   const displayOther = liveStatus && other ? { ...other, ...liveStatus } : other
 
   // Hide messages the current user deleted "for me".

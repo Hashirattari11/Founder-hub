@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MessageSquarePlus, Search } from 'lucide-react'
 import { ChatListItem } from './ChatListItem'
-import { getOtherUser } from '../../lib/chat'
+import { resolveChatPartner } from '../../lib/chat'
 import type { Chat } from '../../types'
 
 interface ChatListProps {
@@ -27,9 +27,9 @@ export function ChatList({
     const q = search.trim().toLowerCase()
     if (!q) return chats
     return chats.filter((chat) => {
-      const other = getOtherUser(chat, currentUserId)
-      const name = (other?.full_name ?? '').toLowerCase()
-      const username = (other?.username ?? '').toLowerCase()
+      const partner = resolveChatPartner(chat, currentUserId)
+      const name = (partner?.profile.full_name ?? '').toLowerCase()
+      const username = (partner?.profile.username ?? '').toLowerCase()
       return name.includes(q) || username.includes(q)
     })
   }, [chats, search, currentUserId])

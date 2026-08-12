@@ -12,6 +12,7 @@ import {
   getUnreadCounts,
   markChatRead,
   markMessagesRead,
+  sameUser,
   startChat,
   subscribeToChats,
 } from '../lib/chat'
@@ -35,6 +36,10 @@ export default function Messages() {
       const data = await getMyChats(user.id)
       if (id !== fetchIdRef.current) return undefined
       setChats(data)
+      setActiveChat((prev) => {
+        if (!prev) return prev
+        return data.find((c) => c.id === prev.id) ?? prev
+      })
       const counts = await getUnreadCounts(data.map((c) => c.id), user.id)
       if (id !== fetchIdRef.current) return undefined
       setUnreadCounts(counts)
@@ -65,7 +70,7 @@ export default function Messages() {
     const params = new URLSearchParams(window.location.search)
     const otherId = params.get('user')
     if (!otherId || !/^[0-9a-f-]{8}(-[0-9a-f-]{4}){3}-[0-9a-f-]{12}$/i.test(otherId)) return
-    if (otherId === user.id) {
+    if (sameUser(otherId, user.id)) {
       toast.error("You can't start a conversation with yourself.")
       return
     }

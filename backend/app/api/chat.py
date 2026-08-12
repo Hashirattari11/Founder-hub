@@ -82,6 +82,12 @@ def _fetch_chat_with_profiles(user_client, chat_id: str, viewer_id: str) -> dict
     return _enrich_chat_for_viewer(user_client, rows[0], viewer_id)
 
 
+def _norm_uuid(value: str | None) -> str:
+    if not value:
+        return ""
+    return str(value).lower()
+
+
 @router.post("/chats/start", response_model=ChatOut)
 async def start_chat(
     payload: ChatStartIn,
@@ -89,7 +95,12 @@ async def start_chat(
     user_client=Depends(get_user_client),
 ):
     """Get (or create) a chat between the current user and receiver_id."""
-    if _uuid_eq(payload.receiver_id, user_id):
+    viewer_id = _norm_uuid(user_id)
+    receiver_id = _norm_uuid(payload.receiver_id)
+
+    if not receiver_id:
+        raise HTTPException(status_code=400, detail="Invalid recipient")
+    if _uuid_eq(receiver_id, viewer_id):
         raise HTTPException(status_code=400, detail="You cannot start a chat with yourself")
 
     receiver = (
@@ -103,7 +114,9 @@ async def start_chat(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Normalize participant order so the unique constraint finds existing chats.
-    p1, p2 = sorted([user_id, payload.receiver_id])
+    p1, p2 = sorted([viewer_id, receiver_id])
+    if _uuid_eq(p1, p2):
+        raise HTTPException(status_code=400, detail="You cannot start a chat with yourself")
 
     existing = (
         user_client.table("chats")
