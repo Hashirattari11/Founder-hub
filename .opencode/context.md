@@ -2,24 +2,25 @@
 
 ## Environment
 - Frontend: Vite+React18+TS (D:\founderhub\frontend), Vercel prod https://founder-hub-0.vercel.app
-- Backend: FastAPI (D:\founderhub\backend), deployed to Railway (railway.json) — URL UNKNOWN (find via Railway dashboard or git remotes)
-- Branch main. This-session commits: e9cd563, 67fc16e (pushed+deployed). Prior-session auth commit b96f62d.
-- Tests: Playwright. ⚠️ port 5173 hijacked by FrameForge AI → ALWAYS use BASE_URL=https://founder-hub-0.vercel.app. Runner: C:\Users\AAMASH\AppData\Local\Temp\opencode\run-auth-prod.ps1. Last prod suite: auth+roles 10 passed / 0 failed.
+- Backend: FastAPI (D:\founderhub\backend) — NOT DEPLOYED (only Vercel frontend live). railway.json exists but no live URL.
+- Branch main. This-session commits: e9cd563, 67fc16e, 1d917fb (all pushed+deployed).
+- Tests: Playwright. ⚠️ port 5173 hijacked by FrameForge AI → ALWAYS use BASE_URL=https://founder-hub-0.vercel.app. Runner: C:\Users\AAMASH\AppData\Local\Temp\opencode\run-auth-prod.ps1.
 
-## THIS-SESSION DB FIXES (both applied via Supabase MCP, live)
-1. `restore_profiles_write_grants`: GRANT INSERT,UPDATE ON profiles TO authenticated (was revoked → "permission denied for table profiles"). Security: trg_protect_role_columns protects admin/system columns.
-2. `fix_protect_role_columns_connections_count_default`: trigger INSERT branch had `connections_count is not null` but column DEFAULT=0 → `0 is not null`=TRUE → RAISE on every user INSERT ("Privileged and system fields are admin-managed"). FIX: changed to `connections_count <> 0` (only non-zero raises). handle_new_user unaffected (runs SECURITY DEFINER, auth.uid() null, guard skipped). VERIFIED fix_applied=true.
+## THIS-SESSION DB FIXES (via Supabase MCP, live — no deploy needed)
+1. `restore_profiles_write_grants`: GRANT INSERT,UPDATE ON profiles TO authenticated (was revoked). trg_protect_role_columns protects admin cols.
+2. `fix_protect_role_columns_connections_count_default`: trigger INSERT branch `connections_count is not null` → default 0 → always raised "Privileged and system fields are admin-managed." on user INSERT. Fixed to `<> 0`. handle_new_user unaffected (SECURITY DEFINER).
 
-## ROOT CAUSE of "Service temporarily unavailable" (separate from auth)
-frontend/src/lib/config.ts: `API_URL = VITE_API_URL || (PROD ? '' : 'http://localhost:8001')`.
-Vercel env vars (checked via `vercel env ls production`): only VITE_SUPABASE_ANON_KEY + VITE_SUPABASE_URL set. **VITE_API_URL MISSING** → in prod API_URL='' → fetch('/api/...') hits frontend SPA → returns HTML → api.ts parseJson throws "Service temporarily unavailable".
-Affects: all FastAPI-backed features (AI generate, war-room insights, AI settings, admin AI summaries). Does NOT affect Register/Login (those use supabase.auth only).
-FIX needed: (a) confirm Railway backend is live + get its URL; (b) `npx vercel env add VITE_API_URL production` with the Railway URL; (c) redeploy frontend. UNVERIFIED — don't know Railway URL.
+## THIS-SESSION FRONTEND (deployed)
+- e9cd563: Callback intent=register+onboarded→/dashboard (don't re-onboard); real PostgrestError message + 42501 hint.
+- 67fc16e: Login friendly errors; FormInput a11y; chat inputs name attrs.
+- 1d917fb: "Welcome back! We found your existing FounderHub account." toast on Google intent=register+onboarded.
 
-## Auth 18-phase spec (prior session built most — see .opencode/auth-report.md)
-PKCE (detectSessionInUrl:false ✓), Callback intent routing ✓, username gen (lib/username.ts) ✓, profile completion gate (lib/profileCompletion.ts + ProfileGateRoute) ✓, role permanence (protect_role_columns + RoleRequestCard + backend emails) ✓, no "temporarily denied" logic ✓, idempotent handle_new_user (ON CONFLICT DO NOTHING) ✓.
+## "Service temporarily unavailable" (backend not deployed — SEPARATE issue)
+config.ts: API_URL = VITE_API_URL || (PROD ? '' : localhost:8001). Vercel env MISSING VITE_API_URL → prod API_URL='' → /api calls hit SPA → HTML → api.ts throws. Affects: AI generate, war-room insights, AI settings, admin AI. Auth/Register/Login/profile save NOT affected (Supabase direct). FIX requires deploying FastAPI backend (Railway/Render) + setting VITE_API_URL + redeploy frontend.
 
-## Pending Tasks
-- User retest: (1) new account profile save — trigger fix should resolve "Privileged and system fields"; (2) existing account edit save. NO frontend deploy needed for DB fixes.
-- Investigate Railway backend URL + set VITE_API_URL on Vercel + redeploy (for "Service temporarily unavailable" on AI/backend features). Ask user if they have the Railway backend URL, OR find via `cd backend; git remote -v` / `railway status`.
-- Frontend commits this session (e9cd563, 67fc16e) already deployed. No NEW frontend changes since.
+## Auth flow (no backend needed — all Supabase direct)
+Create Account with existing email (Register.tsx) → "An account already exists" screen + "Continue to Sign In" (commit c441837, working). Google "Continue with Google" Create Account + existing → Callback intent=register + onboarded → /dashboard + "Welcome back" toast. Sign In + existing → /dashboard. Sign In + not-found → "Account not found" + signOut cleanup. New Google → /onboarding. Onboarding save → trigger fix unblocked it.
+
+## Pending
+- User retest: new account onboarding save (trigger fix) + existing Google account Create Account (toast + dashboard).
+- Backend deploy (Railway/Render) — separate task, needs env vars (Supabase service key, OPENAI key, JWT secret, FRONTEND_URL) + set VITE_API_URL on Vercel. NOT in scope of auth fix.

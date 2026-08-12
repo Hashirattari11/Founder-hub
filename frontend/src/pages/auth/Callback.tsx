@@ -70,9 +70,11 @@ export default function Callback() {
           return
         }
 
-        // A real FounderHub account has a username — it was set during onboarding.
-        // A profile row created by the handle_new_user trigger (Google OAuth) has
-        // full_name but NO username, which means the account was never created.
+        // A real FounderHub account has a profile row (created by the
+        // handle_new_user trigger on first-ever auth). username being set means
+        // onboarding was completed; username NULL means the row exists but
+        // onboarding was never finished (still needs a username + role pick).
+        const hasProfile = Boolean(p)
         const isOnboarded = Boolean(p?.username)
 
         if (intent === 'signin') {
@@ -90,9 +92,10 @@ export default function Callback() {
 
         if (intent === 'register') {
           // The user clicked "Continue with Google" on the Create Account page.
-          // If they already have an onboarded account (username set), don't push
-          // them through the onboarding wizard again — go straight to the app.
-          if (isOnboarded) {
+          // If a profile already exists for this Google identity, the account
+          // already exists — never silently re-onboard them. Send them to the
+          // app (the profile completion gate handles a missing username/role).
+          if (hasProfile) {
             toast.success('Welcome back! We found your existing FounderHub account.')
             navigate(popAuthRedirect('/dashboard'), { replace: true })
           } else {
