@@ -4,6 +4,7 @@ import { Rocket } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase, popAuthRedirect } from '../../lib/supabase'
 import { getErrorMessage } from '../../lib/errors'
+import { hasUserConsent, recordUserConsent } from '../../lib/consent'
 import { isAdminProfile } from '../../lib/admin'
 import type { Profile } from '../../types'
 
@@ -68,6 +69,10 @@ export default function Callback() {
         }
 
         const isOnboarded = Boolean(p?.username)
+        const consented = await hasUserConsent(session.user.id)
+
+        const needsConsent = !isOnboarded && !consented
+        const pendingGoogleConsent = sessionStorage.getItem('founderhub:pending-consent') === '1'
 
         if (intent === 'signin') {
           if (isOnboarded) {
@@ -77,6 +82,7 @@ export default function Callback() {
             setState('accountNotFound')
             await supabase.auth.signOut()
           }
+          sessionStorage.removeItem('founderhub:pending-consent')
           return
         }
 
@@ -84,14 +90,23 @@ export default function Callback() {
           if (isOnboarded) {
             toast.success('Welcome back!')
             navigate(popAuthRedirect('/dashboard'), { replace: true })
+          } else if (pendingGoogleConsent) {
+            sessionStorage.removeItem('founderhub:pending-consent')
+            await recordUserConsent(session.user.id)
+            navigate('/complete-profile', { replace: true })
+          } else if (needsConsent) {
+            navigate('/auth/consent', { replace: true })
           } else {
             navigate('/complete-profile', { replace: true })
           }
+          sessionStorage.removeItem('founderhub:pending-consent')
           return
         }
 
         if (isOnboarded) {
           navigate(popAuthRedirect('/dashboard'), { replace: true })
+        } else if (needsConsent) {
+          navigate('/auth/consent', { replace: true })
         } else {
           navigate('/complete-profile', { replace: true })
         }

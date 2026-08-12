@@ -10,8 +10,27 @@ from app.schemas.chat import ChatMessageIn, ChatMessageOut, ChatOut, ChatStartIn
 router = APIRouter(prefix="/api", tags=["chat"])
 
 CHAT_PROFILE_FIELDS = (
-    "id, full_name, avatar_url, role, is_online, last_seen"
+    "id, full_name, username, avatar_url, role, is_online, last_seen"
 )
+
+
+def _fetch_chat_with_profiles(user_client, chat_id: str) -> dict:
+    """Reload a chat row with both participant profile embeds."""
+    result = (
+        user_client.table("chats")
+        .select(
+            f"*, "
+            f"participant_1_profile:profiles!chats_participant_1_fkey({CHAT_PROFILE_FIELDS}), "
+            f"participant_2_profile:profiles!chats_participant_2_fkey({CHAT_PROFILE_FIELDS})"
+        )
+        .eq("id", chat_id)
+        .limit(1)
+        .execute()
+    )
+    rows = result.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    return rows[0]
 
 
 @router.post("/chats/start", response_model=ChatOut)
@@ -46,7 +65,7 @@ async def start_chat(
         .execute()
     )
     if existing.data:
-        return existing.data[0]
+        return _fetch_chat_with_profiles(user_client, existing.data[0]["id"])
 
     inserted = (
         user_client.table("chats")
@@ -56,7 +75,7 @@ async def start_chat(
     if not inserted.data:
         raise HTTPException(status_code=409, detail="Could not create chat")
 
-    return inserted.data[0]
+    return _fetch_chat_with_profiles(user_client, inserted.data[0]["id"])
 
 
 @router.get("/chats", response_model=list[ChatOut])

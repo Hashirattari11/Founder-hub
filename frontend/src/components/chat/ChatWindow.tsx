@@ -26,6 +26,7 @@ import {
   deleteMessageForMe,
   getChatMessages,
   getOtherUser,
+  hydrateChatProfiles,
   hydrateReplyTo,
   markMessagesRead,
   messagePreview,
@@ -36,6 +37,7 @@ import {
   toggleReaction,
 } from '../../lib/chat'
 import { formatDayDivider, isSameDay, timeAgo } from '../../lib/helpers'
+import { profileDisplayName } from '../../lib/users'
 import { playMessageSound } from '../../lib/sound'
 import type { Chat, ChatMessage } from '../../types'
 
@@ -72,9 +74,10 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
+  const [resolvedChat, setResolvedChat] = useState(chat)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const nearBottomRef = useRef(true)
-  const other = getOtherUser(chat, userId)
+  const other = getOtherUser(resolvedChat, userId)
   const displayOther = liveStatus && other ? { ...other, ...liveStatus } : other
 
   // Hide messages the current user deleted "for me".
@@ -110,6 +113,21 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
       /* notifications unavailable */
     }
   }, [])
+
+  // Ensure participant profiles are loaded (backend / startChat may omit embeds).
+  useEffect(() => {
+    let cancelled = false
+    setResolvedChat(chat)
+    if (getOtherUser(chat, userId)) return
+    hydrateChatProfiles(chat)
+      .then((hydrated) => {
+        if (!cancelled) setResolvedChat(hydrated)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [chat, userId])
 
   // Initial load
   useEffect(() => {
@@ -555,7 +573,7 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">
-                  {displayOther?.full_name ?? 'Unknown user'}
+                  {displayOther ? profileDisplayName(displayOther) : 'Member'}
                 </p>
                 <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                   {displayOther?.is_online

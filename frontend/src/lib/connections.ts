@@ -2,6 +2,21 @@ import { supabase } from './supabase'
 import { api } from './api'
 import type { ConnectionRow } from '../types'
 
+type ProfileEmbed = {
+  id: string
+  full_name: string | null
+  username: string | null
+  avatar_url: string | null
+  role: string | null
+  skills?: string[] | null
+  city?: string | null
+}
+
+function unwrapProfile<T extends ProfileEmbed>(p: T | T[] | null | undefined): T | null {
+  if (!p) return null
+  return Array.isArray(p) ? (p[0] ?? null) : p
+}
+
 export type ConnectionState =
   | { status: 'none' }
   | { status: 'requested' }
@@ -17,22 +32,52 @@ export async function getConnectionState(
   const { data, error } = await supabase
     .from('connections')
     .select('requester_id, receiver_id, status')
-    .or(`and(requester_id.eq.${viewerId},receiver_id.eq.${otherId}),and(requester_id.eq.${otherId},receiver_id.eq.${viewerId})`)
-    .maybeSingle()
-  if (error) return { status: 'none' }
-  const row = data as ConnectionRow | null
-  if (!row) return { status: 'none' }
-  if (row.requester_id === viewerId && row.status === 'pending') return { status: 'pending' }
-  if (row.receiver_id === viewerId && row.status === 'pending') return { status: 'requested' }
-  return { status: 'accepted' }
+    .or(
+      `and(requester_id.eq.${viewerId},receiver_id.eq.${otherId}),and(requester_id.eq.${otherId},receiver_id.eq.${viewerId})`,
+    )
+    .limit(2)
+  if (error) throw error
+
+  const rows = (data ?? []) as ConnectionRow[]
+  if (!rows.length) return { status: 'none' }
+
+  if (rows.some((r) => r.status === 'accepted')) return { status: 'accepted' }
+
+  const minePending = rows.find((r) => r.requester_id === viewerId && r.status === 'pending')
+  if (minePending) return { status: 'pending' }
+
+  const theirsPending = rows.find((r) => r.receiver_id === viewerId && r.status === 'pending')
+  if (theirsPending) return { status: 'requested' }
+
+  return { status: 'none' }
 }
 
 export async function sendConnectionRequest(requesterId: string, receiverId: string): Promise<void> {
+  if (requesterId === receiverId) {
+    throw new Error("You can't connect with yourself.")
+  }
+
+  const existing = await getConnectionState(requesterId, receiverId)
+  if (existing.status === 'accepted') {
+    throw new Error('You are already connected.')
+  }
+  if (existing.status === 'pending') {
+    throw new Error('Connection request already sent.')
+  }
+  if (existing.status === 'requested') {
+    throw new Error('They already sent you a request — accept it instead.')
+  }
+
   const { error } = await supabase
     .from('connections')
     .insert({ requester_id: requesterId, receiver_id: receiverId, status: 'pending' })
-  if (error) throw error
-  // Best-effort email notification to the receiver.
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Connection request already sent.')
+    }
+    throw error
+  }
+
   void api
     .post('/api/notify/connection-request', { receiver_id: receiverId }, { auth: true })
     .catch(() => {})
@@ -62,15 +107,8 @@ export async function rejectConnectionRequest(receiverId: string, requesterId: s
 export async function getPeopleToConnect(
   user: { id: string; role: string | null; skills: string[] | null },
   limit = 3,
-): Promise<Array<{ id: string; full_name: string; username: string | null; avatar_url: string | null; role: string | null; skills: string[] | null; city: string | null }>> {
-  // People who already sent ME a request — always surface them so I can accept/decline.
-  const { data: incoming } = await supabase
-    .from('connections')
-    .select('requester_id, profiles!connections_requester_id_fkey(id, full_name, username, avatar_url, role, skills, city)')
-    .eq('receiver_id', user.id)
-    .eq('status', 'pending')
-
-  const byId = new Map<string, {
+): Promise<
+  Array<{
     id: string
     full_name: string
     username: string | null
@@ -78,21 +116,34 @@ export async function getPeopleToConnect(
     role: string | null
     skills: string[] | null
     city: string | null
-  }>()
+  }>
+> {
+  const { data: incoming } = await supabase
+    .from('connections')
+    .select(
+      'requester_id, profiles!connections_requester_id_fkey(id, full_name, username, avatar_url, role, skills, city)',
+    )
+    .eq('receiver_id', user.id)
+    .eq('status', 'pending')
 
-  for (const row of (incoming ?? []) as Array<{
-    requester_id: string
-    profiles: {
+  const byId = new Map<
+    string,
+    {
       id: string
-      full_name: string | null
+      full_name: string
       username: string | null
       avatar_url: string | null
       role: string | null
       skills: string[] | null
       city: string | null
-    }[] | null
+    }
+  >()
+
+  for (const row of (incoming ?? []) as Array<{
+    requester_id: string
+    profiles: ProfileEmbed | ProfileEmbed[] | null
   }>) {
-    const p = (row.profiles ?? [])[0]
+    const p = unwrapProfile(row.profiles)
     if (!p || p.id === user.id) continue
     byId.set(p.id, {
       id: p.id,
@@ -109,6 +160,7 @@ export async function getPeopleToConnect(
     .from('profiles')
     .select('id, full_name, username, avatar_url, role, skills, city')
     .neq('id', user.id)
+    .not('username', 'is', null)
     .limit(30)
   if (error) throw error
 
@@ -137,4 +189,30 @@ export async function getPeopleToConnect(
   }
 
   return [...byId.values()].slice(0, limit)
+}
+
+/** List accepted connections for the current user. */
+export async function getAcceptedConnections(userId: string) {
+  const { data, error } = await supabase
+    .from('connections')
+    .select(
+      'requester_id, receiver_id, status, requester:profiles!connections_requester_id_fkey(id, full_name, username, avatar_url, role), receiver:profiles!connections_receiver_id_fkey(id, full_name, username, avatar_url, role)',
+    )
+    .eq('status', 'accepted')
+    .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
+  if (error) throw error
+
+  return (data ?? [])
+    .map((row) => {
+      const r = row as {
+        requester_id: string
+        receiver_id: string
+        requester: ProfileEmbed | ProfileEmbed[] | null
+        receiver: ProfileEmbed | ProfileEmbed[] | null
+      }
+      const other =
+        r.requester_id === userId ? unwrapProfile(r.receiver) : unwrapProfile(r.requester)
+      return other
+    })
+    .filter(Boolean)
 }

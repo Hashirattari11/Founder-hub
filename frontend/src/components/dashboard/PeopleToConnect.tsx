@@ -9,6 +9,7 @@ import {
   acceptConnectionRequest,
   rejectConnectionRequest,
 } from '../../lib/connections'
+import { getErrorMessage } from '../../lib/errors'
 import { Avatar } from '../Avatar'
 import { SkeletonRow } from './Skeleton'
 import { ROLE_LABELS } from '../../types'
@@ -71,8 +72,8 @@ export function PeopleToConnect({ user, limit = 3 }: { user: Profile; limit?: nu
       await sendConnectionRequest(user.id, candidate.id)
       setStates((prev) => ({ ...prev, [candidate.id]: { status: 'pending' } }))
       toast.success(`Connection request sent to ${candidate.full_name}`)
-    } catch {
-      toast.error('Could not send connection request')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusy(null)
     }
@@ -84,8 +85,8 @@ export function PeopleToConnect({ user, limit = 3 }: { user: Profile; limit?: nu
       await acceptConnectionRequest(user.id, candidate.id)
       setStates((prev) => ({ ...prev, [candidate.id]: { status: 'accepted' } }))
       toast.success(`You and ${candidate.full_name} are now connected`)
-    } catch {
-      toast.error('Could not accept the request')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusy(null)
     }
@@ -97,8 +98,8 @@ export function PeopleToConnect({ user, limit = 3 }: { user: Profile; limit?: nu
       await rejectConnectionRequest(user.id, candidate.id)
       setStates((prev) => ({ ...prev, [candidate.id]: { status: 'none' } }))
       toast.success(`Request from ${candidate.full_name} declined`)
-    } catch {
-      toast.error('Could not decline the request')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusy(null)
     }

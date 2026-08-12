@@ -5,6 +5,7 @@ import { FileMessage } from './FileMessage'
 import { ImageMessage } from './ImageMessage'
 import { VoiceMessage } from './VoiceMessage'
 import { formatTime } from '../../lib/helpers'
+import { profileDisplayName } from '../../lib/users'
 import { messagePreview, summarizeReactions } from '../../lib/chat'
 import type { ChatMessage, ChatProfile } from '../../types'
 
@@ -164,7 +165,7 @@ export function MessageBubble({
       >
         {!isOwn && showAvatar && (
           <span className="mb-0.5 ml-2 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-            {other?.full_name ?? 'Unknown user'}
+            {other ? profileDisplayName(other) : null}
           </span>
         )}
 

@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { api } from './api'
+import { discoverUsers, discoverableToProfile } from './users'
 import type { Chat, ChatMessage, ChatMessageType, ChatProfile, MessageReaction, Profile, RepliedMessage } from '../types'
 
 export const CHAT_PROFILE_FIELDS = 'id, full_name, username, avatar_url, role, is_online, last_seen'
@@ -75,9 +76,36 @@ export function getOtherUser(
   chat: Chat,
   currentUserId: string,
 ): ChatProfile | null {
-  return chat.participant_1 === currentUserId
-    ? (chat.participant_1_profile ?? null)
-    : (chat.participant_2_profile ?? null)
+  if (chat.participant_1 === currentUserId) {
+    return chat.participant_2_profile ?? null
+  }
+  if (chat.participant_2 === currentUserId) {
+    return chat.participant_1_profile ?? null
+  }
+  return null
+}
+
+/** Attach participant profile rows when a chat payload omits them (e.g. /chats/start). */
+export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
+  const missing: string[] = []
+  if (!chat.participant_1_profile) missing.push(chat.participant_1)
+  if (!chat.participant_2_profile) missing.push(chat.participant_2)
+  if (missing.length === 0) return chat
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(CHAT_PROFILE_FIELDS)
+    .in('id', missing)
+  if (error) throw error
+
+  const byId = new Map((data ?? []).map((row) => [row.id as string, row as ChatProfile]))
+  return {
+    ...chat,
+    participant_1_profile:
+      chat.participant_1_profile ?? byId.get(chat.participant_1) ?? null,
+    participant_2_profile:
+      chat.participant_2_profile ?? byId.get(chat.participant_2) ?? null,
+  }
 }
 
 /** All chats for the current user, newest last_message first. */
@@ -97,7 +125,11 @@ export async function getMyChats(userId: string): Promise<Chat[]> {
 
 /** Get (or create) a chat with another user via the backend. */
 export async function startChat(receiverId: string): Promise<Chat> {
-  return api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
+  if (!receiverId || !/^[0-9a-f-]{36}$/i.test(receiverId)) {
+    throw new Error('Invalid recipient — could not start conversation.')
+  }
+  const chat = await api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
+  return hydrateChatProfiles(chat)
 }
 
 /** Messages for a chat, 50 at a time (pass before = oldest message id for the previous page). */
@@ -482,21 +514,8 @@ export function subscribeToMessages(userId: string, onChange: () => void): () =>
   }
 }
 
-/** Debounced user search for the "New Message" modal. */
-export async function searchUsers(query: string, excludeUserId: string, limit = 8): Promise<Profile[]> {
-  const q = query.trim()
-  let builder = supabase
-    .from('profiles')
-    .select('*')
-    .neq('id', excludeUserId)
-    .order('full_name')
-    .limit(limit)
-
-  if (q) {
-    builder = builder.or(`full_name.ilike.%${q}%,username.ilike.%${q}%`)
-  }
-
-  const { data, error } = await builder
-  if (error) throw error
-  return (data ?? []) as Profile[]
+/** Debounced user search for messaging — delegates to canonical discoverUsers. */
+export async function searchUsers(query: string, excludeUserId: string, limit = 12): Promise<Profile[]> {
+  const rows = await discoverUsers({ query, excludeUserId, limit, onboardedOnly: true })
+  return rows.map(discoverableToProfile)
 }

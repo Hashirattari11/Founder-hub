@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Rocket, Globe, UserPlus, UserCheck, MessageCircle, C
 import { getProfileByUsername, trackProfileView } from '../../lib/profile'
 import { getMyStartups } from '../../lib/startups'
 import { getConnectionState, sendConnectionRequest, acceptConnectionRequest } from '../../lib/connections'
+import { getErrorMessage } from '../../lib/errors'
 import { FollowButton } from '../../components/FollowButton'
 import { useSession } from '../../context/AuthContext'
 import { Avatar } from '../../components/Avatar'
@@ -170,8 +171,8 @@ export default function ProfileView() {
                       setConnectionStatus('pending')
                       toast.success(`Connection request sent to ${profile.full_name}`)
                     }
-                  } catch {
-                    toast.error('Could not send connection request')
+                  } catch (err) {
+                    toast.error(getErrorMessage(err, 'generic'))
                   }
                 }}
                 disabled={connectionStatus === 'accepted' || connectionStatus === 'pending'}

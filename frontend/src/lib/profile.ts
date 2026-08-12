@@ -72,6 +72,8 @@ export async function searchProfilesByRole(role: Profile['role'], opts?: { query
 
   let builder = supabase.from('profiles').select(select).eq('role', role)
   if (opts?.excludeUserId) builder = builder.neq('id', opts.excludeUserId)
+  // Only list onboarded members (username set) for consistent discovery.
+  builder = builder.not('username', 'is', null)
 
   const q = opts?.query?.trim()
   const safe = q ? escapeIlike(q.replace(/[%,.]/g, ' ').trim()) : ''
@@ -111,18 +113,36 @@ export async function searchProfilesByRole(role: Profile['role'], opts?: { query
   return results.slice(0, 60)
 }
 
-export async function updateProfile(userId: string, updates: ProfileUpdate) {
+async function assertOwnProfile(userId: string) {
   const {
     data: { session },
   } = await supabase.auth.getSession()
   if (!session?.user?.id || session.user.id !== userId) {
     throw new Error("You don't have access to this.")
   }
+  return session.user.id
+}
+
+export async function updateProfile(userId: string, updates: ProfileUpdate) {
+  await assertOwnProfile(userId)
 
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
     .eq('id', userId)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as Profile
+}
+
+/** Create or update the signed-in user's profile (onboarding / complete-profile). */
+export async function saveOwnProfile(userId: string, updates: ProfileUpdate) {
+  await assertOwnProfile(userId)
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert({ id: userId, ...updates })
     .select('*')
     .single()
   if (error) throw error

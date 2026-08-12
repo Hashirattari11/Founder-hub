@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, Plus, ArrowLeft, ArrowRight, Loader2, Rocket, Code2, Palette, Megaphone, Wallet, Scale, BarChart3, Lightbulb, Users, Shield } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { saveOwnProfile } from '../../lib/profile'
 import { getErrorMessage } from '../../lib/errors'
 import { useSession } from '../../context/AuthContext'
 import { AuthLayout } from '../../components/AuthLayout'
@@ -133,8 +133,7 @@ export default function CompleteProfile() {
       // username yet) can pick their role here; everyone else keeps their role
       // and uses the role-request flow to change it.
       const roleAlreadySet = Boolean(profile?.username)
-      const { error } = await supabase.from('profiles').upsert({
-        id: user.id,
+      await saveOwnProfile(user.id, {
         ...(roleAlreadySet ? {} : { role }),
         full_name: fullName.trim(),
         username: username.trim().toLowerCase(),
@@ -150,7 +149,6 @@ export default function CompleteProfile() {
         portfolio_url: portfolio.trim() || null,
         twitter_url: twitter.trim() || null,
       })
-      if (error) throw error
 
       toast.success('Profile complete! Welcome to FounderHub.')
       navigate('/dashboard', { replace: true })

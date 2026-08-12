@@ -68,7 +68,7 @@ export default function Meetings() {
         setUpcoming(u.meetings)
         setPast(p.meetings)
       })
-      .catch(() => toast.error('Could not load your meetings'))
+      .catch((err) => toast.error(getErrorMessage(err, 'generic')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -126,8 +126,8 @@ export default function Meetings() {
       toast.success(status === 'cancelled' ? 'Meeting cancelled' : 'Marked as completed')
       setDetail((d) => (d?.id === m.id ? { ...d, status } : d))
       refresh()
-    } catch {
-      toast.error('Could not update meeting')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -596,8 +596,8 @@ function MeetingFormModal({
         })
         onDone(meeting)
       }
-    } catch {
-      toast.error(isEdit ? 'Could not update meeting' : 'Could not create meeting')
+    } catch (err) {
+      toast.error(getErrorMessage(err, isEdit ? 'generic' : 'generic'))
     } finally {
       setSaving(false)
     }

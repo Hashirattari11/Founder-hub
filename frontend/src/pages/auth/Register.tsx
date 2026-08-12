@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { CircleAlert } from 'lucide-react'
 import { supabase, APP_URL } from '../../lib/supabase'
 import { getErrorMessage } from '../../lib/errors'
+import { recordUserConsent } from '../../lib/consent'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput, SelectInput } from '../../components/FormInput'
 import { Seo } from '../../components/Seo'
@@ -27,10 +28,16 @@ const registerSchema = z
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
     role: z.enum(['founder', 'developer', 'designer', 'investor', 'marketer']),
+    termsAccepted: z.boolean(),
+    privacyAccepted: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
+  })
+  .refine((data) => data.termsAccepted && data.privacyAccepted, {
+    message: 'Please accept the Terms of Service and Privacy Policy to create your account.',
+    path: ['termsAccepted'],
   })
 
 type RegisterForm = z.infer<typeof registerSchema>
@@ -44,11 +51,16 @@ export default function Register() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { role: 'founder' },
+    defaultValues: { role: 'founder', termsAccepted: false, privacyAccepted: false },
   })
+
+  const termsAccepted = watch('termsAccepted')
+  const privacyAccepted = watch('privacyAccepted')
+  const consentOk = termsAccepted && privacyAccepted
 
   const onSubmit = async (values: RegisterForm) => {
     setSubmitting(true)
@@ -82,6 +94,7 @@ export default function Register() {
       }
 
       if (data.session) {
+        await recordUserConsent(data.user!.id)
         toast.success('Welcome to FounderHub!')
         navigate('/complete-profile', { replace: true })
         return
@@ -93,6 +106,7 @@ export default function Register() {
         password: values.password,
       })
       if (!signInError && signInData.session) {
+        await recordUserConsent(signInData.user!.id)
         toast.success('Welcome to FounderHub!')
         navigate('/complete-profile', { replace: true })
         return
@@ -108,8 +122,13 @@ export default function Register() {
   }
 
   const handleGoogle = async () => {
+    if (!termsAccepted || !privacyAccepted) {
+      toast.error('Please accept the Terms of Service and Privacy Policy to create your account.')
+      return
+    }
     setOauthLoading(true)
     try {
+      sessionStorage.setItem('founderhub:pending-consent', '1')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -118,6 +137,7 @@ export default function Register() {
       })
       if (error) throw error
     } catch (error) {
+      sessionStorage.removeItem('founderhub:pending-consent')
       toast.error(getErrorMessage(error, 'auth'))
       setOauthLoading(false)
     }
@@ -201,16 +221,43 @@ export default function Register() {
           </SelectInput>
         </Field>
 
-        <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
+        <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-300 dark:bg-dark">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              {...register('termsAccepted')}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <span className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+              I agree to the{' '}
+              <Link to="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                Terms of Service
+              </Link>
+              <span className="text-red-500"> *</span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              {...register('privacyAccepted')}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <span className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+              I have read and agree to the{' '}
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              <span className="text-red-500"> *</span>
+            </span>
+          </label>
+          {errors.termsAccepted?.message && (
+            <p className="text-xs text-red-500">{errors.termsAccepted.message}</p>
+          )}
+        </div>
+
+        <button type="submit" disabled={submitting || !consentOk} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60">
           {submitting ? 'Creating account...' : 'Create Account'}
         </button>
-
-        <p className="mt-2 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-          By creating an account, you agree to our{' '}
-          <Link to="/terms" className="font-semibold text-primary hover:underline">Terms of Service</Link>
-          {' '}and{' '}
-          <Link to="/privacy" className="font-semibold text-primary hover:underline">Privacy Policy</Link>.
-        </p>
       </form>
 
       <div className="my-6 flex items-center gap-3">
@@ -224,8 +271,8 @@ export default function Register() {
       <button
         type="button"
         onClick={handleGoogle}
-        disabled={oauthLoading}
-        className="btn-ghost w-full disabled:opacity-60"
+        disabled={oauthLoading || !consentOk}
+        className="btn-ghost w-full disabled:cursor-not-allowed disabled:opacity-60"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -235,13 +282,6 @@ export default function Register() {
         </svg>
         {oauthLoading ? 'Redirecting to Google...' : 'Continue with Google'}
       </button>
-
-      <p className="mt-4 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-        By continuing with Google, you agree to our{' '}
-        <Link to="/terms" className="font-semibold text-primary hover:underline">Terms of Service</Link>
-        {' '}and{' '}
-        <Link to="/privacy" className="font-semibold text-primary hover:underline">Privacy Policy</Link>.
-      </p>
 
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         Already have an account?{' '}

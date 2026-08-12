@@ -7,6 +7,7 @@ import { Avatar } from '../Avatar'
 import { ROLE_LABELS } from '../../types'
 import type { Chat, Profile, Role } from '../../types'
 import { searchUsers, startChat } from '../../lib/chat'
+import { profileDisplayName } from '../../lib/users'
 
 interface NewMessageModalProps {
   open: boolean
@@ -49,7 +50,10 @@ export function NewMessageModal({
   }, [open, query, currentUserId])
 
   const handlePick = async (profile: Profile) => {
-    if (starting) return
+    if (starting || !profile.id) return
+    if (import.meta.env.DEV) {
+      console.debug('[NewMessage] selected recipient userId=', profile.id, profileDisplayName(profile))
+    }
     setStarting(profile.id)
     try {
       const chat = await startChat(profile.id)
@@ -130,7 +134,7 @@ export function NewMessageModal({
                     <Avatar src={profile.avatar_url} name={profile.full_name} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                        {profile.full_name ?? 'Unknown user'}
+                        {profileDisplayName(profile)}
                       </p>
                       <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                         @{profile.username ?? 'user'}

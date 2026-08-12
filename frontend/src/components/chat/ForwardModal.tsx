@@ -6,6 +6,7 @@ import { Avatar } from '../Avatar'
 import { ROLE_LABELS } from '../../types'
 import type { Profile, Role } from '../../types'
 import { searchUsers } from '../../lib/chat'
+import { profileDisplayName } from '../../lib/users'
 
 interface ForwardModalProps {
   open: boolean
@@ -129,7 +130,7 @@ export function ForwardModal({
                     <Avatar src={profile.avatar_url} name={profile.full_name} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                        {profile.full_name ?? 'Unknown user'}
+                        {profileDisplayName(profile)}
                       </p>
                       <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                         @{profile.username ?? 'user'}

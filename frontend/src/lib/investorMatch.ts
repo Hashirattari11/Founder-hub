@@ -26,6 +26,13 @@ export async function getInvestorProfile(userId: string): Promise<InvestorProfil
 }
 
 export async function saveInvestorProfile(userId: string, payload: InvestorProfilePayload): Promise<InvestorProfile> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user?.id || session.user.id !== userId) {
+    throw new Error("You don't have access to this.")
+  }
+
   const { data, error } = await supabase
     .from('investor_profiles')
     .upsert({ user_id: userId, ...payload }, { onConflict: 'user_id' })

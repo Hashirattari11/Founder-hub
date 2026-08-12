@@ -7,6 +7,7 @@ import {
   getConnectionState,
   sendConnectionRequest,
 } from '../lib/connections'
+import { getErrorMessage } from '../lib/errors'
 import type { ConnectionState } from '../lib/connections'
 
 interface ConnectButtonProps {
@@ -53,8 +54,8 @@ export function ConnectButton({
         setState({ status: 'pending' })
         toast.success(targetName ? `Connection request sent to ${targetName}` : 'Request sent')
       }
-    } catch {
-      toast.error('Could not update connection')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusy(false)
     }

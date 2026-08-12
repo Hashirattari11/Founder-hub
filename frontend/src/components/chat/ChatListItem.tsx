@@ -4,6 +4,7 @@ import { Avatar } from '../Avatar'
 import { ROLE_LABELS } from '../../types'
 import type { Chat, Role } from '../../types'
 import { getOtherUser } from '../../lib/chat'
+import { profileDisplayName } from '../../lib/users'
 
 interface ChatListItemProps {
   chat: Chat
@@ -15,7 +16,7 @@ interface ChatListItemProps {
 
 function ChatListItemInner({ chat, currentUserId, active, unread, onClick }: ChatListItemProps) {
   const other = getOtherUser(chat, currentUserId)
-  const name = other?.full_name ?? 'Unknown user'
+  const name = other ? profileDisplayName(other) : 'Member'
   const role = other?.role ? ROLE_LABELS[other.role.toLowerCase() as Role] : null
   const preview = chat.last_message ?? 'No messages yet'
   const timeAgo = chat.last_message_at

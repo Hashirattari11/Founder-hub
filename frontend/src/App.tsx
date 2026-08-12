@@ -31,6 +31,7 @@ import { Seo } from './components/Seo'
 const Register = lazy(() => import('./pages/auth/Register'))
 const Login = lazy(() => import('./pages/auth/Login'))
 const Callback = lazy(() => import('./pages/auth/Callback'))
+const AuthConsent = lazy(() => import('./pages/auth/AuthConsent'))
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
 const CompleteProfile = lazy(() => import('./pages/profile/CompleteProfile'))
@@ -199,6 +200,16 @@ function App() {
       <Route path="/investor-disclaimer" element={<Suspense fallback={<PageLoader />}><InvestorDisclaimerPage /></Suspense>} />
       <Route path="/refund-policy" element={<Suspense fallback={<PageLoader />}><RefundPolicyPage /></Suspense>} />
               <Route path="/auth/callback" element={<Suspense fallback={<PageLoader />}><Callback /></Suspense>} />
+              <Route
+                path="/auth/consent"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <AuthConsent />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/profile/:username" element={<Suspense fallback={<PageLoader />}><ProfileView /></Suspense>} />
               <Route path="/403" element={<Suspense fallback={<PageLoader />}><Forbidden /></Suspense>} />
               <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
@@ -413,11 +424,9 @@ function App() {
               <Route
                 path="/meet/:roomId"
                 element={
-                  <ProtectedRoute>
-                    <Suspense fallback={<PageLoader />}>
-                      <VideoCall />
-                    </Suspense>
-                  </ProtectedRoute>
+                  <Suspense fallback={<PageLoader />}>
+                    <VideoCall />
+                  </Suspense>
                 }
               />
               {/* Phase 17 — Enterprise Admin Console */}
