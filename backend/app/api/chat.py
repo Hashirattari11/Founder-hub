@@ -14,38 +14,28 @@ CHAT_PROFILE_FIELDS = (
 )
 
 
+def _uuid_eq(a: str | None, b: str | None) -> bool:
+    if not a or not b:
+        return False
+    return str(a).lower() == str(b).lower()
+
+
 def _normalize_chat_profiles(user_client, chat: dict) -> dict:
-    """Ensure profile embeds match participant UUID slots (embeds can be wrong)."""
+    """Always fetch profiles by participant UUID — never trust PostgREST embeds."""
     p1 = chat.get("participant_1")
     p2 = chat.get("participant_2")
     if not p1 or not p2:
         return chat
 
-    p1_prof = chat.get("participant_1_profile") or {}
-    p2_prof = chat.get("participant_2_profile") or {}
-    need: list[str] = []
-    if p1_prof.get("id") != p1:
-        need.append(p1)
-    if p2_prof.get("id") != p2:
-        need.append(p2)
-
-    if need:
-        result = (
-            user_client.table("profiles")
-            .select(CHAT_PROFILE_FIELDS)
-            .in_("id", need)
-            .execute()
-        )
-        by_id = {row["id"]: row for row in (result.data or [])}
-    else:
-        by_id = {}
-
-    chat["participant_1_profile"] = (
-        p1_prof if p1_prof.get("id") == p1 else by_id.get(p1)
+    result = (
+        user_client.table("profiles")
+        .select(CHAT_PROFILE_FIELDS)
+        .in_("id", [p1, p2])
+        .execute()
     )
-    chat["participant_2_profile"] = (
-        p2_prof if p2_prof.get("id") == p2 else by_id.get(p2)
-    )
+    by_id = {str(row["id"]).lower(): row for row in (result.data or [])}
+    chat["participant_1_profile"] = by_id.get(str(p1).lower())
+    chat["participant_2_profile"] = by_id.get(str(p2).lower())
     return chat
 
 
@@ -54,15 +44,20 @@ def _enrich_chat_for_viewer(user_client, chat: dict, viewer_id: str) -> dict:
     chat = _normalize_chat_profiles(user_client, chat)
     p1 = chat.get("participant_1")
     p2 = chat.get("participant_2")
-    if viewer_id == p1:
+    if _uuid_eq(viewer_id, p1):
         other_id = p2
         other_profile = chat.get("participant_2_profile")
-    elif viewer_id == p2:
+    elif _uuid_eq(viewer_id, p2):
         other_id = p1
         other_profile = chat.get("participant_1_profile")
     else:
         other_id = None
         other_profile = None
+
+    # Never attach the viewer's own profile as the "other" participant.
+    if other_profile and _uuid_eq(other_profile.get("id"), viewer_id):
+        other_profile = None
+
     chat["other_participant_id"] = other_id
     chat["other_participant_profile"] = other_profile
     return chat
@@ -94,7 +89,7 @@ async def start_chat(
     user_client=Depends(get_user_client),
 ):
     """Get (or create) a chat between the current user and receiver_id."""
-    if payload.receiver_id == user_id:
+    if _uuid_eq(payload.receiver_id, user_id):
         raise HTTPException(status_code=400, detail="You cannot start a chat with yourself")
 
     receiver = (
@@ -238,10 +233,14 @@ async def send_chat_message(
     row = (chat.data or [None])[0]
     if not row:
         raise HTTPException(status_code=404, detail="Chat not found")
-    if user_id not in (row["participant_1"], row["participant_2"]):
+    if not (_uuid_eq(user_id, row["participant_1"]) or _uuid_eq(user_id, row["participant_2"])):
         raise HTTPException(status_code=403, detail="You are not a participant in this chat")
 
-    receiver_id = row["participant_2"] if row["participant_1"] == user_id else row["participant_1"]
+    receiver_id = (
+        row["participant_2"]
+        if _uuid_eq(row["participant_1"], user_id)
+        else row["participant_1"]
+    )
 
     inserted = (
         user_client.table("messages")

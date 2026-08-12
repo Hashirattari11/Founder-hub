@@ -5,6 +5,11 @@ import type { Chat, ChatMessage, ChatMessageType, ChatProfile, MessageReaction, 
 
 export const CHAT_PROFILE_FIELDS = 'id, full_name, username, avatar_url, role, is_online, last_seen'
 
+function sameUser(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false
+  return a.toLowerCase() === b.toLowerCase()
+}
+
 /** Unique channel name per subscription call — avoids "cannot add callbacks after subscribe()"
  * when two components subscribe to the same logical stream on one page. */
 function uniqueChannel(base: string): string {
@@ -73,8 +78,8 @@ export async function hydrateReplyTo(msg: ChatMessage): Promise<ChatMessage> {
 
 /** UUID of the other participant in a 1:1 chat (never the viewer). */
 export function getOtherParticipantId(chat: Chat, currentUserId: string): string | null {
-  if (chat.participant_1 === currentUserId) return chat.participant_2
-  if (chat.participant_2 === currentUserId) return chat.participant_1
+  if (sameUser(chat.participant_1, currentUserId)) return chat.participant_2
+  if (sameUser(chat.participant_2, currentUserId)) return chat.participant_1
   return null
 }
 
@@ -82,31 +87,38 @@ function profileForParticipant(
   chat: Chat,
   participantId: string,
 ): ChatProfile | null | undefined {
-  if (chat.participant_1 === participantId) return chat.participant_1_profile
-  if (chat.participant_2 === participantId) return chat.participant_2_profile
+  if (sameUser(chat.participant_1, participantId)) return chat.participant_1_profile
+  if (sameUser(chat.participant_2, participantId)) return chat.participant_2_profile
   return null
 }
 
-/** Return the other participant's profile for a chat. */
+function isSelfProfile(profile: ChatProfile | null | undefined, currentUserId: string): boolean {
+  return Boolean(profile?.id && sameUser(profile.id, currentUserId))
+}
+
+/** Return the other participant's profile for a chat. Never returns the viewer. */
 export function getOtherUser(
   chat: Chat,
   currentUserId: string,
 ): ChatProfile | null {
   const otherId = getOtherParticipantId(chat, currentUserId)
-  if (!otherId || otherId === currentUserId) return null
+  if (!otherId || sameUser(otherId, currentUserId)) return null
 
-  // Server-computed field from /api/chats/start (most reliable).
   if (
-    chat.other_participant_id === otherId &&
-    chat.other_participant_profile?.id === otherId
+    chat.other_participant_id &&
+    sameUser(chat.other_participant_id, otherId) &&
+    chat.other_participant_profile &&
+    sameUser(chat.other_participant_profile.id, otherId) &&
+    !isSelfProfile(chat.other_participant_profile, currentUserId)
   ) {
     return chat.other_participant_profile
   }
 
   const profile = profileForParticipant(chat, otherId)
-  if (profile?.id === otherId) return profile
+  if (profile && sameUser(profile.id, otherId) && !isSelfProfile(profile, currentUserId)) {
+    return profile
+  }
 
-  // PostgREST embed can attach the wrong profile — ignore mismatched embeds.
   return null
 }
 
@@ -126,7 +138,7 @@ export async function resolveOtherProfile(
     .select(CHAT_PROFILE_FIELDS)
     .eq('id', otherId)
     .maybeSingle()
-  if (error || !data || data.id !== otherId) return null
+  if (error || !data || !sameUser(data.id as string, otherId)) return null
   return data as ChatProfile
 }
 
@@ -141,11 +153,11 @@ export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
     .in('id', ids)
   if (error) throw error
 
-  const byId = new Map((data ?? []).map((row) => [row.id as string, row as ChatProfile]))
+  const byId = new Map((data ?? []).map((row) => [String(row.id).toLowerCase(), row as ChatProfile]))
   const hydrated: Chat = {
     ...chat,
-    participant_1_profile: byId.get(chat.participant_1) ?? null,
-    participant_2_profile: byId.get(chat.participant_2) ?? null,
+    participant_1_profile: byId.get(String(chat.participant_1).toLowerCase()) ?? null,
+    participant_2_profile: byId.get(String(chat.participant_2).toLowerCase()) ?? null,
   }
 
   if (chat.other_participant_id && chat.other_participant_profile?.id === chat.other_participant_id) {
@@ -158,24 +170,17 @@ export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
 
 /** All chats for the current user, newest last_message first. */
 export async function getMyChats(userId: string): Promise<Chat[]> {
-  const { data, error } = await supabase
-    .from('chats')
-    .select(
-      `*,
-      participant_1_profile:profiles!chats_participant_1_fkey(${CHAT_PROFILE_FIELDS}),
-      participant_2_profile:profiles!chats_participant_2_fkey(${CHAT_PROFILE_FIELDS})`,
-    )
-    .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
-    .order('last_message_at', { ascending: false })
-  if (error) throw error
-  const rows = (data ?? []) as Chat[]
+  const rows = await api.get<Chat[]>('/api/chats', { auth: true })
   return Promise.all(
     rows.map(async (row) => {
       const hydrated = await hydrateChatProfiles(row)
       const otherId = getOtherParticipantId(hydrated, userId)
-      if (!otherId || otherId === userId) return hydrated
-      const other =
+      if (!otherId || sameUser(otherId, userId)) return hydrated
+      let other =
         getOtherUser(hydrated, userId) ?? (await resolveOtherProfile(hydrated, userId))
+      if (isSelfProfile(other, userId)) {
+        other = await resolveOtherProfile(hydrated, userId)
+      }
       return {
         ...hydrated,
         other_participant_id: otherId,
@@ -206,12 +211,12 @@ export async function startChat(receiverId: string): Promise<Chat> {
   const hydrated = await hydrateChatProfiles(chat)
 
   const otherId = getOtherParticipantId(hydrated, me)
-  if (!otherId || otherId !== receiverId) {
+  if (!otherId || !sameUser(otherId, receiverId)) {
     throw new Error('Could not open a conversation with the selected user.')
   }
 
   const other = getOtherUser(hydrated, me) ?? (await resolveOtherProfile(hydrated, me))
-  if (!other || other.id !== receiverId) {
+  if (!other || !sameUser(other.id, receiverId) || isSelfProfile(other, me)) {
     throw new Error('Could not load the recipient profile for this conversation.')
   }
 

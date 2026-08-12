@@ -38,11 +38,11 @@ def resolve_email_provider() -> str | None:
         return "brevo" if settings.brevo_api_key else None
     if chosen == "resend":
         return "resend" if settings.resend_api_key else None
-    # auto: first configured key wins
-    if settings.brevo_api_key:
-        return "brevo"
+    # auto: prefer Resend when both keys exist (Brevo IP whitelist often blocks Vercel).
     if settings.resend_api_key:
         return "resend"
+    if settings.brevo_api_key:
+        return "brevo"
     return None
 
 

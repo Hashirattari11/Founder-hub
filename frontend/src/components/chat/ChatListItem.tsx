@@ -1,9 +1,9 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Avatar } from '../Avatar'
 import { ROLE_LABELS } from '../../types'
-import type { Chat, Role } from '../../types'
-import { getOtherUser } from '../../lib/chat'
+import type { Chat, ChatProfile, Role } from '../../types'
+import { getOtherUser, resolveOtherProfile } from '../../lib/chat'
 import { profileDisplayName } from '../../lib/users'
 
 interface ChatListItemProps {
@@ -15,7 +15,22 @@ interface ChatListItemProps {
 }
 
 function ChatListItemInner({ chat, currentUserId, active, unread, onClick }: ChatListItemProps) {
-  const other = getOtherUser(chat, currentUserId)
+  const [other, setOther] = useState<ChatProfile | null>(() => getOtherUser(chat, currentUserId))
+
+  useEffect(() => {
+    let cancelled = false
+    const immediate = getOtherUser(chat, currentUserId)
+    if (immediate) {
+      setOther(immediate)
+      return
+    }
+    void resolveOtherProfile(chat, currentUserId).then((profile) => {
+      if (!cancelled) setOther(profile)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [chat, currentUserId])
   const name = other ? profileDisplayName(other) : 'Member'
   const role = other?.role ? ROLE_LABELS[other.role.toLowerCase() as Role] : null
   const preview = chat.last_message ?? 'No messages yet'
