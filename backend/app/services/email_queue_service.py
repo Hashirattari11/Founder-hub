@@ -197,6 +197,7 @@ def _template_for(notification_type: str) -> str | None:
         "admin_alert": "admin_alert",
         "broadcast": "broadcast",
         "message_received": "message_received",
+        "connection_request": "connection_request",
     }
     return mapping.get(t) or mapping.get(notification_type) or None
 
@@ -288,7 +289,7 @@ def _record_log(
                 "subject": row.get("subject"),
                 "template": row.get("template"),
                 "template_data": row.get("template_data"),
-                "provider": row.get("provider") or "brevo",
+                "provider": row.get("provider_used") or row.get("provider") or "brevo",
                 "error": (error or None)[:500] if error else None,
                 "message_id": message_id,
                 "http_status": http_status,
@@ -311,6 +312,8 @@ def _send_one(row: dict) -> None:
     )
     ok, error = result["ok"], result["error"]
     message_id, http_status = result.get("message_id"), result.get("http_status")
+    if result.get("provider"):
+        row = {**row, "provider_used": result["provider"]}
 
     if ok:
         try:

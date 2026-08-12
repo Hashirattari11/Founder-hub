@@ -30,6 +30,8 @@ class ChatOut(BaseModel):
     created_at: Optional[datetime] = None
     participant_1_profile: Optional[ChatProfileOut] = None
     participant_2_profile: Optional[ChatProfileOut] = None
+    other_participant_id: Optional[str] = None
+    other_participant_profile: Optional[ChatProfileOut] = None
 
     model_config = {"from_attributes": True}
 

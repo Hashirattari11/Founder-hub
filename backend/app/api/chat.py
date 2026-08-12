@@ -49,7 +49,26 @@ def _normalize_chat_profiles(user_client, chat: dict) -> dict:
     return chat
 
 
-def _fetch_chat_with_profiles(user_client, chat_id: str) -> dict:
+def _enrich_chat_for_viewer(user_client, chat: dict, viewer_id: str) -> dict:
+    """Attach canonical other-participant fields for the authenticated viewer."""
+    chat = _normalize_chat_profiles(user_client, chat)
+    p1 = chat.get("participant_1")
+    p2 = chat.get("participant_2")
+    if viewer_id == p1:
+        other_id = p2
+        other_profile = chat.get("participant_2_profile")
+    elif viewer_id == p2:
+        other_id = p1
+        other_profile = chat.get("participant_1_profile")
+    else:
+        other_id = None
+        other_profile = None
+    chat["other_participant_id"] = other_id
+    chat["other_participant_profile"] = other_profile
+    return chat
+
+
+def _fetch_chat_with_profiles(user_client, chat_id: str, viewer_id: str) -> dict:
     """Reload a chat row with both participant profile embeds."""
     result = (
         user_client.table("chats")
@@ -65,7 +84,7 @@ def _fetch_chat_with_profiles(user_client, chat_id: str) -> dict:
     rows = result.data or []
     if not rows:
         raise HTTPException(status_code=404, detail="Chat not found")
-    return _normalize_chat_profiles(user_client, rows[0])
+    return _enrich_chat_for_viewer(user_client, rows[0], viewer_id)
 
 
 @router.post("/chats/start", response_model=ChatOut)
@@ -100,7 +119,7 @@ async def start_chat(
         .execute()
     )
     if existing.data:
-        return _fetch_chat_with_profiles(user_client, existing.data[0]["id"])
+        return _fetch_chat_with_profiles(user_client, existing.data[0]["id"], user_id)
 
     inserted = (
         user_client.table("chats")
@@ -110,7 +129,7 @@ async def start_chat(
     if not inserted.data:
         raise HTTPException(status_code=409, detail="Could not create chat")
 
-    return _fetch_chat_with_profiles(user_client, inserted.data[0]["id"])
+    return _fetch_chat_with_profiles(user_client, inserted.data[0]["id"], user_id)
 
 
 @router.get("/chats", response_model=list[ChatOut])
@@ -130,7 +149,7 @@ async def list_chats(
         .order("last_message_at", desc=True)
         .execute()
     )
-    return [_normalize_chat_profiles(user_client, row) for row in (result.data or [])]
+    return [_enrich_chat_for_viewer(user_client, row, user_id) for row in (result.data or [])]
 
 
 @router.get("/chats/{chat_id}/messages", response_model=list[ChatMessageOut])

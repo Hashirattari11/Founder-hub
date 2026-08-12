@@ -95,11 +95,39 @@ export function getOtherUser(
   const otherId = getOtherParticipantId(chat, currentUserId)
   if (!otherId || otherId === currentUserId) return null
 
+  // Server-computed field from /api/chats/start (most reliable).
+  if (
+    chat.other_participant_id === otherId &&
+    chat.other_participant_profile?.id === otherId
+  ) {
+    return chat.other_participant_profile
+  }
+
   const profile = profileForParticipant(chat, otherId)
   if (profile?.id === otherId) return profile
 
   // PostgREST embed can attach the wrong profile — ignore mismatched embeds.
   return null
+}
+
+/** Fetch the other participant profile by UUID when embeds are missing/wrong. */
+export async function resolveOtherProfile(
+  chat: Chat,
+  currentUserId: string,
+): Promise<ChatProfile | null> {
+  const otherId = getOtherParticipantId(chat, currentUserId)
+  if (!otherId || otherId === currentUserId) return null
+
+  const existing = getOtherUser(chat, currentUserId)
+  if (existing?.id === otherId) return existing
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(CHAT_PROFILE_FIELDS)
+    .eq('id', otherId)
+    .maybeSingle()
+  if (error || !data || data.id !== otherId) return null
+  return data as ChatProfile
 }
 
 /** Attach participant profile rows keyed by canonical participant UUIDs. */
@@ -114,11 +142,18 @@ export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
   if (error) throw error
 
   const byId = new Map((data ?? []).map((row) => [row.id as string, row as ChatProfile]))
-  return {
+  const hydrated: Chat = {
     ...chat,
     participant_1_profile: byId.get(chat.participant_1) ?? null,
     participant_2_profile: byId.get(chat.participant_2) ?? null,
   }
+
+  if (chat.other_participant_id && chat.other_participant_profile?.id === chat.other_participant_id) {
+    hydrated.other_participant_id = chat.other_participant_id
+    hydrated.other_participant_profile = chat.other_participant_profile
+  }
+
+  return hydrated
 }
 
 /** All chats for the current user, newest last_message first. */
@@ -134,7 +169,20 @@ export async function getMyChats(userId: string): Promise<Chat[]> {
     .order('last_message_at', { ascending: false })
   if (error) throw error
   const rows = (data ?? []) as Chat[]
-  return Promise.all(rows.map((row) => hydrateChatProfiles(row)))
+  return Promise.all(
+    rows.map(async (row) => {
+      const hydrated = await hydrateChatProfiles(row)
+      const otherId = getOtherParticipantId(hydrated, userId)
+      if (!otherId || otherId === userId) return hydrated
+      const other =
+        getOtherUser(hydrated, userId) ?? (await resolveOtherProfile(hydrated, userId))
+      return {
+        ...hydrated,
+        other_participant_id: otherId,
+        other_participant_profile: other,
+      }
+    }),
+  )
 }
 
 /** Get (or create) a chat with another user via the backend. */
@@ -147,12 +195,31 @@ export async function startChat(receiverId: string): Promise<Chat> {
     data: { session },
   } = await supabase.auth.getSession()
   const me = session?.user?.id
-  if (me && receiverId === me) {
+  if (!me) {
+    throw new Error('You must be signed in to start a conversation.')
+  }
+  if (receiverId === me) {
     throw new Error("You can't start a conversation with yourself.")
   }
 
   const chat = await api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
-  return hydrateChatProfiles(chat)
+  const hydrated = await hydrateChatProfiles(chat)
+
+  const otherId = getOtherParticipantId(hydrated, me)
+  if (!otherId || otherId !== receiverId) {
+    throw new Error('Could not open a conversation with the selected user.')
+  }
+
+  const other = getOtherUser(hydrated, me) ?? (await resolveOtherProfile(hydrated, me))
+  if (!other || other.id !== receiverId) {
+    throw new Error('Could not load the recipient profile for this conversation.')
+  }
+
+  return {
+    ...hydrated,
+    other_participant_id: otherId,
+    other_participant_profile: other,
+  }
 }
 
 /** Messages for a chat, 50 at a time (pass before = oldest message id for the previous page). */

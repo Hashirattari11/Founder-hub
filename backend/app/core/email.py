@@ -165,6 +165,7 @@ def _send_with_fallback(
             logger.warning("Brevo failed (%s) — falling back to Resend for %s", result["error"], to)
             fallback = send_resend_email(to, subject, html, text)
             if fallback["ok"]:
+                fallback["provider"] = "resend"
                 return fallback
     elif requested == "resend":
         result = send_resend_email(to, subject, html, text)
@@ -172,11 +173,16 @@ def _send_with_fallback(
             logger.warning("Resend failed (%s) — falling back to Brevo for %s", result["error"], to)
             fallback = send_brevo_email(to, subject, html, text)
             if fallback["ok"]:
+                fallback["provider"] = "brevo"
                 return fallback
     else:
-        return {"ok": False, "error": "No email provider configured (missing BREVO_API_KEY / RESEND_API_KEY)", "message_id": None, "http_status": None}
+        return {"ok": False, "error": "No email provider configured (missing BREVO_API_KEY / RESEND_API_KEY)", "message_id": None, "http_status": None, "provider": None}
 
-    return result or {"ok": False, "error": "Unknown provider error", "message_id": None, "http_status": None}
+    if result and result.get("ok"):
+        result["provider"] = requested
+    elif result:
+        result["provider"] = requested
+    return result or {"ok": False, "error": "Unknown provider error", "message_id": None, "http_status": None, "provider": requested}
 
 
 def send_email(

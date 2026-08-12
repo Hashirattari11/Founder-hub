@@ -79,9 +79,35 @@ export function getOtherUser(
   const otherId = getOtherParticipantId(chat, currentUserId)
   if (!otherId || otherId === currentUserId) return null
 
+  if (
+    chat.other_participant_id === otherId &&
+    chat.other_participant_profile?.id === otherId
+  ) {
+    return chat.other_participant_profile
+  }
+
   const profile = profileForParticipant(chat, otherId)
   if (profile?.id === otherId) return profile
   return null
+}
+
+export async function resolveOtherProfile(
+  chat: Chat,
+  currentUserId: string,
+): Promise<ChatProfile | null> {
+  const otherId = getOtherParticipantId(chat, currentUserId)
+  if (!otherId || otherId === currentUserId) return null
+
+  const existing = getOtherUser(chat, currentUserId)
+  if (existing?.id === otherId) return existing
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(CHAT_PROFILE_FIELDS)
+    .eq('id', otherId)
+    .maybeSingle()
+  if (error || !data || data.id !== otherId) return null
+  return data as ChatProfile
 }
 
 export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
@@ -114,7 +140,19 @@ export async function getMyChats(userId: string): Promise<Chat[]> {
     .order('last_message_at', { ascending: false })
   if (error) throw error
   const rows = (data ?? []) as Chat[]
-  return Promise.all(rows.map((row) => hydrateChatProfiles(row)))
+  return Promise.all(
+    rows.map(async (row) => {
+      const hydrated = await hydrateChatProfiles(row)
+      const otherId = getOtherParticipantId(hydrated, userId)
+      if (!otherId || otherId === userId) return hydrated
+      const other = getOtherUser(hydrated, userId) ?? (await resolveOtherProfile(hydrated, userId))
+      return {
+        ...hydrated,
+        other_participant_id: otherId,
+        other_participant_profile: other,
+      }
+    }),
+  )
 }
 
 export async function startChat(receiverId: string): Promise<Chat> {
@@ -126,12 +164,25 @@ export async function startChat(receiverId: string): Promise<Chat> {
     data: { session },
   } = await supabase.auth.getSession()
   const me = session?.user?.id
-  if (me && receiverId === me) {
+  if (!me) {
+    throw new Error('You must be signed in to start a conversation.')
+  }
+  if (receiverId === me) {
     throw new Error("You can't start a conversation with yourself.")
   }
 
   const chat = await api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
-  return hydrateChatProfiles(chat)
+  const hydrated = await hydrateChatProfiles(chat)
+  const otherId = getOtherParticipantId(hydrated, me)
+  if (!otherId || otherId !== receiverId) {
+    throw new Error('Could not open a conversation with the selected user.')
+  }
+  const other = getOtherUser(hydrated, me) ?? (await resolveOtherProfile(hydrated, me))
+  return {
+    ...hydrated,
+    other_participant_id: otherId,
+    other_participant_profile: other,
+  }
 }
 
 export async function getChatMessages(

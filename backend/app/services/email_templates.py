@@ -461,6 +461,18 @@ def _meeting_accepted(d: Dict) -> Dict[str, str]:
     return {"subject": f"Confirmed: {title}", "html": _shell(inner, "This is an automated email from FounderHub AI.")}
 
 
+def _connection_request(d: Dict) -> Dict[str, str]:
+    from_ = d.get("from_name", "Someone")
+    url = d.get("action_url") or f"{FRONTEND_URL}/dashboard"
+    label = d.get("action_label") or "View Profile"
+    inner = (
+        _heading("New connection request")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(from_)}</strong> wants to connect with you on FounderHub.")
+        + _cta(url, label)
+    )
+    return {"subject": f"{from_} wants to connect — FounderHub", "html": _shell(inner, "You can change notification emails in your preferences.")}
+
+
 def _message_received(d: Dict) -> Dict[str, str]:
     from_ = d.get("from_name", "Someone")
     url = d.get("action_url") or f"{FRONTEND_URL}/messages"
@@ -530,6 +542,7 @@ _RENDERERS = {
     "broadcast": _broadcast,
     "startup_new": _startup_new,
     "message_received": _message_received,
+    "connection_request": _connection_request,
 }
 
 TEMPLATE_NAMES = sorted(_RENDERERS.keys())

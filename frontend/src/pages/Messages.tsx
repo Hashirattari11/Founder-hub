@@ -65,6 +65,10 @@ export default function Messages() {
     const params = new URLSearchParams(window.location.search)
     const otherId = params.get('user')
     if (!otherId || !/^[0-9a-f-]{8}(-[0-9a-f-]{4}){3}-[0-9a-f-]{12}$/i.test(otherId)) return
+    if (otherId === user.id) {
+      toast.error("You can't start a conversation with yourself.")
+      return
+    }
     window.history.replaceState({}, '', window.location.pathname)
     let cancelled = false
     void (async () => {

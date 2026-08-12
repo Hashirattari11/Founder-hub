@@ -30,6 +30,7 @@ import {
   hydrateReplyTo,
   markMessagesRead,
   messagePreview,
+  resolveOtherProfile,
   sendForwardedMessage,
   startChat,
   subscribeToChatMessages,
@@ -39,7 +40,7 @@ import {
 import { formatDayDivider, isSameDay, timeAgo } from '../../lib/helpers'
 import { profileDisplayName } from '../../lib/users'
 import { playMessageSound } from '../../lib/sound'
-import type { Chat, ChatMessage } from '../../types'
+import type { Chat, ChatMessage, ChatProfile } from '../../types'
 
 interface ChatWindowProps {
   chat: Chat
@@ -75,9 +76,10 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
   const [resolvedChat, setResolvedChat] = useState(chat)
+  const [resolvedOther, setResolvedOther] = useState<ChatProfile | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const nearBottomRef = useRef(true)
-  const other = getOtherUser(resolvedChat, userId)
+  const other = resolvedOther ?? getOtherUser(resolvedChat, userId)
   const displayOther = liveStatus && other ? { ...other, ...liveStatus } : other
 
   // Hide messages the current user deleted "for me".
@@ -118,9 +120,13 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
   useEffect(() => {
     let cancelled = false
     setResolvedChat(chat)
+    setResolvedOther(null)
     hydrateChatProfiles(chat)
-      .then((hydrated) => {
-        if (!cancelled) setResolvedChat(hydrated)
+      .then(async (hydrated) => {
+        if (cancelled) return
+        setResolvedChat(hydrated)
+        const profile = await resolveOtherProfile(hydrated, userId)
+        if (!cancelled) setResolvedOther(profile)
       })
       .catch(() => {})
     return () => {

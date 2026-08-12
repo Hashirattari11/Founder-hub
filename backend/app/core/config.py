@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # Primary provider is Brevo; Resend is kept as an automatic fallback so a
     # missing/invalid Brevo key never silently kills delivery. In "auto" the
     # first provider with a configured key wins (brevo → resend).
-    email_provider: str = "brevo"
+    email_provider: str = "auto"
     email_from_name: str = "FounderHub"
     email_from_email: str = "notifications@founderhub.site"
     resend_from_email: str = "FounderHub <notifications@founderhub.site>"

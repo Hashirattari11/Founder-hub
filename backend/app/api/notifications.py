@@ -205,7 +205,7 @@ async def notify_connection_request(
             "requester_username": requester_username,
             "url": f"/profile/{requester_username}" if requester_username else "/dashboard",
         },
-        template="message_received",
+        template="connection_request",
         template_data={
             "from_name": name,
             "action_url": _frontend_url(f"/profile/{requester_username}" if requester_username else "/dashboard"),

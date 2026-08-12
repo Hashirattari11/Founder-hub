@@ -597,6 +597,8 @@ export interface Chat {
   created_at: string
   participant_1_profile?: ChatProfile | null
   participant_2_profile?: ChatProfile | null
+  other_participant_id?: string | null
+  other_participant_profile?: ChatProfile | null
 }
 
 export type ChatMessageType = 'text' | 'image' | 'file' | 'voice'

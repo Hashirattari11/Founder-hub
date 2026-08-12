@@ -29,6 +29,26 @@ export function profileDisplayName(
   return 'Member'
 }
 
+function profileRank(row: DiscoverableUser): number {
+  let score = 0
+  if (row.username?.trim()) score += 4
+  if (row.fullName?.includes(' ')) score += 2
+  if (row.avatarUrl) score += 1
+  return score
+}
+
+function dedupeDiscoverableUsers(rows: DiscoverableUser[]): DiscoverableUser[] {
+  const byKey = new Map<string, DiscoverableUser>()
+  for (const row of rows) {
+    const key = (row.fullName ?? row.username ?? row.userId).trim().toLowerCase()
+    const existing = byKey.get(key)
+    if (!existing || profileRank(row) > profileRank(existing)) {
+      byKey.set(key, row)
+    }
+  }
+  return [...byKey.values()]
+}
+
 export function discoverableToProfile(u: DiscoverableUser): Profile {
   return {
     id: u.userId,
@@ -86,7 +106,7 @@ export async function discoverUsers(opts: {
     console.debug('[discoverUsers]', safe, rows.map((r) => ({ id: r.userId, name: profileDisplayName(r) })))
   }
 
-  return rows
+  return dedupeDiscoverableUsers(rows)
 }
 
 export async function getProfileByUserId(userId: string): Promise<Profile | null> {

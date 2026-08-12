@@ -41,6 +41,8 @@ _TRANSACTIONAL_TYPES = {
     "verify_email",
     "password_reset",
     "account_suspended",
+    "connection_request",
+    "connection_accepted",
 }
 
 DEFAULT_PREFS = {
@@ -80,7 +82,7 @@ def _category_for(notification_type: str) -> str:
     t = (notification_type or "").lower()
     if "meeting" in t or "reminder" in t:
         return "meeting"
-    if "message" in t or "chat" in t:
+    if "message" in t or "chat" in t or "connection" in t:
         return "message"
     if "investor" in t or "funding" in t:
         return "investor"
