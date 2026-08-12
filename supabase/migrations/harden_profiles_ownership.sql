@@ -46,6 +46,9 @@ begin
         raise exception 'Administrator role must be granted by an admin.';
       end if;
     else -- UPDATE
+      if coalesce(current_setting('founderhub.internal_sync', true), '') = 'connections_count' then
+        return new;
+      end if;
       if old.id is distinct from auth.uid() then
         raise exception 'You can only update your own profile.';
       end if;

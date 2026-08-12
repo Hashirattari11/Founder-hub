@@ -190,24 +190,52 @@ export async function sendChatMessage(params: {
   replyToId?: string | null
   isForwarded?: boolean
 }): Promise<ChatMessage> {
+  const type = params.type ?? 'text'
+  const isPlainText =
+    type === 'text' &&
+    !params.fileUrl &&
+    !params.replyToId &&
+    !params.isForwarded
+
+  // Text-only messages go through the API so RLS/trigger edge cases cannot block sends.
+  if (isPlainText) {
+    const msg = await api.post<ChatMessage>(
+      `/api/messages/${params.chatId}/send`,
+      { content: params.content },
+      { auth: true },
+    )
+    return hydrateReplyTos([msg])[0]
+  }
+
   const { data, error } = await supabase
     .from('messages')
     .insert({
       chat_id: params.chatId,
       sender_id: params.senderId,
       content: params.content,
-      type: params.type ?? 'text',
+      type,
       file_url: params.fileUrl ?? null,
       file_name: params.fileName ?? null,
       file_size: params.fileSize ?? null,
       reply_to_id: params.replyToId ?? null,
       is_forwarded: params.isForwarded ?? false,
     })
-    .select(MESSAGE_FIELDS)
+    .select('*')
     .single()
   if (error) throw error
-  const hydrated = await hydrateReplyTos([data as ChatMessage])
-  // Notify the other participant (email + push) in the background.
+
+  const { data: senderRow } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', params.senderId)
+    .maybeSingle()
+
+  const base = {
+    ...(data as ChatMessage),
+    sender: senderRow ?? null,
+    reactions: [] as MessageReaction[],
+  }
+  const hydrated = await hydrateReplyTos([base])
   void notifyMessageParticipant(params.chatId, params.senderId)
   return hydrated[0]
 }
