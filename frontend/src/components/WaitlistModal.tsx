@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Rocket, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { getErrorMessage } from '../lib/errors'
 
 interface WaitlistModalProps {
   isOpen: boolean
@@ -71,7 +72,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
           setSubmitted(true)
           return
         }
-        setError(insertError.message || 'Could not join the waitlist. Please try again.')
+        setError(getErrorMessage(insertError, 'generic'))
         return
       }
       setSubmitted(true)

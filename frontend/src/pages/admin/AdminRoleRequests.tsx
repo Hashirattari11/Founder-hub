@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Check, RefreshCw, X } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
@@ -33,7 +34,7 @@ export default function AdminRoleRequests() {
       const res = await adminListRoleRequests(status || undefined)
       setRequests(res.requests)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load role requests')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +65,7 @@ export default function AdminRoleRequests() {
       }
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Review failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }

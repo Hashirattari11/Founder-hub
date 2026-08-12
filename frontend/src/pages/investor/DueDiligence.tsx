@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { ClipboardCheck, RefreshCw, Lock, FileText, ShieldAlert, LayoutDashboard } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -106,7 +107,7 @@ export default function DueDiligence() {
       setReport(result)
       toast.success(result.insufficient ? 'Data coverage report ready' : 'Due-diligence report generated')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not generate report')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setGenerating(false)
     }
@@ -120,7 +121,7 @@ export default function DueDiligence() {
       setReport((r) => (r ? { ...r, dd_access_status: result.request_status } : r))
       toast.success('Access request sent to the founder')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Request failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setRequesting(false)
     }

@@ -75,11 +75,9 @@ export async function exploreStartups(options: ExploreOptions = {}): Promise<Exp
   if (stages.length > 0) query = query.in('stage', stages)
 
   if (search && search.trim()) {
-    const q = search.trim()
-    try {
-      query = query.textSearch('fts', q, { type: 'websearch' })
-    } catch {
-      query = query.ilike('name', `%${q}%`)
+    const q = search.trim().replace(/[%_\\]/g, '')
+    if (q) {
+      query = query.or(`name.ilike.%${q}%,tagline.ilike.%${q}%,description.ilike.%${q}%`)
     }
   }
 
@@ -88,12 +86,15 @@ export async function exploreStartups(options: ExploreOptions = {}): Promise<Exp
 
   const { data, error } = await query
   if (error) {
-    // Fallback for older schemas without the fts column.
-    if (error.message?.includes('fts')) {
+    // Fallback query without optional fts column.
+    if (error.message?.includes('fts') || error.message?.includes('column')) {
       let fb = supabase.from('startups').select(`*, profiles!startups_founder_id_fkey(${PROFILE_FIELDS})`).eq('is_published', true)
       if (industries.length > 0) fb = fb.in('industry', industries)
       if (stages.length > 0) fb = fb.in('stage', stages)
-      if (search?.trim()) fb = fb.ilike('name', `%${search.trim()}%`)
+      if (search?.trim()) {
+        const q = search.trim().replace(/[%_\\]/g, '')
+        if (q) fb = fb.or(`name.ilike.%${q}%,tagline.ilike.%${q}%,description.ilike.%${q}%`)
+      }
       if (sort === 'newest') fb = fb.order('created_at', { ascending: false })
       fb = fb.limit(200)
       const fbData = await fb

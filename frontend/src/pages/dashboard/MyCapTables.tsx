@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import { BarChart3, Coins, Scale, TrendingUp, Users } from 'lucide-react'
 import { getMyCapTables } from '../../lib/equity'
@@ -24,7 +25,7 @@ export default function MyCapTables() {
       const res = await getMyCapTables()
       setItems(res.startups ?? [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load cap tables')
+      setError(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

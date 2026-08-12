@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Camera, Check, Loader2, Save } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
 import { updateProfile, saveAvatar } from '../../lib/profile'
+import { getErrorMessage } from '../../lib/errors'
 import { Avatar } from '../../components/Avatar'
 import { SkillsSelector } from '../../components/SkillsSelector'
 import { useUsernameCheck } from '../../hooks/useUsernameCheck'
@@ -40,6 +41,12 @@ export default function EditProfile() {
 
   const usernameStatus = useUsernameCheck(username, user?.id).status
 
+  useEffect(() => {
+    if (!user) navigate('/login', { replace: true })
+  }, [user, navigate])
+
+  if (!user) return null
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !user) return
@@ -54,7 +61,7 @@ export default function EditProfile() {
       void updated
     } catch (error) {
       setAvatarPreview(profile?.avatar_url ?? null)
-      toast.error(error instanceof Error ? error.message : 'Failed to upload avatar')
+      toast.error(getErrorMessage(error, 'generic'))
     } finally {
       setUploadingAvatar(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -101,11 +108,7 @@ export default function EditProfile() {
       await refreshProfile()
       navigate('/dashboard', { replace: true })
     } catch (error) {
-      // supabase errors (PostgrestError) are not Error instances — surface the
-      // real message instead of masking it as a generic failure.
-      const err = error as { message?: string; code?: string } | null
-      const message = error instanceof Error ? error.message : err?.message || 'Failed to save profile'
-      toast.error(err?.code === '42501' ? `${message} — Please log out and log back in.` : message)
+      toast.error(getErrorMessage(error, 'profile'))
       void prevProfile
     } finally {
       setSaving(false)

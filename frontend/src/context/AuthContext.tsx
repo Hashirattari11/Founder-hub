@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { invalidateStudioConfig } from '../lib/aiStudio'
 import type { User, Profile, Role } from '../types'
@@ -91,7 +92,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setSession(null)
+          setUser(null)
+          userIdRef.current = null
+          lastRoleRef.current = null
+          setRealProfile(null)
+          setPreviewRoleState(null)
+          return
+        }
+
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          toast.error('Your session expired — Please sign in again.')
+          setSession(null)
+          setUser(null)
+          setRealProfile(null)
+          return
+        }
+
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {

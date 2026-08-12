@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Loader2, RefreshCw, Search, Trash2, Video, Ban, CalendarDays, FileText, Sparkles } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
@@ -50,7 +51,7 @@ export default function AdminMeetings() {
       const res = await adminListMeetings({ search: search || undefined, status: status || undefined })
       setMeetings(res.meetings)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load meetings')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -74,7 +75,7 @@ export default function AdminMeetings() {
       setMeetings((prev) => prev.map((x) => (x.id === m.id ? { ...x, status: 'cancelled' } : x)))
       toast.success('Meeting cancelled')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Cancel failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }
@@ -93,7 +94,7 @@ export default function AdminMeetings() {
         setMeetings((prev) => prev.filter((x) => x.id !== m.id))
         toast.success('Meeting deleted')
       })
-      .catch((err) => toast.error(err instanceof Error ? err.message : 'Delete failed'))
+      .catch((err) => toast.error(getErrorMessage(err, 'generic')))
       .finally(() => setBusyId(null))
   }
 
@@ -210,7 +211,7 @@ export default function AdminMeetings() {
                                   setMeetings((prev) => prev.map((x) => (x.id === m.id ? { ...x, status: 'scheduled' } : x)))
                                   toast.success('Meeting rescheduled')
                                 })
-                                .catch((err) => toast.error(err instanceof Error ? err.message : 'Update failed'))
+                                .catch((err) => toast.error(getErrorMessage(err, 'generic')))
                                 .finally(() => setBusyId(null))
                             }}
                             disabled={busy}

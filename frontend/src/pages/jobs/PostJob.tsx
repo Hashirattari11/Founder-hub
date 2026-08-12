@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Briefcase, Check, Loader2, Plus, Rocket, X } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -143,7 +144,7 @@ export default function PostJob() {
       toast.success('Job posted! Candidates with matching skills have been alerted.')
       navigate('/dashboard/manage-jobs')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to post job')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSubmitting(false)
     }

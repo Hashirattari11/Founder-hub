@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Plus, RefreshCw, Trash2, Users2, XCircle } from 'lucide-react'
 import {
@@ -40,7 +41,7 @@ export default function AdminStartupMembers() {
       setMembers(membersRes.members)
       setStartups(startupsRes.startups)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load startup members')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -79,7 +80,7 @@ export default function AdminStartupMembers() {
       setPermission('viewer')
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Add failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -95,7 +96,7 @@ export default function AdminStartupMembers() {
       setMembers((prev) => prev.filter((x) => x.startup_id !== m.startup_id || x.user_id !== m.user_id))
       toast.success('Member removed')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Remove failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -832,7 +833,7 @@ function JoinMeetingModal({ onClose, onDone }: { onClose: () => void; onDone: (r
       const { room_id } = await joinMeetingByLink(trimmed)
       onDone(room_id)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not join that meeting')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setJoining(false)
     }

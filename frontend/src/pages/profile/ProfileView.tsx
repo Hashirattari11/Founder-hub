@@ -89,7 +89,7 @@ export default function ProfileView() {
     )
   }
 
-  const isOwnProfile = user?.id === profile.id
+  const isOwnProfile = Boolean(user?.id && profile.id && user.id === profile.id)
 
   type SocialKey = 'linkedin_url' | 'github_url' | 'portfolio_url' | 'twitter_url'
 

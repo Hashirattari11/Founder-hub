@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Activity, BarChart3, CheckCircle2, Cpu, RefreshCw, XCircle } from 'lucide-react'
 import {
@@ -62,7 +63,7 @@ function AiAnalyticsTab() {
     try {
       setData(await adminAiAnalytics())
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load AI analytics')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -186,7 +187,7 @@ function AiUsageTab() {
       const res = await adminAiUsage(200)
       setLogs(res.logs)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load usage logs')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

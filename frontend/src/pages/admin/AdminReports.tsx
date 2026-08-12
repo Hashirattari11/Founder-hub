@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Check, RefreshCw, X } from 'lucide-react'
 import { adminDismissReport, adminListReports, adminResolveReport } from '../../api/admin'
@@ -29,7 +30,7 @@ export default function AdminReports() {
       const res = await adminListReports(status || undefined)
       setReports(res.reports)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load reports')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -49,7 +50,7 @@ export default function AdminReports() {
       setNote('')
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Action failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }

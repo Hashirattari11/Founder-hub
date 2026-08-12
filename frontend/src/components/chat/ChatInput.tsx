@@ -19,7 +19,7 @@ import {
   uploadVoiceNote,
 } from '../../lib/chat'
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder'
-import { friendlyDbError } from '../../lib/helpers'
+import { getErrorMessage } from '../../lib/errors'
 import type { ChatMessage } from '../../types'
 
 const EMOJI_LIST = [
@@ -119,7 +119,7 @@ export function ChatInput({
         onCancelEdit()
         resetTyping()
       } catch (err) {
-        toast.error(friendlyDbError(err).message)
+        toast.error(getErrorMessage(err, 'generic'))
       } finally {
         setSending(false)
       }
@@ -151,7 +151,7 @@ export function ChatInput({
         if (replyTo) onCancelReply()
         resetTyping()
       } catch (err) {
-        toast.error(friendlyDbError(err).message)
+        toast.error(getErrorMessage(err, 'generic'))
       } finally {
         setSending(false)
       }
@@ -168,7 +168,7 @@ export function ChatInput({
       if (replyTo) onCancelReply()
       resetTyping()
     } catch (err) {
-      toast.error(friendlyDbError(err).message)
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSending(false)
     }
@@ -192,7 +192,7 @@ export function ChatInput({
           onMessageSent(msg)
           if (replyTo) onCancelReply()
         } catch (err) {
-          toast.error(friendlyDbError(err).message)
+          toast.error(getErrorMessage(err, 'generic'))
         }
       })()
     }

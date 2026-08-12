@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Radar, ClipboardCheck, Target, RefreshCw, LayoutDashboard } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -54,7 +55,7 @@ export default function AdminAiFeatures() {
       setWr(wrR)
       setAm(amR)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load AI feature usage')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

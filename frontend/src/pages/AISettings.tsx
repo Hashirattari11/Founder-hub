@@ -18,6 +18,7 @@ import { AppHeader } from '../components/AppHeader'
 import { useSession } from '../context/AuthContext'
 import { updateProfile } from '../lib/profile'
 import { api } from '../lib/api'
+import { getErrorMessage } from '../lib/errors'
 
 type ProviderId = 'anthropic' | 'openai' | 'openrouter' | 'nvidia'
 
@@ -167,7 +168,7 @@ export default function AISettings() {
       toast.success('Connection successful!')
     } catch (e) {
       setField(provider, { testing: false, status: 'failed' })
-      toast.error(`Failed: ${e instanceof Error ? e.message : 'Connection failed'}`)
+      toast.error(getErrorMessage(e, 'network'))
     }
   }
 
@@ -188,7 +189,7 @@ export default function AISettings() {
       toast.success('API key saved!')
     } catch (e) {
       setField(provider, { saving: false })
-      toast.error(e instanceof Error ? e.message : 'Could not save key')
+      toast.error(getErrorMessage(e, 'generic'))
     }
   }
 
@@ -198,7 +199,7 @@ export default function AISettings() {
       setField(provider, { ...EMPTY_STATE })
       toast.success('Key removed')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not remove key')
+      toast.error(getErrorMessage(e, 'generic'))
     }
   }
 

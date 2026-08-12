@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Loader2, Send, Sparkles, FileText, Upload, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -112,7 +113,7 @@ export function JobApplyModal({ job, open, onClose, onApplied }: ApplyModalProps
       if (streamError) throw new Error(streamError)
     } catch (err) {
       if (!(err instanceof DOMException && err.name === 'AbortError')) {
-        toast.error(err instanceof Error ? err.message : 'Could not generate cover letter')
+        toast.error(getErrorMessage(err, 'generic'))
       }
     } finally {
       setGenerating(false)
@@ -149,7 +150,7 @@ export function JobApplyModal({ job, open, onClose, onApplied }: ApplyModalProps
       onApplied()
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to submit application')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSubmitting(false)
     }

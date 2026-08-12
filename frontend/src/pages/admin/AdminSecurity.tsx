@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { RefreshCw, Save, ShieldAlert } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
@@ -23,7 +24,7 @@ export default function AdminSecurity() {
       const res = await adminLoginLogs(100)
       setLogs(res.logs)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load login logs')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -43,7 +44,7 @@ export default function AdminSecurity() {
       })
       toast.success('Security settings saved')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }

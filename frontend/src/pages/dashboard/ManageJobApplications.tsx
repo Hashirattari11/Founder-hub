@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import {
   Briefcase,
@@ -189,7 +190,7 @@ export default function ManageJobApplications() {
       notifyJobStatus(applicationId, status)
       toast.success(`Application marked as ${status}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update status')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -199,7 +200,7 @@ export default function ManageJobApplications() {
       setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, is_active: !j.is_active } : j)))
       toast.success(job.is_active ? 'Job paused' : 'Job activated')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update job')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

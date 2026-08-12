@@ -112,6 +112,13 @@ export async function searchProfilesByRole(role: Profile['role'], opts?: { query
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdate) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user?.id || session.user.id !== userId) {
+    throw new Error("You don't have access to this.")
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)

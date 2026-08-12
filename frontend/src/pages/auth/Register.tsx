@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { MailCheck, CircleAlert } from 'lucide-react'
+import { CircleAlert } from 'lucide-react'
 import { supabase, APP_URL } from '../../lib/supabase'
+import { getErrorMessage } from '../../lib/errors'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput, SelectInput } from '../../components/FormInput'
 import { Seo } from '../../components/Seo'
@@ -37,7 +38,6 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function Register() {
   const [submitting, setSubmitting] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
-  const [createdEmail, setCreatedEmail] = useState<string | null>(null)
   const [existingEmail, setExistingEmail] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -71,41 +71,37 @@ export default function Register() {
           setExistingEmail(values.email)
           return
         }
-        if (message.includes('rate limit') || error.code === 'over_email_send_rate_limit') {
-          toast.error('Too many requests. Please wait a minute and try again.')
-          return
-        }
-        if (message.includes('unexpected token') || message.includes('not valid json')) {
-          toast.error('Something went wrong. Please try again.')
-          return
-        }
-        toast.error(error.message)
+        toast.error(getErrorMessage(error, 'auth'))
         return
       }
 
-      if (data.session) {
-        toast.success('Account created! Complete your profile to get started.')
-        navigate('/complete-profile')
-        return
-      }
-
-      // Email confirmation enabled: Supabase returns 200 for duplicate emails
-      // (anti-enumeration) with an empty identities array — no real user created.
       const identities = data.user?.identities ?? []
       if (identities.length === 0) {
         setExistingEmail(values.email)
         return
       }
 
-      // Genuine new account awaiting email verification.
-      setCreatedEmail(values.email)
+      if (data.session) {
+        toast.success('Welcome to FounderHub!')
+        navigate('/complete-profile', { replace: true })
+        return
+      }
+
+      // Email confirmation may still be on in Supabase — try immediate sign-in.
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      })
+      if (!signInError && signInData.session) {
+        toast.success('Welcome to FounderHub!')
+        navigate('/complete-profile', { replace: true })
+        return
+      }
+
+      toast.success('Welcome to FounderHub!')
+      navigate('/login', { replace: true })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong'
-      toast.error(
-        message.includes('Unexpected token') || message.includes('not valid JSON')
-          ? 'Something went wrong. Please try again.'
-          : message,
-      )
+      toast.error(getErrorMessage(error, 'auth'))
     } finally {
       setSubmitting(false)
     }
@@ -122,7 +118,7 @@ export default function Register() {
       })
       if (error) throw error
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Google sign up failed')
+      toast.error(getErrorMessage(error, 'auth'))
       setOauthLoading(false)
     }
   }
@@ -139,37 +135,20 @@ export default function Register() {
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
             <CircleAlert className="h-7 w-7" />
           </div>
-          <h2 className="mt-4 text-lg font-bold">Your account is already created</h2>
+          <h2 className="mt-4 text-lg font-bold">Account Already Exists</h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            <span className="font-semibold">{existingEmail}</span> is already registered.
-            Please sign in to continue.
+            An account with <span className="font-semibold">{existingEmail}</span> already exists.
           </p>
           <Link to="/login" className="btn-primary mt-6 w-full">
-            Go to Sign In
+            Sign In to My Account
           </Link>
           <button
+            type="button"
             onClick={() => setExistingEmail(null)}
             className="btn-ghost mt-3 w-full"
           >
-            Use a different email
+            Try Different Email
           </button>
-        </div>
-      ) : createdEmail ? (
-        <div className="flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400">
-            <MailCheck className="h-7 w-7" />
-          </div>
-          <h2 className="mt-4 text-lg font-bold">Your account has been created</h2>
-          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            We sent a verification link to <span className="font-semibold">{createdEmail}</span>.
-            Click it to confirm your email, then sign in to get started.
-          </p>
-          <button onClick={() => navigate('/login')} className="btn-primary mt-6 w-full">
-            Continue to Sign In
-          </button>
-          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            Didn't get the email? Check your spam folder or try signing in — we can resend it.
-          </p>
         </div>
       ) : (
       <>
@@ -243,27 +222,16 @@ export default function Register() {
       </div>
 
       <button
+        type="button"
         onClick={handleGoogle}
         disabled={oauthLoading}
         className="btn-ghost w-full disabled:opacity-60"
       >
-        <svg className="h-5 w-5" viewBox="0 0 24 24">
-          <path
-            fill="#4285F4"
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-          />
-          <path
-            fill="#34A853"
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-          />
-          <path
-            fill="#EA4335"
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-          />
+        <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
         </svg>
         {oauthLoading ? 'Redirecting to Google...' : 'Continue with Google'}
       </button>

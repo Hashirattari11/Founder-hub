@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
@@ -91,7 +92,7 @@ export default function BusinessPlanGenerator() {
       toast.success('Business plan generated!')
       navigate(`/business-plan/${plan.id}`)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Generation failed. Please try again.')
+      toast.error(getErrorMessage(e, 'generic'))
     } finally {
       clearInterval(interval)
       setGenerating(false)

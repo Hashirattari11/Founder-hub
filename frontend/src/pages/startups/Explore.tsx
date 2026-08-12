@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal, X, Filter } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AppHeader } from '../../components/AppHeader'
@@ -158,8 +159,9 @@ function FiltersPanel({
 
 export default function Explore() {
   const { user, profile } = useSession()
+  const [searchParams] = useSearchParams()
   const { savedIds, toggleSave } = useSavedStartups(user?.id)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
   const [sort, setSort] = useState<SortOption>('newest')
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [startups, setStartups] = useState<Startup[]>([])
@@ -203,6 +205,11 @@ export default function Explore() {
     },
     [search, filters, sort],
   )
+
+  useEffect(() => {
+    const q = searchParams.get('search')
+    if (q != null) setSearch(q)
+  }, [searchParams])
 
   // Debounced reload on search / filters / sort changes.
   useEffect(() => {

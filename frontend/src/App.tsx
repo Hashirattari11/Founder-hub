@@ -6,6 +6,7 @@ import { ThemeProvider } from './hooks/useTheme'
 import { AuthProvider } from './context/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { GuestRoute } from './components/GuestRoute'
 import { AdminRoute } from './components/AdminRoute'
 import ProfileGateRoute from './components/ProfileGateRoute'
 import { FounderGuard, InvestorGuard } from './components/RoleGuard'
@@ -180,8 +181,8 @@ function App() {
             </Helmet>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/register" element={<Suspense fallback={<PageLoader />}><Register /></Suspense>} />
-              <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+              <Route path="/register" element={<GuestRoute><Suspense fallback={<PageLoader />}><Register /></Suspense></GuestRoute>} />
+              <Route path="/login" element={<GuestRoute><Suspense fallback={<PageLoader />}><Login /></Suspense></GuestRoute>} />
               <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPassword /></Suspense>} />
               <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>} />
       <Route path="/privacy" element={<Suspense fallback={<PageLoader />}><PrivacyPage /></Suspense>} />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -108,7 +109,7 @@ export default function CoFounderHub() {
       setRequestModal(null)
       load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not send request')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSending(null)
     }
@@ -125,7 +126,7 @@ export default function CoFounderHub() {
         load()
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not respond')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

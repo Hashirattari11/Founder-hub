@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getErrorMessage } from './errors'
 import { API_URL } from './config'
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
@@ -6,16 +7,10 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean
 }
 
-/**
- * Parse a JSON body safely. When the API host is unreachable the request may
- * resolve to an HTML page (e.g. the SPA index.html fallback), which would make
- * `response.json()` throw "Unexpected token '<' ...". Surface a friendly
- * message instead of the raw parse error.
- */
 async function parseJson<T>(response: Response): Promise<T> {
   const type = (response.headers.get('content-type') ?? '').toLowerCase()
   if (!type.includes('application/json')) {
-    throw new Error('Service temporarily unavailable. Please try again in a moment.')
+    throw new Error('Service temporarily unavailable.')
   }
   return response.json() as Promise<T>
 }
@@ -44,21 +39,34 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     }
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...rest,
-    headers: finalHeaders,
-    body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...rest,
+      headers: finalHeaders,
+      body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch (err) {
+    throw new Error(getErrorMessage(err, 'network'))
+  }
 
   if (!response.ok) {
-    let detail = `Request failed with status ${response.status}`
+    let detail = ''
     try {
       const data = await response.json()
       if (data.detail) detail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)
     } catch {
       // ignore parse errors
     }
-    throw new Error(detail)
+    const ctx =
+      response.status === 401 || response.status === 403
+        ? 'permission'
+        : response.status === 404
+          ? 'notFound'
+          : response.status >= 500
+            ? 'generic'
+            : 'network'
+    throw new Error(getErrorMessage(detail || response.status, ctx))
   }
 
   if (response.status === 204) return undefined as T

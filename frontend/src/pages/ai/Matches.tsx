@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Target, Play, Bookmark, X, Sparkles, TrendingUp, LayoutDashboard } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -74,7 +75,7 @@ export default function Matches() {
           : 'No matches above the threshold — update your profile or startup for better results',
       )
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not run matching')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setRunning(false)
     }
@@ -92,7 +93,7 @@ export default function Matches() {
       }
       toast.success(kind === 'save' ? 'Match saved' : 'Match dismissed')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

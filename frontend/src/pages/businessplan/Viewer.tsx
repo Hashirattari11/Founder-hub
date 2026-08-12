@@ -41,6 +41,7 @@ import {
   getBusinessPlan,
   updateBusinessPlan,
 } from '../../lib/businessPlan'
+import { getErrorMessage } from '../../lib/errors'
 import type { BusinessPlanRecord, BusinessPlanSection } from '../../types/businessPlan'
 
 const inputCls =
@@ -224,7 +225,7 @@ function PlanTab({
       setEditing(false)
       toast.success('Business plan updated')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not save changes')
+      toast.error(getErrorMessage(e, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -530,7 +531,7 @@ export default function BusinessPlanViewer() {
       const data = await getBusinessPlan(id)
       setPlan(data)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load business plan')
+      setError(getErrorMessage(e, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -546,7 +547,7 @@ export default function BusinessPlanViewer() {
       await downloadBusinessPlanExport(plan.id, format, plan.startup_name)
       toast.success(`Exported ${format.toUpperCase()}`)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Could not export ${format}`)
+      toast.error(getErrorMessage(e, 'generic'))
     }
   }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../lib/errors'
 import { Download, FileText, Loader2, Plus, Save, Trash2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { AppHeader } from '../components/AppHeader'
@@ -376,7 +377,7 @@ export default function ResumeBuilder() {
       }
       toast.success('Resume saved')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save resume')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -392,7 +393,7 @@ export default function ResumeBuilder() {
       await buildResumePdf(data)
       toast.success('PDF downloaded')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not generate PDF')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setDownloading(false)
     }
@@ -406,7 +407,7 @@ export default function ResumeBuilder() {
       setData({ ...EMPTY, fullName: profile?.full_name ?? '', email: user?.email ?? '', skills: profile?.skills ?? [] })
       toast.success('Resume deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete resume')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

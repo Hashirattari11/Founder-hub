@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { RefreshCw, Search, X } from 'lucide-react'
 import { adminListMessages } from '../../api/admin'
@@ -25,7 +26,7 @@ export default function AdminMessages() {
       const res = await adminListMessages({ search: query || undefined })
       setMessages(res.messages)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load messages')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

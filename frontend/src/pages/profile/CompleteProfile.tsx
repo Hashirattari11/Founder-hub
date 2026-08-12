@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, Plus, ArrowLeft, ArrowRight, Loader2, Rocket, Code2, Palette, Megaphone, Wallet, Scale, BarChart3, Lightbulb, Users, Shield } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { getErrorMessage } from '../../lib/errors'
 import { useSession } from '../../context/AuthContext'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
@@ -154,11 +155,7 @@ export default function CompleteProfile() {
       toast.success('Profile complete! Welcome to FounderHub.')
       navigate('/dashboard', { replace: true })
     } catch (error) {
-      // supabase errors (PostgrestError) are not Error instances — surface the
-      // real message instead of masking it as a generic failure.
-      const err = error as { message?: string; code?: string } | null
-      const message = error instanceof Error ? error.message : err?.message || 'Failed to save profile'
-      toast.error(err?.code === '42501' ? `${message} — Please log out and log back in.` : message)
+      toast.error(getErrorMessage(error, 'profile'))
     } finally {
       setSubmitting(false)
     }

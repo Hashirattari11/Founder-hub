@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, Loader2, Save, Wallet, Sparkles } from 'lucide-react'
@@ -145,7 +146,7 @@ export default function InvestorProfileSetup() {
       toast.success("Investor profile saved — you're now findable by founders")
       navigate('/dashboard')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save investor profile')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }

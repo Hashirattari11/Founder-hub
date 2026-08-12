@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { getErrorMessage } from '../lib/errors'
 import toast from 'react-hot-toast'
 import { MessageSquare } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
@@ -14,7 +15,6 @@ import {
   startChat,
   subscribeToChats,
 } from '../lib/chat'
-import { friendlyDbError } from '../lib/helpers'
 import type { Chat } from '../types'
 
 export default function Messages() {
@@ -40,7 +40,7 @@ export default function Messages() {
       setUnreadCounts(counts)
       return data
     } catch (error) {
-      if (id === fetchIdRef.current) setLoadError(friendlyDbError(error).message)
+      if (id === fetchIdRef.current) setLoadError(getErrorMessage(error, 'generic'))
       return undefined
     } finally {
       if (id === fetchIdRef.current) setLoading(false)
@@ -78,7 +78,7 @@ export default function Messages() {
         void markMessagesRead(chat.id, user.id)
         markChatRead(chat.id).catch(() => {})
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Could not open this conversation')
+        toast.error(getErrorMessage(error, 'generic'))
       }
     })()
     return () => {

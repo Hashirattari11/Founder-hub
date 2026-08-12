@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -271,7 +272,7 @@ export default function EquityDashboardPage() {
       await downloadEquityPdf(data.startup.id, data.startup.name)
       toast.success('Cap table PDF downloaded')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to export PDF')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -537,7 +538,7 @@ export default function EquityDashboardPage() {
                               toast.success('Share class deleted')
                               load()
                           } catch (err) {
-                            toast.error(err instanceof Error ? err.message : 'Failed to delete')
+                            toast.error(getErrorMessage(err, 'generic'))
                           }
                         }}
                         className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
@@ -839,7 +840,7 @@ function AddHolderModal({
           : null,
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add holder')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -1018,7 +1019,7 @@ function AddRoundModal({
         close_date: closeDate || null,
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add round')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -1137,7 +1138,7 @@ function AddClassModal({
         conversion_ratio: conversion ? Number(conversion) : null,
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add share class')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -1225,7 +1226,7 @@ function DilutionModal({ open, onClose, startupId }: { open: boolean; onClose: (
       const res = await runDilution(startupId, { raise_amount: raiseNum, pre_money_valuation: preNum })
       setResult(res)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to run dilution')
+      setError(getErrorMessage(err, 'generic'))
     } finally {
       setRunning(false)
     }

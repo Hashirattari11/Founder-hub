@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -670,7 +671,7 @@ function AddShareholderModal({
         notes: notes.trim() || null,
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add shareholder')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -887,7 +888,7 @@ function AddRoundModal({
         close_date: closeDate || null,
       })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add funding round')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -1223,7 +1224,7 @@ function EquitySplitModal({
       if (streamError) throw new Error(streamError)
     } catch (err) {
       if (!(err instanceof DOMException && err.name === 'AbortError')) {
-        setError(err instanceof Error ? err.message : 'AI generation failed')
+        setError(getErrorMessage(err, 'generic'))
       }
     } finally {
       setGenerating(false)

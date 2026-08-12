@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { RefreshCw, Search, Wallet } from 'lucide-react'
 import { adminListInvestors } from '../../api/admin'
@@ -34,7 +35,7 @@ export default function AdminInvestors() {
       const res = await adminListInvestors({ search: search || undefined })
       setInvestors(res.investors)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load investors')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

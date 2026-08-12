@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, FileText, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
@@ -176,7 +177,7 @@ export default function ApplicationsDashboard() {
       )
       toast.success(`Application ${status}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update status')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

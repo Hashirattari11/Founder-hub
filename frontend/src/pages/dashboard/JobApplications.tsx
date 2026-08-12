@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import { Briefcase, ExternalLink, FileText, Loader2, Send, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -61,7 +62,7 @@ export default function JobApplications() {
       setApplications((prev) => prev.filter((a) => a.id !== id))
       toast.success('Application withdrawn')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not withdraw application')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setWithdrawingId(null)
     }

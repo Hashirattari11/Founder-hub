@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Mail, RefreshCw, Search, Users } from 'lucide-react'
 import { Badge, Card, PageHeader } from './adminUi'
 import { adminListWaitlist } from '../../api/admin'
@@ -18,7 +19,7 @@ export default function AdminWaitlist() {
       const res = await adminListWaitlist({ limit: 500 })
       setEntries(res.waitlist)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load the waitlist')
+      setError(getErrorMessage(e, 'generic'))
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Radar, Plus, RefreshCw, Trash2, Calendar, User, Target, LayoutDashboard } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -106,7 +107,7 @@ export default function WarRoom() {
       )
       setData(result)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load the War Room')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -121,7 +122,7 @@ export default function WarRoom() {
       const plan = await api.get<Plan>(`/api/war-room/plans/${planId}`, { auth: true })
       setSelectedPlan(plan)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not load plan')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -139,7 +140,7 @@ export default function WarRoom() {
       setFocus('')
       await load(startupId)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not create plan')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setPlanning(false)
     }
@@ -155,7 +156,7 @@ export default function WarRoom() {
       )
       await load(startupId ?? '')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update task')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -182,7 +183,7 @@ export default function WarRoom() {
       toast.success('Task added')
       await load(startupId ?? '')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not add task')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setAddingTask(false)
     }
@@ -196,7 +197,7 @@ export default function WarRoom() {
       toast.success('Insights refreshed')
       await load(startupId)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not refresh insights')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setRefreshing(false)
     }
@@ -207,7 +208,7 @@ export default function WarRoom() {
       await api.delete(`/api/war-room/insights/${insightId}`, { auth: true })
       setData((d) => (d ? { ...d, insights: (d.insights ?? []).filter((i) => i.id !== insightId) } : d))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete insight')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -216,7 +217,7 @@ export default function DataRoomPage() {
       setPreviewUrl(url)
       logDocumentAction(doc.id, 'viewed').catch(() => {})
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not open document')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -238,7 +239,7 @@ export default function DataRoomPage() {
       a.remove()
       logDocumentAction(doc.id, 'downloaded').catch(() => {})
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not download document')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -617,7 +618,7 @@ function CreateRoomModal({
     try {
       await onSubmit({ name: name.trim(), description: description.trim() })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create data room')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -699,7 +700,7 @@ function UploadModal({
     try {
       await onSubmit({ file, name: name.trim() || file.name, category, description: description.trim(), is_confidential: confidential })
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -1045,7 +1046,7 @@ function SettingsModal({
       onSaved()
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save settings')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -1177,7 +1178,7 @@ function RequestAccessModal({
     try {
       await onSubmit(message.trim())
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send request')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSending(false)
     }
@@ -1215,7 +1216,7 @@ function NdaGate({ room, onSign }: { room: DataRoom; onSign: () => void }) {
     try {
       await onSign()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not sign NDA')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSigning(false)
     }

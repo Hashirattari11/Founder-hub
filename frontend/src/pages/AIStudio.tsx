@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../lib/errors'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -120,7 +121,7 @@ function ToolPanel({ tool, onClose }: { tool: AIToolInfo; onClose: () => void })
       setProvider(result.provider)
       toast.success(`${tool.name} ready`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Generation failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setGenerating(false)
     }

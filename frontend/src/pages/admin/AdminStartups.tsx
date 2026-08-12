@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Loader2, RefreshCw, Search, Star, Trash2, Eye, EyeOff, CheckCircle2, Rocket } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
@@ -33,7 +34,7 @@ export default function AdminStartups() {
       const res = await adminListStartups({ search: search || undefined, status: status || undefined })
       setStartups(res.startups)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load startups')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -51,7 +52,7 @@ export default function AdminStartups() {
       setStartups((prev) => prev.map((s) => (s.id === startup.id ? { ...s, [key]: next } : s)))
       toast.success(`${startup.name} updated`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }
@@ -70,7 +71,7 @@ export default function AdminStartups() {
         setStartups((prev) => prev.filter((s) => s.id !== startup.id))
         toast.success('Startup deleted')
       })
-      .catch((err) => toast.error(err instanceof Error ? err.message : 'Delete failed'))
+      .catch((err) => toast.error(getErrorMessage(err, 'generic')))
       .finally(() => setBusyId(null))
   }
 

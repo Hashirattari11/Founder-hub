@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Rocket, Eye, EyeOff, Pencil, BarChart3, Trash2, Loader2, Handshake } from 'lucide-react'
@@ -43,7 +44,7 @@ export default function MyStartups() {
       )
       toast.success(startup.is_published ? 'Moved to drafts' : 'Startup published')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update startup')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }
@@ -62,7 +63,7 @@ export default function MyStartups() {
       setStartups((prev) => prev.filter((s) => s.id !== startup.id))
       toast.success('Startup deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete startup')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }

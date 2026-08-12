@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, MessageSquarePlus, Search, X } from 'lucide-react'
@@ -55,7 +56,7 @@ export function NewMessageModal({
       onChatSelected(chat)
       onClose()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not start a chat with this user')
+      toast.error(getErrorMessage(error, 'generic'))
     } finally {
       setStarting(null)
     }

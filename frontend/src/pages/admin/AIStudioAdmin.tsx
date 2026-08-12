@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import {
   Activity,
@@ -115,7 +116,7 @@ function ToolsTab() {
       const res = await adminListTools()
       setTools(res.tools)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load tools')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -151,7 +152,7 @@ function ToolsTab() {
       setTools((prev) => prev.map((t) => (t.slug === tool.slug ? updated : t)))
       toast.success(`${updated.name} ${updated.is_enabled ? 'enabled' : 'disabled'}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -167,7 +168,7 @@ function ToolsTab() {
       setTools((prev) => prev.filter((t) => t.slug !== tool.slug))
       toast.success('Tool deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -217,7 +218,7 @@ function ToolsTab() {
       }
       setEditor(emptyEditor())
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -588,7 +589,7 @@ function UsersTab() {
       const res = await adminListUsers(search)
       setUsers(res.users)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load users')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -606,7 +607,7 @@ function UsersTab() {
       toast.success('Roles updated')
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save roles')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSavingId(null)
     }
@@ -729,7 +730,7 @@ function AnalyticsTab() {
     try {
       setData(await adminAnalytics())
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load analytics')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -854,7 +855,7 @@ function UsageTab() {
       const res = await adminUsageLogs()
       setLogs(res.logs)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load usage logs')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

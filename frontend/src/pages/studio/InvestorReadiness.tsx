@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowRight, CheckCircle2, Sparkles, Wallet } from 'lucide-react'
@@ -21,7 +22,7 @@ export default function InvestorReadiness() {
       const result = refresh ? await analyzeInvestorReadiness(id) : await getInvestorReadiness(id)
       setData(result)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not analyze investor readiness')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
       setRefreshing(false)

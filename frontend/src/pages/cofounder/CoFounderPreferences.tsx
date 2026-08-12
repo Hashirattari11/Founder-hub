@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Check, Sparkles, Loader2, X } from 'lucide-react'
@@ -181,7 +182,7 @@ export default function CoFounderPreferences() {
       toast.success('Co-founder preferences saved!')
       navigate('/co-founder')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save preferences')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Activity, BarChart3, RefreshCw, TrendingUp, Users } from 'lucide-react'
 import {
@@ -27,7 +28,7 @@ export default function AdminAnalytics() {
     try {
       setData(await adminAnalytics())
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load analytics')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

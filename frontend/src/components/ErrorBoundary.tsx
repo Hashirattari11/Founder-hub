@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 interface Props {
   children: ReactNode
@@ -7,21 +8,22 @@ interface Props {
 
 interface State {
   hasError: boolean
-  message: string
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, message: '' }
+  state: State = { hasError: false }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, message: error.message }
+  static getDerivedStateFromError(): State {
+    return { hasError: true }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Only log in development — avoids noisy console output in production.
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught:', error, info)
-    }
+    console.error('ErrorBoundary caught:', error, info)
+  }
+
+  private handleRetry = () => {
+    this.setState({ hasError: false })
+    window.location.reload()
   }
 
   render() {
@@ -33,26 +35,25 @@ export class ErrorBoundary extends Component<Props, State> {
           ⚠️
         </div>
         <div>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-            Something went wrong
-          </h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Something went wrong</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {this.state.message || 'An unexpected error occurred.'}
+            An unexpected error occurred. Please try again.
           </p>
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => window.location.reload()}
+            type="button"
+            onClick={this.handleRetry}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
-            Reload page
+            Try Again
           </button>
-          <a
-            href="/"
+          <Link
+            to="/"
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-dark-300 dark:text-gray-300 dark:hover:bg-dark-200"
           >
-            Go home
-          </a>
+            Go Home
+          </Link>
         </div>
       </div>
     )

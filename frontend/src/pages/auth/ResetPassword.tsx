@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -46,7 +47,7 @@ export default function ResetPassword() {
       toast.success('Password updated successfully')
       navigate('/dashboard', { replace: true })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update password')
+      toast.error(getErrorMessage(error, 'generic'))
     } finally {
       setSubmitting(false)
     }

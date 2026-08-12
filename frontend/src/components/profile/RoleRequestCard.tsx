@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { ArrowRight, BadgeCheck, Clock, Loader2, Send, ShieldCheck, X } from 'lucide-react'
 import { ROLES, ROLE_LABELS } from '../../types'
@@ -38,7 +39,7 @@ export default function RoleRequestCard({ currentRole }: { currentRole: Role | n
         await refreshProfile()
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load role requests')
+      toast.error(getErrorMessage(error, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -70,7 +71,7 @@ export default function RoleRequestCard({ currentRole }: { currentRole: Role | n
       setReason('')
       await load()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to submit request')
+      toast.error(getErrorMessage(error, 'generic'))
     } finally {
       setSubmitting(false)
     }
@@ -82,7 +83,7 @@ export default function RoleRequestCard({ currentRole }: { currentRole: Role | n
       toast.success('Request cancelled')
       await load()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to cancel request')
+      toast.error(getErrorMessage(error, 'generic'))
     }
   }
 

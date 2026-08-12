@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { CalendarClock, Check, Eye, Handshake, Loader2, ThumbsDown } from 'lucide-react'
@@ -64,7 +65,7 @@ export default function InvestorRequests() {
       setRequests((prev) => prev.map((r) => (r.id === request.id ? { ...r, status } : r)))
       toast.success(status === 'passed' ? 'Marked as passed' : status === 'meeting_scheduled' ? 'Meeting scheduled' : 'You showed interest')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update request')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }

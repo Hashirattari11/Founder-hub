@@ -151,6 +151,7 @@ export function DashboardLayout() {
   const { user, profile, realProfile, signOut } = useSession()
   const { sidebarOpen, toggleSidebar, closeSidebar } = useDashboardStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
   const unreadCount = useUnreadChatsCount()
@@ -163,6 +164,13 @@ export function DashboardLayout() {
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    if (!q) return
+    navigate(`/explore?search=${encodeURIComponent(q)}`)
   }
 
   return (
@@ -216,14 +224,16 @@ export function DashboardLayout() {
               <Menu className="h-5 w-5" />
             </button>
 
-            <div className="relative hidden max-w-md flex-1 sm:block">
+            <form onSubmit={handleSearch} className="relative hidden max-w-md flex-1 sm:block">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
-                type="text"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search startups, people, skills..."
                 className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-dark-300 dark:bg-dark"
               />
-            </div>
+            </form>
 
             <div className="ml-auto flex items-center gap-3">
               <MessagesButton />

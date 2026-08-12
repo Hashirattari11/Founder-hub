@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, FileText, Plus, RefreshCw, Share2, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -31,7 +32,7 @@ export default function BusinessPlanDashboard() {
       const res = await listBusinessPlans()
       setPlans(res.plans ?? [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load business plans')
+      setError(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -53,7 +54,7 @@ export default function BusinessPlanDashboard() {
       setPlans((p) => p.filter((x) => x.id !== id))
       toast.success('Business plan deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete business plan')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

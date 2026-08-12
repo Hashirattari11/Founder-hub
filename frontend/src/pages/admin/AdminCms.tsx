@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { FileText, Megaphone, Pencil, Plus, Save, Trash2, XCircle } from 'lucide-react'
 import {
@@ -106,7 +107,7 @@ function SiteContentTab() {
       const res = await adminSiteContent()
       setItems(res.content)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load site content')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -140,7 +141,7 @@ function SiteContentTab() {
       setEditor(emptyContentEditor)
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -260,7 +261,7 @@ function BlogTab() {
       const res = await adminBlogPosts()
       setPosts(res.posts)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load blog posts')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -301,7 +302,7 @@ function BlogTab() {
       setEditor(emptyBlogEditor)
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -319,7 +320,7 @@ function BlogTab() {
       setPosts((prev) => prev.filter((p) => p.id !== post.id))
       toast.success('Post deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -330,7 +331,7 @@ function BlogTab() {
       setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, status: next as BlogPost['status'] } : p)))
       toast.success(next === 'published' ? 'Published' : 'Unpublished')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -502,7 +503,7 @@ function AnnouncementsTab() {
       const res = await adminAnnouncements()
       setAnnouncements(res.announcements)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load announcements')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -536,7 +537,7 @@ function AnnouncementsTab() {
       setEditor(emptyAnnouncementEditor)
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }
@@ -547,7 +548,7 @@ function AnnouncementsTab() {
       await adminUpdateAnnouncement(announcement.id, { is_active: !announcement.is_active })
       setAnnouncements((prev) => prev.map((a) => (a.id === announcement.id ? { ...a, is_active: !announcement.is_active } : a)))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -563,7 +564,7 @@ function AnnouncementsTab() {
       setAnnouncements((prev) => prev.filter((a) => a.id !== announcement.id))
       toast.success('Announcement deleted')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

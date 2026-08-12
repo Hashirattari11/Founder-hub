@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from './errors'
 import { api } from './api'
 import type {
   AIStudioConfig,
@@ -94,7 +95,7 @@ export function useAIStudioConfig(userId: string | undefined) {
         }
       })
       .catch((err: Error) => {
-        if (active) setError(err.message)
+        if (active) setError(getErrorMessage(err, 'network'))
       })
     return () => {
       active = false

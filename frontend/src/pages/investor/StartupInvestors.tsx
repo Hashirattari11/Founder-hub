@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -140,7 +141,7 @@ export default function StartupInvestors() {
       setMatches(res.matches.map(toDisplayResult))
       toast.success(res.total > 0 ? `${res.total} matching investors found!` : 'No matching investors yet')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not run investor matching')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setFinding(false)
     }
@@ -166,7 +167,7 @@ export default function StartupInvestors() {
       setRequestTarget(null)
       loadMatches()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not send intro request')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSending(false)
     }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowRight, Handshake, Loader2, Sparkles } from 'lucide-react'
@@ -153,7 +154,7 @@ export default function Matching() {
       setFounderMatches(refreshed.matches)
       toast.success(`Matched ${result.matches_kept} candidates`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Matching failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setRunning(false)
     }

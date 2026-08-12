@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import { BarChart3, Coins, Loader2, Users } from 'lucide-react'
 import { getAdminCapTables } from '../../lib/equity'
@@ -25,7 +26,7 @@ export default function CapTableAdmin() {
         setItems(res.cap_tables ?? [])
         setTotal(res.total ?? 0)
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load cap tables'))
+      .catch((err) => setError(getErrorMessage(err, 'generic')))
       .finally(() => setLoading(false))
   }, [])
 

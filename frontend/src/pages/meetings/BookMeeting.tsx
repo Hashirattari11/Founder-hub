@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -113,7 +114,7 @@ export default function BookMeeting() {
       toast.success('Meeting booked — see you there!')
       navigate('/meetings', { state: { highlight: meeting.id } })
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Booking failed')
+      toast.error(getErrorMessage(e, 'generic'))
       setBooking(false)
     }
   }

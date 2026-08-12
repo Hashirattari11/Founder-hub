@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Bell, CheckCheck, RefreshCw, Trash2 } from 'lucide-react'
 import {
@@ -21,7 +22,7 @@ export default function AdminNotifications() {
       const res = await adminNotifications(unreadOnly)
       setNotifications(res.notifications)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load notifications')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -36,7 +37,7 @@ export default function AdminNotifications() {
       await adminNotificationRead(n.id)
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to mark read')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -46,7 +47,7 @@ export default function AdminNotifications() {
       setNotifications((prev) => prev.map((x) => ({ ...x, is_read: true })))
       toast.success('All notifications marked as read')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to mark all read')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -55,7 +56,7 @@ export default function AdminNotifications() {
       await adminNotificationDelete(n.id)
       setNotifications((prev) => prev.filter((x) => x.id !== n.id))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

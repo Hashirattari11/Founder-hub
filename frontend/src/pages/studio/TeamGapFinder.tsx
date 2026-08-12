@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowRight, Handshake, Sparkles, Users } from 'lucide-react'
@@ -26,7 +27,7 @@ export default function TeamGapFinder() {
       const result = refresh ? await analyzeTeamGaps(id) : await getTeamGaps(id)
       setData(result)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not analyze team gaps')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
       setRefreshing(false)

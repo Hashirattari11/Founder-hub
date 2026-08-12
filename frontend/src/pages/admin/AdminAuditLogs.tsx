@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { RefreshCw, ScrollText } from 'lucide-react'
 import { adminAuditLogs } from '../../api/admin'
@@ -34,7 +35,7 @@ export default function AdminAuditLogs() {
       const res = await adminAuditLogs(action || undefined)
       setLogs(res.logs)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load audit logs')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

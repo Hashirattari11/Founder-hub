@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Activity, Database, KeyRound, RefreshCw, Server } from 'lucide-react'
 import { adminHealth } from '../../api/admin'
@@ -14,7 +15,7 @@ export default function AdminHealth() {
     try {
       setData(await adminHealth())
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load health')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

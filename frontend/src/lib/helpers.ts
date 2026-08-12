@@ -158,30 +158,4 @@ export function capitalize(str: string | null | undefined): string {
 }
 
 /** Map common Supabase/PostgREST errors to a friendly message. */
-export function friendlyDbError(err: unknown): Error {
-  let msg = ''
-  let code = ''
-
-  if (err instanceof Error) {
-    msg = err.message
-  } else if (err && typeof err === 'object') {
-    const e = err as Record<string, unknown>
-    msg = String(e.message ?? '')
-    code = String(e.code ?? '')
-    const details = String(e.details ?? '')
-    if (msg && details) msg = `${msg} — ${details}`
-  } else {
-    msg = String(err)
-  }
-
-  if (msg.includes('PGRST205') || msg.includes('Could not find the table')) {
-    return new Error(
-      'Database schema is not set up yet. Run supabase/migrations/setup_all.sql in the Supabase SQL Editor.',
-    )
-  }
-  if (code === '42501' || msg.includes('PGRST42501') || msg.toLowerCase().includes('permission denied')) {
-    return new Error('Permission denied for this operation.')
-  }
-  if (!msg) msg = code ? `Database error (${code})` : 'Request failed. Please try again.'
-  return new Error(msg)
-}
+export { friendlyDbError, getErrorMessage } from './errors'

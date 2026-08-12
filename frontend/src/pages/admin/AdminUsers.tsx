@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import {
   Ban,
@@ -86,7 +87,7 @@ export default function AdminUsers() {
       })
       setUsers(res.users)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load users')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -103,7 +104,7 @@ export default function AdminUsers() {
       toast.success(successMsg)
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Action failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBusyId(null)
     }

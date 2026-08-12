@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import {
   Activity,
   AlertTriangle,
@@ -27,7 +28,7 @@ export default function AdminDashboard() {
       setData(await adminOverview())
       setError('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load overview')
+      setError(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useParams } from 'react-router-dom'
 import { FileText, Loader2, Rocket, ShieldCheck } from 'lucide-react'
 import { getSharedBusinessPlan } from '../../lib/businessPlan'
@@ -37,7 +38,7 @@ export default function BusinessPlanShareView() {
         const data = await getSharedBusinessPlan(token)
         setPlan(data)
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Could not load this business plan')
+        setError(getErrorMessage(e, 'generic'))
       } finally {
         setLoading(false)
       }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -34,7 +35,7 @@ export default function ForgotPassword() {
       setSent(true)
       toast.success('Password reset email sent')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send reset email')
+      toast.error(getErrorMessage(error, 'generic'))
     } finally {
       setSubmitting(false)
     }

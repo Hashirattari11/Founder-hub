@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 import { Loader2, RefreshCw, Save, ShieldAlert } from 'lucide-react'
 import { useSession } from '../../context/AuthContext'
@@ -21,7 +22,7 @@ export default function AdminSettings() {
       const res = await adminSettings()
       setSettings(res.settings)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load settings')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +65,7 @@ export default function AdminSettings() {
       setDrafts({})
       await load()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSaving(false)
     }

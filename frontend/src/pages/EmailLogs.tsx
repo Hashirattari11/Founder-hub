@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getErrorMessage } from '../lib/errors'
 import toast from 'react-hot-toast'
 import { Loader2, RefreshCw, Send, Mail, MailCheck, MailX, RotateCcw, Zap } from 'lucide-react'
 import { api } from '../lib/api'
@@ -113,7 +114,7 @@ export default function EmailLogs() {
       .get<{ logs: EmailLogRow[] }>('/api/admin/email-logs', { auth: true })
       .then((res) => setLogs(res.logs ?? []))
       .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Could not load email logs'),
+        setError(getErrorMessage(err, 'generic')),
       )
       .finally(() => setLoading(false))
   }
@@ -168,7 +169,7 @@ export default function EmailLogs() {
       loadLogs()
       loadQueue()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Broadcast failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setBSending(false)
     }
@@ -187,7 +188,7 @@ export default function EmailLogs() {
       setTEmail('')
       loadLogs()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Test email failed')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setTSending(false)
     }

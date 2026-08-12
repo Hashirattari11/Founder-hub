@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '../../lib/errors'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -138,7 +139,7 @@ export default function MeetingDetail() {
       setMeeting(m)
       toast.success('Meeting marked as completed')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not end meeting')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setEnding(false)
     }
@@ -160,7 +161,7 @@ export default function MeetingDetail() {
       setMeeting(result.meeting)
       toast.success('AI summary generated')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not generate summary')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setGenerating(false)
     }
@@ -178,7 +179,7 @@ export default function MeetingDetail() {
           : m,
       )
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not update item')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -191,7 +192,7 @@ export default function MeetingDetail() {
       setShowAddItem(false)
       toast.success('Action item added')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not add item')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 
@@ -208,7 +209,7 @@ export default function MeetingDetail() {
       toast.success('Meeting deleted')
       navigate('/meetings')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not delete meeting')
+      toast.error(getErrorMessage(err, 'generic'))
     }
   }
 

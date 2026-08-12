@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getErrorMessage } from '../lib/errors'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -54,7 +55,7 @@ export function ApplyModal({ startup, open, onClose, onApplied }: ApplyModalProp
       onApplied()
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send application')
+      toast.error(getErrorMessage(err, 'generic'))
     } finally {
       setSubmitting(false)
     }
