@@ -75,12 +75,11 @@ export default function Messages() {
       try {
         const chat = await startChat(otherId)
         if (cancelled) return
-        const data = await loadChats()
-        const found = data?.find((c) => c.id === chat.id)
-        setActiveChat(found ?? chat)
+        setActiveChat(chat)
         setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
         void markMessagesRead(chat.id, user.id)
         markChatRead(chat.id).catch(() => {})
+        void loadChats()
       } catch (error) {
         toast.error(getErrorMessage(error, 'generic'))
       }
@@ -101,14 +100,13 @@ export default function Messages() {
   }
 
   const handleChatCreated = async (chat: Chat) => {
-    const data = await loadChats()
-    const found = data?.find((c) => c.id === chat.id)
-    setActiveChat(found ?? chat)
+    setActiveChat(chat)
     if (user) {
       setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
       void markMessagesRead(chat.id, user.id)
       markChatRead(chat.id).catch(() => {})
     }
+    void loadChats()
   }
 
   return (

@@ -25,12 +25,11 @@ import {
   deleteMessageForEveryone,
   deleteMessageForMe,
   getChatMessages,
+  getChatOtherProfile,
   getOtherUser,
-  hydrateChatProfiles,
   hydrateReplyTo,
   markMessagesRead,
   messagePreview,
-  resolveOtherProfile,
   sendForwardedMessage,
   startChat,
   subscribeToChatMessages,
@@ -116,19 +115,23 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
     }
   }, [])
 
-  // Always re-fetch profiles by participant UUID — PostgREST embeds can attach wrong rows.
+  // Always load the other participant by UUID — never trust embeds.
   useEffect(() => {
     let cancelled = false
     setResolvedChat(chat)
     setResolvedOther(null)
-    hydrateChatProfiles(chat)
-      .then(async (hydrated) => {
-        if (cancelled) return
-        setResolvedChat(hydrated)
-        const profile = await resolveOtherProfile(hydrated, userId)
-        if (!cancelled) setResolvedOther(profile)
-      })
-      .catch(() => {})
+    void getChatOtherProfile(chat, userId).then((profile) => {
+      if (!cancelled) {
+        setResolvedOther(profile)
+        if (profile) {
+          setResolvedChat((prev) => ({
+            ...prev,
+            other_participant_id: profile.id,
+            other_participant_profile: profile,
+          }))
+        }
+      }
+    })
     return () => {
       cancelled = true
     }

@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Avatar } from '../Avatar'
 import { ROLE_LABELS } from '../../types'
 import type { Chat, ChatProfile, Role } from '../../types'
-import { getOtherUser, resolveOtherProfile } from '../../lib/chat'
+import { getChatOtherProfile, getOtherUser } from '../../lib/chat'
 import { profileDisplayName } from '../../lib/users'
 
 interface ChatListItemProps {
@@ -19,12 +19,12 @@ function ChatListItemInner({ chat, currentUserId, active, unread, onClick }: Cha
 
   useEffect(() => {
     let cancelled = false
-    const immediate = getOtherUser(chat, currentUserId)
-    if (immediate) {
-      setOther(immediate)
+    const cached = getOtherUser(chat, currentUserId)
+    if (cached) {
+      setOther(cached)
       return
     }
-    void resolveOtherProfile(chat, currentUserId).then((profile) => {
+    void getChatOtherProfile(chat, currentUserId).then((profile) => {
       if (!cancelled) setOther(profile)
     })
     return () => {

@@ -92,11 +92,7 @@ function profileForParticipant(
   return null
 }
 
-function isSelfProfile(profile: ChatProfile | null | undefined, currentUserId: string): boolean {
-  return Boolean(profile?.id && sameUser(profile.id, currentUserId))
-}
-
-/** Return the other participant's profile for a chat. Never returns the viewer. */
+/** Fetch a profile row by canonical user UUID. */
 export function getOtherUser(
   chat: Chat,
   currentUserId: string,
@@ -105,67 +101,45 @@ export function getOtherUser(
   if (!otherId || sameUser(otherId, currentUserId)) return null
 
   if (
-    chat.other_participant_id &&
-    sameUser(chat.other_participant_id, otherId) &&
     chat.other_participant_profile &&
     sameUser(chat.other_participant_profile.id, otherId) &&
-    !isSelfProfile(chat.other_participant_profile, currentUserId)
+    !sameUser(chat.other_participant_profile.id, currentUserId)
   ) {
     return chat.other_participant_profile
   }
 
   const profile = profileForParticipant(chat, otherId)
-  if (profile && sameUser(profile.id, otherId) && !isSelfProfile(profile, currentUserId)) {
+  if (profile && sameUser(profile.id, otherId) && !sameUser(profile.id, currentUserId)) {
     return profile
   }
 
   return null
 }
 
-/** Fetch the other participant profile by UUID when embeds are missing/wrong. */
-export async function resolveOtherProfile(
-  chat: Chat,
-  currentUserId: string,
-): Promise<ChatProfile | null> {
-  const otherId = getOtherParticipantId(chat, currentUserId)
-  if (!otherId || otherId === currentUserId) return null
+/** @deprecated Use getChatOtherProfile */
+export const resolveOtherProfile = getChatOtherProfile
 
-  const existing = getOtherUser(chat, currentUserId)
-  if (existing?.id === otherId) return existing
-
+/** Fetch a profile row by canonical user UUID. */
+export async function fetchParticipantProfile(userId: string): Promise<ChatProfile | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select(CHAT_PROFILE_FIELDS)
-    .eq('id', otherId)
+    .eq('id', userId)
     .maybeSingle()
-  if (error || !data || !sameUser(data.id as string, otherId)) return null
+  if (error || !data) return null
   return data as ChatProfile
 }
 
-/** Attach participant profile rows keyed by canonical participant UUIDs. */
-export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
-  const ids = [chat.participant_1, chat.participant_2].filter(Boolean)
-  if (ids.length === 0) return chat
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(CHAT_PROFILE_FIELDS)
-    .in('id', ids)
-  if (error) throw error
-
-  const byId = new Map((data ?? []).map((row) => [String(row.id).toLowerCase(), row as ChatProfile]))
-  const hydrated: Chat = {
-    ...chat,
-    participant_1_profile: byId.get(String(chat.participant_1).toLowerCase()) ?? null,
-    participant_2_profile: byId.get(String(chat.participant_2).toLowerCase()) ?? null,
-  }
-
-  if (chat.other_participant_id && chat.other_participant_profile?.id === chat.other_participant_id) {
-    hydrated.other_participant_id = chat.other_participant_id
-    hydrated.other_participant_profile = chat.other_participant_profile
-  }
-
-  return hydrated
+/** Load the other participant's profile — always by UUID, never trust embeds. */
+export async function getChatOtherProfile(
+  chat: Chat,
+  viewerId: string,
+): Promise<ChatProfile | null> {
+  const otherId = getOtherParticipantId(chat, viewerId)
+  if (!otherId || sameUser(otherId, viewerId)) return null
+  const profile = await fetchParticipantProfile(otherId)
+  if (!profile || sameUser(profile.id, viewerId)) return null
+  return profile
 }
 
 /** All chats for the current user, newest last_message first. */
@@ -173,16 +147,12 @@ export async function getMyChats(userId: string): Promise<Chat[]> {
   const rows = await api.get<Chat[]>('/api/chats', { auth: true })
   return Promise.all(
     rows.map(async (row) => {
-      const hydrated = await hydrateChatProfiles(row)
-      const otherId = getOtherParticipantId(hydrated, userId)
-      if (!otherId || sameUser(otherId, userId)) return hydrated
-      let other =
-        getOtherUser(hydrated, userId) ?? (await resolveOtherProfile(hydrated, userId))
-      if (isSelfProfile(other, userId)) {
-        other = await resolveOtherProfile(hydrated, userId)
-      }
+      const otherId = getOtherParticipantId(row, userId)
+      if (!otherId || sameUser(otherId, userId)) return row
+      const other = await getChatOtherProfile(row, userId)
+      if (!other) return row
       return {
-        ...hydrated,
+        ...row,
         other_participant_id: otherId,
         other_participant_profile: other,
       }
@@ -203,25 +173,24 @@ export async function startChat(receiverId: string): Promise<Chat> {
   if (!me) {
     throw new Error('You must be signed in to start a conversation.')
   }
-  if (receiverId === me) {
+  if (sameUser(receiverId, me)) {
     throw new Error("You can't start a conversation with yourself.")
   }
 
   const chat = await api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
-  const hydrated = await hydrateChatProfiles(chat)
 
-  const otherId = getOtherParticipantId(hydrated, me)
+  const otherId = getOtherParticipantId(chat, me)
   if (!otherId || !sameUser(otherId, receiverId)) {
     throw new Error('Could not open a conversation with the selected user.')
   }
 
-  const other = getOtherUser(hydrated, me) ?? (await resolveOtherProfile(hydrated, me))
-  if (!other || !sameUser(other.id, receiverId) || isSelfProfile(other, me)) {
+  const other = await getChatOtherProfile(chat, me)
+  if (!other || !sameUser(other.id, receiverId)) {
     throw new Error('Could not load the recipient profile for this conversation.')
   }
 
   return {
-    ...hydrated,
+    ...chat,
     other_participant_id: otherId,
     other_participant_profile: other,
   }
