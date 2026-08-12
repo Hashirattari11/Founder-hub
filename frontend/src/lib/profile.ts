@@ -60,26 +60,55 @@ export interface PeopleSearchResult {
   created_at: string | null
 }
 
+/** Escape `%`, `_`, and `\` for PostgREST ilike patterns. */
+function escapeIlike(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+}
+
 /** Browse people by role (Investor / Developer / Marketer / Designer). */
 export async function searchProfilesByRole(role: Profile['role'], opts?: { query?: string; excludeUserId?: string }): Promise<PeopleSearchResult[]> {
-  let builder = supabase
-    .from('profiles')
-    .select('id, full_name, username, avatar_url, bio, role, skills, city, country, is_open_to_work, created_at')
-    .eq('role', role)
+  const select =
+    'id, full_name, username, avatar_url, bio, role, skills, city, country, is_open_to_work, created_at'
+
+  let builder = supabase.from('profiles').select(select).eq('role', role)
   if (opts?.excludeUserId) builder = builder.neq('id', opts.excludeUserId)
+
   const q = opts?.query?.trim()
-  if (q) {
-    const safe = q.replace(/[%,.]/g, ' ').trim()
-    if (safe.includes(',')) {
-      builder = builder.or(`full_name.ilike.%${safe}%,username.ilike.%${safe}%`)
-    } else if (safe) {
-      builder = builder.or(`full_name.ilike.%${safe}%,skills.cs.{${safe}},username.ilike.%${safe}%`)
-    }
+  const safe = q ? escapeIlike(q.replace(/[%,.]/g, ' ').trim()) : ''
+
+  if (safe) {
+    builder = builder.or(`full_name.ilike.%${safe}%,username.ilike.%${safe}%`)
   }
-  builder = builder.order('created_at', { ascending: false }).limit(60)
+
+  builder = builder.order('created_at', { ascending: false }).limit(safe ? 120 : 60)
   const { data, error } = await builder
   if (error) throw error
-  return (data as PeopleSearchResult[]) ?? []
+
+  let results = (data as PeopleSearchResult[]) ?? []
+
+  // Skills live in a text[] column — PostgREST array filters require exact
+  // element matches and break on spaces/special chars. Match client-side instead.
+  if (safe) {
+    const needle = safe.toLowerCase()
+    const textIds = new Set(results.map((p) => p.id))
+
+    let skillPool = supabase.from('profiles').select(select).eq('role', role)
+    if (opts?.excludeUserId) skillPool = skillPool.neq('id', opts.excludeUserId)
+    const { data: pool, error: poolError } = await skillPool
+      .order('created_at', { ascending: false })
+      .limit(120)
+    if (poolError) throw poolError
+
+    for (const p of (pool as PeopleSearchResult[]) ?? []) {
+      if (textIds.has(p.id)) continue
+      if ((p.skills ?? []).some((s) => s.toLowerCase().includes(needle))) {
+        results.push(p)
+        textIds.add(p.id)
+      }
+    }
+  }
+
+  return results.slice(0, 60)
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdate) {

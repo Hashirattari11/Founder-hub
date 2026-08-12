@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { supabase, popAuthRedirect } from '../../lib/supabase'
 import { isAdminProfile } from '../../lib/admin'
 import type { Profile } from '../../types'
 
-type CallbackState = 'loading' | 'error' | 'accountNotFound'
+type CallbackState = 'loading' | 'error' | 'accountNotFound' | 'accountAlreadyExists'
 
 export default function Callback() {
   const [state, setState] = useState<CallbackState>('loading')
@@ -74,16 +73,14 @@ export default function Callback() {
         // handle_new_user trigger on first-ever auth). username being set means
         // onboarding was completed; username NULL means the row exists but
         // onboarding was never finished (still needs a username + role pick).
-        const hasProfile = Boolean(p)
         const isOnboarded = Boolean(p?.username)
 
         if (intent === 'signin') {
           if (isOnboarded) {
             navigate(popAuthRedirect('/dashboard'), { replace: true })
           } else {
-            // Google account authenticated but no FounderHub account exists.
-            // Show "Account not found" and clean up the orphaned session so a
-            // later Create Account / Sign In starts from a clean state.
+            // Sign-in expects a finished account (username set). Stub profiles
+            // from an unfinished registration do not count — ask them to register.
             setState('accountNotFound')
             await supabase.auth.signOut()
           }
@@ -91,13 +88,12 @@ export default function Callback() {
         }
 
         if (intent === 'register') {
-          // The user clicked "Continue with Google" on the Create Account page.
-          // If a profile already exists for this Google identity, the account
-          // already exists — never silently re-onboard them. Send them to the
-          // app (the profile completion gate handles a missing username/role).
-          if (hasProfile) {
-            toast.success('Welcome back! We found your existing FounderHub account.')
-            navigate(popAuthRedirect('/dashboard'), { replace: true })
+          // handle_new_user always creates a profile row on first OAuth, so we
+          // cannot use hasProfile to detect duplicates. A completed account has
+          // a username; a brand-new Google signup only has the stub profile.
+          if (isOnboarded) {
+            setState('accountAlreadyExists')
+            await supabase.auth.signOut()
           } else {
             navigate('/onboarding', { replace: true })
           }
@@ -171,6 +167,25 @@ export default function Callback() {
             </Link>
             <Link to="/login" className="btn-ghost w-full">
               Back to sign in
+            </Link>
+          </div>
+        </div>
+      ) : state === 'accountAlreadyExists' ? (
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-dark-300 dark:bg-dark">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+            <span className="text-2xl font-bold">!</span>
+          </div>
+          <h1 className="mt-4 text-xl font-bold">Your account is already created</h1>
+          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            This Google account is already registered on FounderHub.
+            Please sign in to continue.
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <Link to="/login" className="btn-primary w-full">
+              Go to Sign In
+            </Link>
+            <Link to="/register" className="btn-ghost w-full">
+              Use a different email
             </Link>
           </div>
         </div>

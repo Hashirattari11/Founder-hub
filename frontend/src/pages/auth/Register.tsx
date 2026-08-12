@@ -89,22 +89,12 @@ export default function Register() {
         return
       }
 
-      // Email confirmation is required. Supabase returns 200 (not an error) when
-      // the email already belongs to an account — for anti-enumeration it returns
-      // a placeholder user that has NO real row (and therefore no profile). A
-      // genuine new signup has a real id whose profile was just created by the
-      // handle_new_user trigger, so checking for a profile by id tells them apart.
-      if (data.user?.id) {
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', data.user.id)
-          .maybeSingle()
-        if (!profileError && !userProfile) {
-          // Placeholder id -> the account already exists -> ask them to sign in.
-          setExistingEmail(values.email)
-          return
-        }
+      // Email confirmation enabled: Supabase returns 200 for duplicate emails
+      // (anti-enumeration) with an empty identities array — no real user created.
+      const identities = data.user?.identities ?? []
+      if (identities.length === 0) {
+        setExistingEmail(values.email)
+        return
       }
 
       // Genuine new account awaiting email verification.
@@ -149,14 +139,14 @@ export default function Register() {
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
             <CircleAlert className="h-7 w-7" />
           </div>
-          <h2 className="mt-4 text-lg font-bold">An account already exists</h2>
+          <h2 className="mt-4 text-lg font-bold">Your account is already created</h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-            It looks like <span className="font-semibold">{existingEmail}</span> is
-            already registered. Please sign in to continue.
+            <span className="font-semibold">{existingEmail}</span> is already registered.
+            Please sign in to continue.
           </p>
-          <button onClick={() => navigate('/login')} className="btn-primary mt-6 w-full">
-            Continue to Sign In
-          </button>
+          <Link to="/login" className="btn-primary mt-6 w-full">
+            Go to Sign In
+          </Link>
           <button
             onClick={() => setExistingEmail(null)}
             className="btn-ghost mt-3 w-full"
