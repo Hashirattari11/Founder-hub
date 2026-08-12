@@ -118,14 +118,18 @@ def enqueue_email(
     provider = resolve_email_provider() or ""
 
     try:
+        merged_data = dict(data or {})
+        delay = max(0, int(send_delay_seconds or 0))
+        if delay > 0:
+            merged_data["send_after"] = datetime.now(timezone.utc).timestamp() + delay
         payload = {
-            "recipient_id": (data or {}).get("user_id"),
+            "recipient_id": merged_data.get("user_id") or merged_data.get("receiver_id"),
             "to_email": to_email,
             "subject": rendered.get("subject", ""),
             "html_body": rendered.get("html", ""),
             "text_body": rendered.get("text", ""),
             "template": template,
-            "template_data": data or {},
+            "template_data": merged_data,
             "dedupe_key": key,
             "status": "queued",
             "attempts": 0,
@@ -154,9 +158,11 @@ def enqueue_email(
             row["id"] = None
         delay = max(0, int(send_delay_seconds or 0))
         if delay > 0:
-            threading.Timer(delay, _send_one_safe, args=(row,)).start()
+            # Serverless-safe: leave queued until cron/startup drain picks it up.
+            logger.info("Queued %s for %s (send_after +%ss)", template, to_email, delay)
         else:
-            threading.Thread(target=_send_one_safe, args=(row,), daemon=True).start()
+            # Send synchronously — background threads/timers die on Vercel after response.
+            _send_one_safe(row)
     _wake_worker()
     return True
 
@@ -216,6 +222,25 @@ def _template_for(notification_type: str) -> str | None:
     return mapping.get(t) or mapping.get(notification_type) or None
 
 
+def _send_after_ts(row: dict) -> float | None:
+    """Optional unix timestamp before which a queued row must not send."""
+    td = row.get("template_data") or {}
+    raw = td.get("send_after")
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_ready(row: dict) -> bool:
+    send_after = _send_after_ts(row)
+    if send_after is None:
+        return True
+    return time.time() >= send_after
+
+
 def _wake_worker() -> None:
     loop = asyncio.get_event_loop()
     if loop.is_running():
@@ -242,6 +267,8 @@ def _claim_batch() -> list[dict]:
         )
         claimed = []
         for row in rows.data or []:
+            if not _is_ready(row):
+                continue
             try:
                 service_supabase.table("email_queue").update({"status": "sending"}).eq("id", row["id"]).execute()
                 claimed.append(row)

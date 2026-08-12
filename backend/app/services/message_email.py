@@ -5,8 +5,9 @@ from datetime import datetime, timezone, timedelta
 from app.core.config import settings
 from app.core.supabase import service_supabase
 
-# Wait before sending so bursts collapse into one email.
-MESSAGE_SEND_DELAY_SECONDS = 180
+# Batching window (dedupe key bucket). Delay must NOT rely on background timers
+# on Vercel serverless — emails send synchronously or via cron drain.
+MESSAGE_SEND_DELAY_SECONDS = 0
 # Dedupe bucket — must be >= delay so only one queued row per burst.
 MESSAGE_DEDUPE_WINDOW_SECONDS = 900
 

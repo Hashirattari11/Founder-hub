@@ -182,14 +182,20 @@ def notify(
             if not merged_data.get("user_name"):
                 merged_data["user_name"] = "there"
             merged_data.setdefault("receiver_id", user_id)
-            result["email_enqueued"] = enqueue_email(
-                to_email=to_email or user_email(user_id),
-                notification_type=notification_type,
-                template=template,
-                data={**merged_data, "user_id": user_id},
-                dedupe_key=dedupe_key,
-                send_delay_seconds=send_delay_seconds,
-            )
+            to = to_email or user_email(user_id)
+            if not to:
+                logger.warning("No email for user %s — skipping %s", user_id, notification_type)
+            else:
+                result["email_enqueued"] = enqueue_email(
+                    to_email=to,
+                    notification_type=notification_type,
+                    template=template,
+                    data={**merged_data, "user_id": user_id},
+                    dedupe_key=dedupe_key,
+                    send_delay_seconds=send_delay_seconds,
+                )
+                if not result["email_enqueued"]:
+                    logger.info("Email not enqueued for %s (%s) — dedupe or queue insert failed", user_id, notification_type)
 
     if push and prefs.get("push_enabled", True):
         queued = enqueue_push(user_id, title, body, data)

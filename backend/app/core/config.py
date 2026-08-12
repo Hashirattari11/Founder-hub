@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     resend_from_email: str = "FounderHub <notification@founderhub.site>"
     # Shared secret used to verify Brevo webhook signatures (HMAC-SHA256).
     brevo_webhook_secret: str = ""
+    cron_secret: str = ""
     anthropic_api_key: str = ""
     encryption_key: str = ""
     frontend_url: str = "http://localhost:5173"
