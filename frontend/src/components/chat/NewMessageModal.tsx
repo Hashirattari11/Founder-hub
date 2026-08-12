@@ -51,6 +51,10 @@ export function NewMessageModal({
 
   const handlePick = async (profile: Profile) => {
     if (starting || !profile.id) return
+    if (profile.id === currentUserId) {
+      toast.error("You can't start a conversation with yourself.")
+      return
+    }
     if (import.meta.env.DEV) {
       console.debug('[NewMessage] selected recipient userId=', profile.id, profileDisplayName(profile))
     }

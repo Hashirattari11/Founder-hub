@@ -152,7 +152,7 @@ export async function getPeopleToConnect(
       avatar_url: p.avatar_url,
       role: p.role,
       skills: p.skills ?? [],
-      city: p.city,
+      city: p.city ?? null,
     })
   }
 
@@ -184,7 +184,7 @@ export async function getPeopleToConnect(
       avatar_url: p.avatar_url,
       role: p.role,
       skills: p.skills ?? [],
-      city: p.city,
+      city: p.city ?? null,
     })
   }
 
@@ -192,7 +192,7 @@ export async function getPeopleToConnect(
 }
 
 /** List accepted connections for the current user. */
-export async function getAcceptedConnections(userId: string) {
+export async function getAcceptedConnections(userId: string): Promise<ProfileEmbed[]> {
   const { data, error } = await supabase
     .from('connections')
     .select(
@@ -214,5 +214,5 @@ export async function getAcceptedConnections(userId: string) {
         r.requester_id === userId ? unwrapProfile(r.receiver) : unwrapProfile(r.requester)
       return other
     })
-    .filter(Boolean)
+    .filter((other): other is ProfileEmbed => Boolean(other))
 }

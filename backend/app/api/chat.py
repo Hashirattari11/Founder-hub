@@ -14,6 +14,41 @@ CHAT_PROFILE_FIELDS = (
 )
 
 
+def _normalize_chat_profiles(user_client, chat: dict) -> dict:
+    """Ensure profile embeds match participant UUID slots (embeds can be wrong)."""
+    p1 = chat.get("participant_1")
+    p2 = chat.get("participant_2")
+    if not p1 or not p2:
+        return chat
+
+    p1_prof = chat.get("participant_1_profile") or {}
+    p2_prof = chat.get("participant_2_profile") or {}
+    need: list[str] = []
+    if p1_prof.get("id") != p1:
+        need.append(p1)
+    if p2_prof.get("id") != p2:
+        need.append(p2)
+
+    if need:
+        result = (
+            user_client.table("profiles")
+            .select(CHAT_PROFILE_FIELDS)
+            .in_("id", need)
+            .execute()
+        )
+        by_id = {row["id"]: row for row in (result.data or [])}
+    else:
+        by_id = {}
+
+    chat["participant_1_profile"] = (
+        p1_prof if p1_prof.get("id") == p1 else by_id.get(p1)
+    )
+    chat["participant_2_profile"] = (
+        p2_prof if p2_prof.get("id") == p2 else by_id.get(p2)
+    )
+    return chat
+
+
 def _fetch_chat_with_profiles(user_client, chat_id: str) -> dict:
     """Reload a chat row with both participant profile embeds."""
     result = (
@@ -30,7 +65,7 @@ def _fetch_chat_with_profiles(user_client, chat_id: str) -> dict:
     rows = result.data or []
     if not rows:
         raise HTTPException(status_code=404, detail="Chat not found")
-    return rows[0]
+    return _normalize_chat_profiles(user_client, rows[0])
 
 
 @router.post("/chats/start", response_model=ChatOut)
@@ -95,7 +130,7 @@ async def list_chats(
         .order("last_message_at", desc=True)
         .execute()
     )
-    return result.data or []
+    return [_normalize_chat_profiles(user_client, row) for row in (result.data or [])]
 
 
 @router.get("/chats/{chat_id}/messages", response_model=list[ChatMessageOut])

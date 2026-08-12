@@ -57,13 +57,49 @@ export async function hydrateReplyTo(msg: ChatMessage): Promise<ChatMessage> {
   return { ...msg, reply_to: toRepliedMessage(data as ReplyRow) }
 }
 
+export function getOtherParticipantId(chat: Chat, currentUserId: string): string | null {
+  if (chat.participant_1 === currentUserId) return chat.participant_2
+  if (chat.participant_2 === currentUserId) return chat.participant_1
+  return null
+}
+
+function profileForParticipant(
+  chat: Chat,
+  participantId: string,
+): ChatProfile | null | undefined {
+  if (chat.participant_1 === participantId) return chat.participant_1_profile
+  if (chat.participant_2 === participantId) return chat.participant_2_profile
+  return null
+}
+
 export function getOtherUser(
   chat: Chat,
   currentUserId: string,
 ): ChatProfile | null {
-  return chat.participant_1 === currentUserId
-    ? (chat.participant_1_profile ?? null)
-    : (chat.participant_2_profile ?? null)
+  const otherId = getOtherParticipantId(chat, currentUserId)
+  if (!otherId || otherId === currentUserId) return null
+
+  const profile = profileForParticipant(chat, otherId)
+  if (profile?.id === otherId) return profile
+  return null
+}
+
+export async function hydrateChatProfiles(chat: Chat): Promise<Chat> {
+  const ids = [chat.participant_1, chat.participant_2].filter(Boolean)
+  if (ids.length === 0) return chat
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(CHAT_PROFILE_FIELDS)
+    .in('id', ids)
+  if (error) throw error
+
+  const byId = new Map((data ?? []).map((row) => [row.id as string, row as ChatProfile]))
+  return {
+    ...chat,
+    participant_1_profile: byId.get(chat.participant_1) ?? null,
+    participant_2_profile: byId.get(chat.participant_2) ?? null,
+  }
 }
 
 export async function getMyChats(userId: string): Promise<Chat[]> {
@@ -77,11 +113,25 @@ export async function getMyChats(userId: string): Promise<Chat[]> {
     .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
     .order('last_message_at', { ascending: false })
   if (error) throw error
-  return data as Chat[]
+  const rows = (data ?? []) as Chat[]
+  return Promise.all(rows.map((row) => hydrateChatProfiles(row)))
 }
 
 export async function startChat(receiverId: string): Promise<Chat> {
-  return api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
+  if (!receiverId || !/^[0-9a-f-]{36}$/i.test(receiverId)) {
+    throw new Error('Invalid recipient — could not start conversation.')
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const me = session?.user?.id
+  if (me && receiverId === me) {
+    throw new Error("You can't start a conversation with yourself.")
+  }
+
+  const chat = await api.post<Chat>('/api/chats/start', { receiver_id: receiverId }, { auth: true })
+  return hydrateChatProfiles(chat)
 }
 
 export async function getChatMessages(

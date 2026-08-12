@@ -100,6 +100,11 @@ export default function Messages() {
     const data = await loadChats()
     const found = data?.find((c) => c.id === chat.id)
     setActiveChat(found ?? chat)
+    if (user) {
+      setUnreadCounts((prev) => ({ ...prev, [chat.id]: 0 }))
+      void markMessagesRead(chat.id, user.id)
+      markChatRead(chat.id).catch(() => {})
+    }
   }
 
   return (

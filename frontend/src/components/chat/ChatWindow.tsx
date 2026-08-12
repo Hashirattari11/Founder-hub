@@ -114,11 +114,10 @@ export function ChatWindow({ chat, userId, onBack }: ChatWindowProps) {
     }
   }, [])
 
-  // Ensure participant profiles are loaded (backend / startChat may omit embeds).
+  // Always re-fetch profiles by participant UUID — PostgREST embeds can attach wrong rows.
   useEffect(() => {
     let cancelled = false
     setResolvedChat(chat)
-    if (getOtherUser(chat, userId)) return
     hydrateChatProfiles(chat)
       .then((hydrated) => {
         if (!cancelled) setResolvedChat(hydrated)
