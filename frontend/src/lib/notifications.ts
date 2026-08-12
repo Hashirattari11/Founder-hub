@@ -11,6 +11,11 @@ export interface NotificationPreferences {
   investor_emails: boolean
   application_emails: boolean
   admin_alerts: boolean
+  community_emails: boolean
+  startup_emails: boolean
+  job_emails: boolean
+  data_room_emails: boolean
+  ai_report_emails: boolean
 }
 
 export const DEFAULT_PREFERENCES: NotificationPreferences = {
@@ -22,6 +27,11 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
   investor_emails: true,
   application_emails: true,
   admin_alerts: true,
+  community_emails: true,
+  startup_emails: true,
+  job_emails: true,
+  data_room_emails: true,
+  ai_report_emails: true,
 }
 
 /** Insert a notification for the current user (RLS allows own inserts). */

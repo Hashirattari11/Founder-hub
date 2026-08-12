@@ -44,6 +44,11 @@ PREF_KEYS = [
     "investor_emails",
     "application_emails",
     "admin_alerts",
+    "community_emails",
+    "startup_emails",
+    "job_emails",
+    "data_room_emails",
+    "ai_report_emails",
 ]
 
 DEFAULT_PREFS = {k: True for k in PREF_KEYS}
@@ -165,6 +170,11 @@ class PreferencesUpdate(BaseModel):
     investor_emails: Optional[bool] = None
     application_emails: Optional[bool] = None
     admin_alerts: Optional[bool] = None
+    community_emails: Optional[bool] = None
+    startup_emails: Optional[bool] = None
+    job_emails: Optional[bool] = None
+    data_room_emails: Optional[bool] = None
+    ai_report_emails: Optional[bool] = None
 
 
 @router.put("/api/notification-preferences")

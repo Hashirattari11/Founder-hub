@@ -352,6 +352,7 @@ export function ChatWindow({ chat, userId, onBack, onChatUpdated }: ChatWindowPr
 
   const handleMessageSent = useCallback(
     (msg: ChatMessage) => {
+      if (!msg?.id) return
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]))
       requestAnimationFrame(() => scrollToBottom(true))
       onChatUpdated?.()
@@ -694,6 +695,7 @@ export function ChatWindow({ chat, userId, onBack, onChatUpdated }: ChatWindowPr
           </div>
         ) : (
           searchedMessages.map((msg, i) => {
+            if (!msg?.id) return null
             const prev = searchedMessages[i - 1]
             const newDay = !prev || !isSameDay(prev.created_at, msg.created_at)
             const firstOfGroup = !prev || prev.sender_id !== msg.sender_id

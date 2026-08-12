@@ -72,18 +72,16 @@ def _email_html(body: str) -> str:
 
 
 def _message_dedupe_key(chat_id: str, receiver_id: str) -> str:
-    """Time-windowed dedupe: one email per chat per minute, so every new
-    message burst still produces a fresh email without flooding the inbox."""
-    bucket = int(time.time() // 60)
-    return f"message:{chat_id}:{receiver_id}:{bucket}"
+    from app.services.message_email import message_dedupe_key
+    return message_dedupe_key(chat_id, receiver_id)
 
 
 def _broadcast_startup_published(startup: dict, exclude_ids: set[str]) -> int:
-    """Email + notify every other user about a newly published startup.
+    """Bell-only broadcast for newly published startups — no blind mass email.
 
-    Respects each user's notification preferences (marketing/email_enabled).
-    Matched talent/investors are excluded so they don't get a second, less
-    targeted email.
+    Matched talent/investors already receive targeted emails via notify_matched_users /
+    notify_investors. This path only creates in-app notifications for users who opted
+    into marketing/product news.
     """
     try:
         rows = (
@@ -114,6 +112,8 @@ def _broadcast_startup_published(startup: dict, exclude_ids: set[str]) -> int:
                     "startup_id": startup_id,
                     "url": f"/startups/{startup_id}",
                 },
+                email=False,
+                push=True,
                 template="startup_new",
                 template_data={
                     "startup_name": startup_name,
@@ -157,23 +157,28 @@ async def notify_message(
     if not email:
         return {"sent": False}
     name = _sender_name(sender_id)
+    from app.services.message_email import message_notify_payload
+
+    batch = message_notify_payload(
+        chat_id=payload.chat_id,
+        receiver_id=payload.receiver_id,
+        sender_id=sender_id,
+        sender_name=name,
+    )
     notify(
         payload.receiver_id,
         "message_received",
-        f"New message from {name}",
-        f"{name} sent you a message on FounderHub.",
+        batch["title"],
+        batch["body"],
         {
             "sender_id": sender_id,
             "chat_id": payload.chat_id,
             "url": f"/messages?user={sender_id}",
         },
         template="message_received",
-        template_data={
-            "from_name": name,
-            "action_url": _frontend_url(f"/messages?user={sender_id}"),
-            "action_label": "Open Chat",
-        },
-        dedupe_key=_message_dedupe_key(payload.chat_id, payload.receiver_id),
+        template_data=batch["template_data"],
+        dedupe_key=batch["dedupe_key"],
+        send_delay_seconds=batch["send_delay_seconds"],
     )
     enqueue_push(
         payload.receiver_id,

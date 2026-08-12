@@ -13,6 +13,7 @@ from app.api.applications import router as applications_router
 from app.api.matching import router as matching_router
 from app.api.chat import router as chat_router
 from app.api.notifications import router as notifications_router
+from app.api.community_notifications import router as community_notifications_router
 from app.api.notification_center import router as notification_center_router
 from app.api.brevo_webhook import router as brevo_webhook_router
 from app.api.job_notifications import router as job_notifications_router
@@ -126,6 +127,7 @@ app.include_router(applications_router)
 app.include_router(matching_router)
 app.include_router(chat_router)
 app.include_router(notifications_router)
+app.include_router(community_notifications_router)
 app.include_router(notification_center_router)
 app.include_router(brevo_webhook_router)
 app.include_router(job_notifications_router)

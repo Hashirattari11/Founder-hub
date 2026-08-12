@@ -59,8 +59,15 @@ export function formatFileSize(bytes: number | null | undefined): string {
   return `${n >= 10 || i === 0 ? n.toFixed(0) : n.toFixed(1)} ${units[i]}`
 }
 
-export function isSameDay(a: string, b: string): boolean {
-  return new Date(a).toDateString() === new Date(b).toDateString()
+export function isSameDay(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  if (!a || !b) return false
+  const da = new Date(a)
+  const db = new Date(b)
+  if (Number.isNaN(da.getTime()) || Number.isNaN(db.getTime())) return false
+  return da.toDateString() === db.toDateString()
 }
 
 /**

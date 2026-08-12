@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { notifyUser } from './feed'
+import { notifyCommunityFollow } from './communityNotify'
 
 export type FollowTarget = 'user' | 'startup'
 
@@ -70,18 +70,7 @@ export async function toggleFollow(
   if (error) throw error
 
   if (targetType === 'user') {
-    const { data: me } = await supabase
-      .from('profiles')
-      .select('full_name, role, city')
-      .eq('id', userId)
-      .maybeSingle()
-    await notifyUser({
-      userId: targetId,
-      type: 'new_follower',
-      title: `${me?.full_name ?? 'Someone'} started following you`,
-      body: `${me?.role ?? 'Member'} from ${me?.city || 'FounderHub'}`,
-      data: { follower_id: userId },
-    })
+    void notifyCommunityFollow(targetId)
   }
 
   return true

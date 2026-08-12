@@ -277,23 +277,29 @@ async def send_chat_message(
     # Notify the other participant without blocking the send path.
     try:
         from app.services.notification_service import notify
+        from app.services.message_email import message_notify_payload
         from app.core.users import user_full_name
 
         sender_name = user_full_name(user_id) or "Someone"
+        preview = (content or "").strip()[:120]
+        batch = message_notify_payload(
+            chat_id=chat_id,
+            receiver_id=str(receiver_id),
+            sender_id=user_id,
+            sender_name=sender_name,
+            preview=preview,
+        )
         notify(
             receiver_id,
             "message_received",
-            "New message",
-            f"{sender_name} sent you a message.",
+            batch["title"],
+            batch["body"],
             {"chat_id": chat_id, "sender_id": user_id, "message_id": msg.get("id")},
             email=True,
             template="message_received",
-            template_data={
-                "from_name": sender_name,
-                "action_url": f"{_frontend_base()}/messages",
-                "action_label": "Open Chat",
-            },
-            dedupe_key=f"message:{chat_id}:{user_id}:{msg.get('id')}",
+            template_data=batch["template_data"],
+            dedupe_key=batch["dedupe_key"],
+            send_delay_seconds=batch["send_delay_seconds"],
         )
     except Exception as exc:  # pragma: no cover
         print(f"[chat.send] notify failed: {exc}")

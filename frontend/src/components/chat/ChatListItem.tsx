@@ -34,11 +34,16 @@ function ChatListItemInner({ chat, currentUserId, active, unread, onClick }: Cha
     }
   }, [chat, currentUserId])
   const name = other ? profileDisplayName(other) : 'Member'
-  const role = other?.role ? ROLE_LABELS[other.role.toLowerCase() as Role] : null
-  const preview = chat.last_message ?? 'No messages yet'
-  const timeAgo = chat.last_message_at
-    ? formatDistanceToNow(new Date(chat.last_message_at), { addSuffix: true })
+  const role = other?.role
+    ? ROLE_LABELS[other.role.toLowerCase() as Role] ?? other.role
     : null
+  const preview = chat.last_message ?? 'No messages yet'
+  const timeAgo = (() => {
+    if (!chat.last_message_at) return null
+    const date = new Date(chat.last_message_at)
+    if (Number.isNaN(date.getTime())) return null
+    return formatDistanceToNow(date, { addSuffix: true })
+  })()
 
   return (
     <button

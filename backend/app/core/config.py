@@ -14,10 +14,10 @@ class Settings(BaseSettings):
     # Primary provider is Brevo; Resend is kept as an automatic fallback so a
     # missing/invalid Brevo key never silently kills delivery. In "auto" the
     # first provider with a configured key wins (brevo → resend).
-    email_provider: str = "auto"
+    email_provider: str = "brevo"
     email_from_name: str = "FounderHub"
-    email_from_email: str = "notifications@founderhub.site"
-    resend_from_email: str = "FounderHub <notifications@founderhub.site>"
+    email_from_email: str = "notification@founderhub.site"
+    resend_from_email: str = "FounderHub <notification@founderhub.site>"
     # Shared secret used to verify Brevo webhook signatures (HMAC-SHA256).
     brevo_webhook_secret: str = ""
     anthropic_api_key: str = ""

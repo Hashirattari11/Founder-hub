@@ -31,13 +31,13 @@ def notify_founder(startup_id: str, applicant_name: str, role: str, applicant_id
         "New application received",
         f"{applicant_name} applied for {role}",
         {"startup_id": startup_id, "applicant_id": applicant_id, "role": role},
-        template="broadcast",
+        template="application_received",
         template_data={
             "user_name": user_full_name(founder_id) or "there",
-            "title": "New application received",
-            "body": f"{applicant_name} applied for {role} at {startup_name}",
+            "from_name": applicant_name,
+            "startup_name": startup_name,
+            "role": role,
             "action_url": settings.frontend_url_for(f"/startups/{startup_id}"),
-            "action_label": "Review Application",
         },
         dedupe_key=f"new_application:{startup_id}:{applicant_id}",
     )

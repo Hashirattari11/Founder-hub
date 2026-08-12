@@ -82,6 +82,7 @@ def enqueue_email(
     dedupe_key: str | None = None,
     *,
     send_now: bool = True,
+    send_delay_seconds: int = 0,
 ) -> bool:
     """Queue an email and deliver it in real time.
 
@@ -137,7 +138,6 @@ def enqueue_email(
         return False
 
     if send_now:
-        # Real-time delivery: hand the row to a background thread immediately.
         row = dict(payload)
         try:
             inserted = (
@@ -152,7 +152,11 @@ def enqueue_email(
                 row["id"] = inserted.data[0]["id"]
         except Exception:  # pragma: no cover
             row["id"] = None
-        threading.Thread(target=_send_one_safe, args=(row,), daemon=True).start()
+        delay = max(0, int(send_delay_seconds or 0))
+        if delay > 0:
+            threading.Timer(delay, _send_one_safe, args=(row,)).start()
+        else:
+            threading.Thread(target=_send_one_safe, args=(row,), daemon=True).start()
     _wake_worker()
     return True
 
@@ -198,6 +202,16 @@ def _template_for(notification_type: str) -> str | None:
         "broadcast": "broadcast",
         "message_received": "message_received",
         "connection_request": "connection_request",
+        "community_follow": "community_follow",
+        "community_comment": "community_comment",
+        "community_repost": "community_repost",
+        "community_likes": "community_likes",
+        "community_mention": "community_mention",
+        "waitlist_admin": "waitlist_admin",
+        "waitlist_confirmation": "waitlist_confirmation",
+        "application_received": "application_received",
+        "password_reset_success": "password_reset_success",
+        "ai_report_ready": "ai_report_ready",
     }
     return mapping.get(t) or mapping.get(notification_type) or None
 
@@ -302,6 +316,37 @@ def _record_log(
 
 def _send_one(row: dict) -> None:
     from app.core.email import send_email_full
+
+    # Refresh batched message counts right before send.
+    template = row.get("template") or ""
+    template_data = dict(row.get("template_data") or {})
+    if template == "message_received" and template_data.get("chat_id") and template_data.get("sender_id"):
+        try:
+            from app.services.message_email import count_recent_messages
+
+            receiver_id = row.get("recipient_id") or template_data.get("receiver_id")
+            count = count_recent_messages(
+                template_data["chat_id"],
+                str(receiver_id or ""),
+                template_data["sender_id"],
+            )
+            template_data["message_count"] = count
+            from_name = template_data.get("from_name") or "Someone"
+            if count > 1:
+                row = {
+                    **row,
+                    "subject": f"You have {count} new messages from {from_name} — FounderHub",
+                }
+            row = {**row, "template_data": template_data}
+            rendered = render_template(template, template_data)
+            row = {
+                **row,
+                "subject": rendered.get("subject", row.get("subject", "")),
+                "html_body": rendered.get("html", row.get("html_body", "")),
+                "text_body": rendered.get("text", row.get("text_body", "")),
+            }
+        except Exception as exc:  # pragma: no cover
+            logger.warning("message batch refresh failed: %s", exc)
 
     result = send_email_full(
         row.get("to_email", ""),

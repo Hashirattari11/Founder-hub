@@ -44,7 +44,7 @@ def _shell(inner: str, footer: str = "", preheader: str = "") -> str:
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#1A1A1A;border-radius:16px;border:1px solid #2A2A2A;overflow:hidden;">
           <tr>
             <td style="padding:28px 32px 0;">
-              <span style="color:#7C3AED;font-size:22px;font-weight:800;letter-spacing:-0.5px;">FounderHub AI</span>
+              <span style="color:#7C3AED;font-size:22px;font-weight:800;letter-spacing:-0.5px;">FounderHub</span>
             </td>
           </tr>
           <tr>
@@ -54,7 +54,7 @@ def _shell(inner: str, footer: str = "", preheader: str = "") -> str:
           </tr>
           {f'<tr><td style="padding:20px 32px;border-top:1px solid #2A2A2A;"><p style="color:#4B5563;font-size:12px;line-height:1.6;margin:0;text-align:center;">{footer}</p></td></tr>' if footer else ""}
         </table>
-        <p style="color:#4B5563;font-size:11px;margin:16px 0 0;text-align:center;">© {datetime.utcnow().year} FounderHub AI · <a href="{FRONTEND_URL}" style="color:#6B7280;text-decoration:none;">FounderHub</a></p>
+        <p style="color:#4B5563;font-size:11px;margin:16px 0 0;text-align:center;">© {datetime.utcnow().year} FounderHub · <a href="{FRONTEND_URL}/settings/notifications" style="color:#6B7280;text-decoration:none;">Notification preferences</a> · <a href="{FRONTEND_URL}" style="color:#6B7280;text-decoration:none;">FounderHub</a></p>
       </td>
     </tr>
   </table>
@@ -117,7 +117,7 @@ def _welcome(d: Dict) -> Dict[str, str]:
         + _text("You're all set. From idea to funded startup — co-founders, developers, investors and AI tools in one place.")
         + _cta(url, "Explore FounderHub")
     )
-    return {"subject": "Welcome to FounderHub AI", "html": _shell(inner, "You received this because you created an account.")}
+    return {"subject": "Welcome to FounderHub", "html": _shell(inner, "You received this because you created an account.")}
 
 
 def _verify_email(d: Dict) -> Dict[str, str]:
@@ -127,7 +127,7 @@ def _verify_email(d: Dict) -> Dict[str, str]:
         + _text(f"Hi {_esc(d.get('user_name', 'there'))}, please confirm your email to activate your FounderHub account.")
         + _cta(url, "Verify Email")
     )
-    return {"subject": "Verify your email — FounderHub AI", "html": _shell(inner, "If you didn't create an account, ignore this email.")}
+    return {"subject": "Verify your email — FounderHub", "html": _shell(inner, "If you didn't create an account, ignore this email.")}
 
 
 def _password_reset(d: Dict) -> Dict[str, str]:
@@ -137,7 +137,16 @@ def _password_reset(d: Dict) -> Dict[str, str]:
         + _text("Click the button below to set a new password. This link expires in 30 minutes.")
         + _cta(url, "Reset Password")
     )
-    return {"subject": "Reset your password — FounderHub AI", "html": _shell(inner, "If you didn't request this, you can safely ignore it.")}
+    return {"subject": "Reset your password — FounderHub", "html": _shell(inner, "If you didn't request this, you can safely ignore it.")}
+
+
+def _password_reset_success(d: Dict) -> Dict[str, str]:
+    inner = (
+        _heading("Password updated")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, your FounderHub password was changed successfully. If this wasn't you, contact support immediately.")
+        + _cta(f"{FRONTEND_URL}/login", "Sign In")
+    )
+    return {"subject": "Your password was changed — FounderHub", "html": _shell(inner, "Security notification from FounderHub.")}
 
 
 def _meeting_invite(d: Dict) -> Dict[str, str]:
@@ -475,14 +484,23 @@ def _connection_request(d: Dict) -> Dict[str, str]:
 
 def _message_received(d: Dict) -> Dict[str, str]:
     from_ = d.get("from_name", "Someone")
+    count = int(d.get("message_count") or 1)
+    preview = (d.get("message_preview") or "").strip()
     url = d.get("action_url") or f"{FRONTEND_URL}/messages"
-    label = d.get("action_label") or "Open Chat"
-    inner = (
-        _heading("You have a new message")
-        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(from_)}</strong> sent you a message.")
-        + _cta(url, label)
+    label = d.get("action_label") or "Open Message"
+    if count > 1:
+        heading = f"You have {count} new messages from {_esc(from_)}"
+        body = f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(from_)}</strong> sent you {count} messages while you were away."
+        subject = f"You have {count} new messages from {from_} — FounderHub"
+    else:
+        heading = f"New message from {_esc(from_)}"
+        body = f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(from_)}</strong> sent you a message on FounderHub."
+        subject = f"New message from {from_} — FounderHub"
+    preview_block = (
+        _card(_text(f"&ldquo;{_esc(preview)}&rdquo;", "#D1D5DB", "14px")) if preview else ""
     )
-    return {"subject": f"New message from {from_} — FounderHub", "html": _shell(inner, "You can change message emails in your preferences.")}
+    inner = _heading(heading) + _text(body) + preview_block + _cta(url, label)
+    return {"subject": subject, "html": _shell(inner, "You can change message emails in your notification preferences.")}
 
 
 def _role_request(d: Dict) -> Dict[str, str]:
@@ -510,7 +528,124 @@ def _role_request(d: Dict) -> Dict[str, str]:
         + reason_block
         + _cta(url, label)
     )
-    return {"subject": f"Role request: {role} — FounderHub", "html": _shell(inner, "Sent to admin from FounderHub AI.")}
+    return {"subject": f"Role request: {role} — FounderHub", "html": _shell(inner, "Sent to admin from FounderHub.")}
+
+
+def _application_received(d: Dict) -> Dict[str, str]:
+    startup = d.get("startup_name", "your startup")
+    applicant = d.get("from_name") or d.get("applicant_name") or "Someone"
+    role = d.get("role", "")
+    url = d.get("action_url") or f"{FRONTEND_URL}/dashboard/applications"
+    inner = (
+        _badge("#3B82F6", "New application")
+        + _heading(f"New application for {_esc(startup)}")
+        + _text(
+            f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(applicant)}</strong>"
+            f"{f' applied for {_esc(role)}' if role else ' submitted an application'}."
+        )
+        + _cta(url, "Review Application")
+    )
+    return {"subject": f"New application for {startup} — FounderHub", "html": _shell(inner, "Application notification from FounderHub.")}
+
+
+def _community_follow(d: Dict) -> Dict[str, str]:
+    from_ = d.get("from_name", "Someone")
+    url = d.get("action_url") or f"{FRONTEND_URL}/community"
+    inner = (
+        _heading(f"{_esc(from_)} started following you")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(from_)}</strong> is now following you on FounderHub.")
+        + _cta(url, d.get("action_label") or "View Profile")
+    )
+    return {"subject": f"{from_} started following you — FounderHub", "html": _shell(inner, "Manage community emails in your notification preferences.")}
+
+
+def _community_comment(d: Dict) -> Dict[str, str]:
+    from_ = d.get("from_name", "Someone")
+    preview = d.get("preview") or ""
+    url = d.get("action_url") or f"{FRONTEND_URL}/community"
+    inner = (
+        _heading(f"{_esc(from_)} commented on your post")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, someone engaged with your post.")
+        + (_card(_text(f"&ldquo;{_esc(preview)}&rdquo;", "#D1D5DB", "14px")) if preview else "")
+        + _cta(url, d.get("action_label") or "View Post")
+    )
+    return {"subject": f"New comment on your post — FounderHub", "html": _shell(inner, "Manage community emails in your notification preferences.")}
+
+
+def _community_repost(d: Dict) -> Dict[str, str]:
+    from_ = d.get("from_name", "Someone")
+    url = d.get("action_url") or f"{FRONTEND_URL}/community"
+    inner = (
+        _heading("Your post was reposted")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, <strong style='color:#FFFFFF;'>{_esc(from_)}</strong> reposted your FounderHub post.")
+        + _cta(url, d.get("action_label") or "View Post")
+    )
+    return {"subject": f"{from_} reposted your post — FounderHub", "html": _shell(inner, "Manage community emails in your notification preferences.")}
+
+
+def _community_likes(d: Dict) -> Dict[str, str]:
+    count = int(d.get("like_count") or 1)
+    url = d.get("action_url") or f"{FRONTEND_URL}/community"
+    inner = (
+        _heading(f"You received {count} new likes")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, your post received {count} new likes on FounderHub.")
+        + _cta(url, d.get("action_label") or "View Post")
+    )
+    return {"subject": f"{count} new likes on your post — FounderHub", "html": _shell(inner, "We batch like emails so your inbox stays useful.")}
+
+
+def _community_mention(d: Dict) -> Dict[str, str]:
+    from_ = d.get("from_name", "Someone")
+    preview = d.get("preview") or ""
+    url = d.get("action_url") or f"{FRONTEND_URL}/community"
+    inner = (
+        _heading(f"{_esc(from_)} mentioned you")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, you were tagged in a FounderHub post.")
+        + (_card(_text(f"&ldquo;{_esc(preview)}&rdquo;", "#D1D5DB", "14px")) if preview else "")
+        + _cta(url, d.get("action_label") or "View Post")
+    )
+    return {"subject": f"{from_} mentioned you — FounderHub", "html": _shell(inner, "Manage community emails in your notification preferences.")}
+
+
+def _waitlist_admin(d: Dict) -> Dict[str, str]:
+    email = d.get("email") or "unknown"
+    country = d.get("country") or "—"
+    city = d.get("city") or "—"
+    inner = (
+        _badge("#F59E0B", "Waitlist")
+        + _heading("New FounderHub waitlist signup")
+        + _card(
+            f"<table role='presentation' width='100%' cellpadding='0' cellspacing='0'>"
+            f"{_kv('Email', _esc(email))}"
+            f"{_kv('Country', _esc(country))}"
+            f"{_kv('City', _esc(city))}"
+            f"</table>"
+        )
+        + _cta(f"{FRONTEND_URL}/admin/waitlist", "View Waitlist")
+    )
+    return {"subject": "New FounderHub waitlist signup", "html": _shell(inner, "Admin alert from FounderHub.")}
+
+
+def _waitlist_confirmation(d: Dict) -> Dict[str, str]:
+    inner = (
+        _heading("You are on the FounderHub waitlist")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, thanks for joining. We will email you when early access opens.")
+        + _cta(FRONTEND_URL, "Visit FounderHub")
+    )
+    return {"subject": "You're on the FounderHub waitlist", "html": _shell(inner, "You joined the public waitlist at founderhub.site.")}
+
+
+def _ai_report_ready(d: Dict) -> Dict[str, str]:
+    report_type = d.get("report_type") or "AI report"
+    summary = d.get("summary") or "Your report is ready to view in FounderHub."
+    url = d.get("action_url") or f"{FRONTEND_URL}/dashboard"
+    inner = (
+        _badge("#A78BFA", "Report ready")
+        + _heading(f"Your {_esc(report_type)} is ready")
+        + _text(f"Hi {_esc(d.get('user_name', 'there'))}, {_esc(summary)}")
+        + _cta(url, d.get("action_label") or "View Report")
+    )
+    return {"subject": f"Your FounderHub {report_type} is ready", "html": _shell(inner, "Manage AI report emails in your notification preferences.")}
 
 
 _RENDERERS = {
@@ -543,6 +678,16 @@ _RENDERERS = {
     "startup_new": _startup_new,
     "message_received": _message_received,
     "connection_request": _connection_request,
+    "application_received": _application_received,
+    "password_reset_success": _password_reset_success,
+    "community_follow": _community_follow,
+    "community_comment": _community_comment,
+    "community_repost": _community_repost,
+    "community_likes": _community_likes,
+    "community_mention": _community_mention,
+    "waitlist_admin": _waitlist_admin,
+    "waitlist_confirmation": _waitlist_confirmation,
+    "ai_report_ready": _ai_report_ready,
 }
 
 TEMPLATE_NAMES = sorted(_RENDERERS.keys())

@@ -16,12 +16,17 @@ interface ToggleGroup {
 
 const EMAIL_TOGGLES: ToggleGroup[] = [
   { key: 'email_enabled', label: 'Enable email notifications', description: 'Master switch for all transactional email.' },
-  { key: 'marketing', label: 'Product news & features', description: 'Updates about new FounderHub features and events.' },
-  { key: 'meeting_emails', label: 'Meeting invites & reminders', description: 'Invites, confirmations, reschedules and reminders for meetings.' },
-  { key: 'message_emails', label: 'New messages', description: 'An email when someone sends you a message.' },
-  { key: 'investor_emails', label: 'Investor activity', description: 'Investor interest, requests and funding opportunities.' },
-  { key: 'application_emails', label: 'Applications & status changes', description: 'New applications and accept/reject updates.' },
-  { key: 'admin_alerts', label: 'Admin alerts', description: 'Security and platform alerts from the FounderHub team.' },
+  { key: 'message_emails', label: 'Messages', description: 'New messages (batched — not one email per message).' },
+  { key: 'community_emails', label: 'Community activity', description: 'Follows, comments, reposts, and batched likes.' },
+  { key: 'startup_emails', label: 'Startup activity', description: 'Startup matches and founder updates relevant to you.' },
+  { key: 'job_emails', label: 'Jobs', description: 'Job alerts and application updates.' },
+  { key: 'meeting_emails', label: 'Meetings', description: 'Invites, confirmations, reschedules and reminders.' },
+  { key: 'investor_emails', label: 'Investor activity', description: 'Investor interest, data room and funding updates.' },
+  { key: 'application_emails', label: 'Applications', description: 'New applications and accept/reject updates.' },
+  { key: 'data_room_emails', label: 'Data room', description: 'Access requests and document activity.' },
+  { key: 'ai_report_emails', label: 'AI reports', description: 'When an AI-generated report is ready for you.' },
+  { key: 'marketing', label: 'Product news', description: 'Product announcements and platform updates.' },
+  { key: 'admin_alerts', label: 'Admin alerts', description: 'Security and platform alerts (admins only).' },
 ]
 
 const PUSH_TOGGLES: ToggleGroup[] = [

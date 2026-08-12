@@ -27,6 +27,11 @@ _CATEGORY_TO_PREF = {
     "application": "application_emails",
     "marketing": "marketing",
     "admin": "admin_alerts",
+    "community": "community_emails",
+    "startup": "startup_emails",
+    "job": "job_emails",
+    "data_room": "data_room_emails",
+    "ai_report": "ai_report_emails",
 }
 
 # System-critical notifications are ALWAYS emailed (respecting only the global
@@ -54,6 +59,11 @@ DEFAULT_PREFS = {
     "investor_emails": True,
     "application_emails": True,
     "admin_alerts": True,
+    "community_emails": True,
+    "startup_emails": True,
+    "job_emails": True,
+    "data_room_emails": True,
+    "ai_report_emails": True,
 }
 
 
@@ -80,6 +90,16 @@ def _prefs(user_id: str) -> dict:
 def _category_for(notification_type: str) -> str:
     """Map a notification type to its preference category."""
     t = (notification_type or "").lower()
+    if t.startswith("community_") or t in ("new_follower", "post_like", "post_comment", "post_repost"):
+        return "community"
+    if t.startswith("data_room") or "data_room" in t:
+        return "data_room"
+    if t.startswith("job_") or t == "job_application":
+        return "job"
+    if t.startswith("startup_") or t == "startup_match" or t == "startup_new":
+        return "startup"
+    if "ai_report" in t or t == "report_ready":
+        return "ai_report"
     if "meeting" in t or "reminder" in t:
         return "meeting"
     if "message" in t or "chat" in t or "connection" in t:
@@ -88,7 +108,7 @@ def _category_for(notification_type: str) -> str:
         return "investor"
     if "application" in t or "accepted" in t or "rejected" in t:
         return "application"
-    if "admin" in t or "report" in t:
+    if "admin" in t or "report" in t or "waitlist" in t:
         return "admin"
     return "marketing"
 
@@ -136,6 +156,7 @@ def notify(
     dedupe_key: str | None = None,
     to_email: str | None = None,
     to_name: str | None = None,
+    send_delay_seconds: int = 0,
 ) -> dict:
     """Fan out a single event to bell + email + push.
 
@@ -160,12 +181,14 @@ def notify(
             merged_data.setdefault("user_name", to_name or user_full_name(user_id))
             if not merged_data.get("user_name"):
                 merged_data["user_name"] = "there"
+            merged_data.setdefault("receiver_id", user_id)
             result["email_enqueued"] = enqueue_email(
                 to_email=to_email or user_email(user_id),
                 notification_type=notification_type,
                 template=template,
-                data=merged_data,
+                data={**merged_data, "user_id": user_id},
                 dedupe_key=dedupe_key,
+                send_delay_seconds=send_delay_seconds,
             )
 
     if push and prefs.get("push_enabled", True):

@@ -1,13 +1,11 @@
-"""Transactional email transport — Brevo primary, Resend fallback.
+"""Transactional email transport — Brevo only.
 
 All FounderHub transactional email is delivered through Brevo
 (`BREVO_API_KEY`). The Brevo `messageId` returned on acceptance is captured
 so the webhook endpoint can map delivery events (delivered / opened /
 clicked / bounced / blocked) back to queue + log rows.
 
-If Brevo is not configured (or its key is rejected), delivery falls back to
-Resend (`RESEND_API_KEY`) so email keeps flowing even when one provider is
-misconfigured. Sending never raises: every attempt returns a structured
+Sending never raises: every attempt returns a structured
 result {ok, error, message_id, http_status} so the queue worker can decide
 whether to retry and the admin panel can surface real delivery status.
 """
@@ -24,23 +22,7 @@ BREVO_API = "https://api.brevo.com/v3/smtp/email"
 
 
 def resolve_email_provider() -> str | None:
-    """Resolve the effective provider based on config + available keys.
-
-    "brevo" wins when a Brevo key exists; otherwise "resend" when a Resend
-    key exists; otherwise None. The chosen provider is pinned on the queue
-    row so the admin panel can see where each message was sent.
-    """
-    chosen = (settings.email_provider or "auto").lower()
-    if chosen not in ("auto", "brevo", "resend"):
-        logger.warning("Unknown EMAIL_PROVIDER %r — falling back to auto", chosen)
-        chosen = "auto"
-    if chosen == "brevo":
-        return "brevo" if settings.brevo_api_key else None
-    if chosen == "resend":
-        return "resend" if settings.resend_api_key else None
-    # auto: prefer Resend when both keys exist (Brevo IP whitelist often blocks Vercel).
-    if settings.resend_api_key:
-        return "resend"
+    """Resolve the effective provider — Brevo is the only production provider."""
     if settings.brevo_api_key:
         return "brevo"
     return None
@@ -150,39 +132,18 @@ def _send_with_fallback(
     text: str | None,
     provider: str | None,
 ) -> dict:
-    """Route a send through the requested provider, falling back to the other.
-
-    Brevo is attempted first when a Brevo key exists; if it rejects the
-    message (4xx/5xx/network) and a Resend key exists, Resend is tried so a
-    bad Brevo key never silently kills delivery.
-    """
-    requested = (provider or resolve_email_provider() or "none").lower()
-    result = None
-
-    if requested == "brevo":
-        result = send_brevo_email(to, subject, html, text)
-        if not result["ok"] and settings.resend_api_key:
-            logger.warning("Brevo failed (%s) — falling back to Resend for %s", result["error"], to)
-            fallback = send_resend_email(to, subject, html, text)
-            if fallback["ok"]:
-                fallback["provider"] = "resend"
-                return fallback
-    elif requested == "resend":
-        result = send_resend_email(to, subject, html, text)
-        if not result["ok"] and settings.brevo_api_key:
-            logger.warning("Resend failed (%s) — falling back to Brevo for %s", result["error"], to)
-            fallback = send_brevo_email(to, subject, html, text)
-            if fallback["ok"]:
-                fallback["provider"] = "brevo"
-                return fallback
-    else:
-        return {"ok": False, "error": "No email provider configured (missing BREVO_API_KEY / RESEND_API_KEY)", "message_id": None, "http_status": None, "provider": None}
-
-    if result and result.get("ok"):
-        result["provider"] = requested
-    elif result:
-        result["provider"] = requested
-    return result or {"ok": False, "error": "Unknown provider error", "message_id": None, "http_status": None, "provider": requested}
+    """Send through Brevo only."""
+    if not settings.brevo_api_key:
+        return {
+            "ok": False,
+            "error": "BREVO_API_KEY not set",
+            "message_id": None,
+            "http_status": None,
+            "provider": None,
+        }
+    result = send_brevo_email(to, subject, html, text)
+    result["provider"] = "brevo"
+    return result
 
 
 def send_email(

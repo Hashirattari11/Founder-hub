@@ -23,12 +23,16 @@ import { useSession } from '../../context/AuthContext'
 import { Avatar } from '../Avatar'
 import { ConnectButton } from '../ConnectButton'
 import {
+  notifyCommunityComment,
+  notifyCommunityLikes,
+  notifyCommunityRepost,
+} from '../../lib/communityNotify'
+import {
   addPostComment,
   checkPostBookmark,
   checkPostLike,
   deletePost,
   getPostComments,
-  notifyUser,
   repostPost,
   togglePostBookmark,
   togglePostLike,
@@ -125,14 +129,8 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     try {
       const nowLiked = await togglePostLike(user.id, post.id)
       setIsLiked(nowLiked)
-      if (nowLiked) {
-        await notifyUser({
-          userId: post.author_id,
-          type: 'post_like',
-          title: `${profile?.full_name ?? 'Someone'} liked your post`,
-          body: post.content.slice(0, 60) + '…',
-          data: { post_id: post.id },
-        })
+      if (nowLiked && post.author_id !== user.id) {
+        void notifyCommunityLikes(post.author_id, post.id, likesCount + 1)
       }
     } catch {
       toast.error('Could not update like')
@@ -174,13 +172,9 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
       setComments((prev) => [...prev, comment])
       setCommentsCount((prev) => prev + 1)
       setCommentText('')
-      await notifyUser({
-        userId: post.author_id,
-        type: 'post_comment',
-        title: `${profile?.full_name ?? 'Someone'} commented on your post`,
-        body: comment.content.slice(0, 60),
-        data: { post_id: post.id },
-      })
+      if (post.author_id !== user.id) {
+        void notifyCommunityComment(post.author_id, post.id, comment.content)
+      }
     } catch {
       toast.error('Could not post comment')
     } finally {
@@ -204,13 +198,9 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     try {
       await repostPost(user.id, post)
       setRepostsCount((prev) => prev + 1)
-      await notifyUser({
-        userId: post.author_id,
-        type: 'post_repost',
-        title: `${profile?.full_name ?? 'Someone'} reposted your post`,
-        body: post.content.slice(0, 60) + '…',
-        data: { post_id: post.id },
-      })
+      if (post.author_id !== user.id) {
+        void notifyCommunityRepost(post.author_id, post.id)
+      }
       toast.success('Reposted!')
     } catch {
       toast.error('Could not repost')

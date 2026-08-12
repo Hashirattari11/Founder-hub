@@ -258,24 +258,53 @@ async function notifyMessageParticipant(chatId: string, senderId: string): Promi
 
 /** Merge fetched messages into local state without dropping optimistic rows. */
 export function mergeChatMessages(prev: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
-  if (incoming.length === 0) return prev
+  const normalized = incoming.map(normalizeIncomingMessage).filter(Boolean) as ChatMessage[]
+  if (normalized.length === 0) return prev
   const byId = new Map(prev.map((m) => [m.id, m]))
-  for (const m of incoming) byId.set(m.id, m)
+  for (const m of normalized) byId.set(m.id, m)
   return [...byId.values()].sort(
     (a, b) => new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime(),
   )
 }
 
+function normalizeIncomingMessage(raw: Partial<ChatMessage> | null | undefined): ChatMessage | null {
+  if (!raw?.id || !raw.chat_id) return null
+  return {
+    id: raw.id,
+    chat_id: raw.chat_id,
+    sender_id: raw.sender_id ?? '',
+    content: raw.content ?? null,
+    type: (raw.type as ChatMessageType) ?? 'text',
+    created_at: raw.created_at ?? new Date().toISOString(),
+    file_url: raw.file_url ?? null,
+    file_name: raw.file_name ?? null,
+    file_size: raw.file_size ?? null,
+    is_read: raw.is_read ?? false,
+    is_deleted: raw.is_deleted ?? false,
+    deleted_for: raw.deleted_for ?? [],
+    reply_to_id: raw.reply_to_id ?? null,
+    is_forwarded: raw.is_forwarded ?? false,
+    edited_at: raw.edited_at ?? null,
+    reactions: raw.reactions ?? [],
+    sender: raw.sender ?? null,
+    reply_to: raw.reply_to ?? null,
+  }
+}
+
 async function enrichOutgoingMessage(msg: ChatMessage, senderId: string): Promise<ChatMessage> {
+  const normalized = normalizeIncomingMessage(msg)
+  if (!normalized) {
+    throw new Error('Message send failed — invalid server response.')
+  }
   const { data: senderRow } = await supabase
     .from('profiles')
     .select('full_name, avatar_url')
     .eq('id', senderId)
     .maybeSingle()
   const base: ChatMessage = {
-    ...msg,
+    ...normalized,
     sender: senderRow ?? null,
-    reactions: msg.reactions ?? [],
+    reactions: normalized.reactions ?? [],
   }
   return (await hydrateReplyTos([base]))[0]
 }
@@ -417,15 +446,17 @@ export function messagePreview(message: {
   }
 }
 
-/** Mark every message in a chat as read for the current user.
- * Uses the SECURITY DEFINER RPC (runs as service role) because the RLS-based
- * update silently failed — messages stayed unread after opening the chat. */
+/** Mark every message in a chat as read for the current user. Never throws. */
 export async function markMessagesRead(chatId: string, userId: string): Promise<void> {
-  const { error } = await supabase.rpc('mark_chat_messages_read', {
-    p_chat_id: chatId,
-    p_user_id: userId,
-  })
-  if (error) throw error
+  try {
+    const { error } = await supabase.rpc('mark_chat_messages_read', {
+      p_chat_id: chatId,
+      p_user_id: userId,
+    })
+    if (error) console.warn('[chat] markMessagesRead failed:', error.message)
+  } catch (err) {
+    console.warn('[chat] markMessagesRead failed:', err)
+  }
 }
 
 /** Upload a chat attachment (image → chat-images, otherwise → chat-files). */
@@ -490,15 +521,27 @@ export function subscribeToChatMessages(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
       (payload) => {
-        const msg = payload.new as ChatMessage
-        onNew(msg)
-        if (msg.sender_id !== userId) markMessagesRead(chatId, userId).catch(() => {})
+        try {
+          const msg = normalizeIncomingMessage(payload.new as ChatMessage)
+          if (!msg) return
+          onNew(msg)
+          if (msg.sender_id !== userId) markMessagesRead(chatId, userId).catch(() => {})
+        } catch (err) {
+          console.error('[chat] realtime INSERT handler failed:', err)
+        }
       },
     )
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
-      (payload) => onUpdate?.(payload.new as ChatMessage),
+      (payload) => {
+        try {
+          const msg = normalizeIncomingMessage(payload.new as ChatMessage)
+          if (msg) onUpdate?.(msg)
+        } catch (err) {
+          console.error('[chat] realtime UPDATE handler failed:', err)
+        }
+      },
     )
     .subscribe()
   return () => {

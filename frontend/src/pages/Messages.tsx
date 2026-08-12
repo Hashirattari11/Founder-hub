@@ -3,6 +3,7 @@ import { getErrorMessage } from '../lib/errors'
 import toast from 'react-hot-toast'
 import { MessageSquare } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ChatList } from '../components/chat/ChatList'
 import { ChatWindow } from '../components/chat/ChatWindow'
 import { NewMessageModal } from '../components/chat/NewMessageModal'
@@ -186,13 +187,15 @@ export default function Messages() {
           className={`${activeChat ? 'block' : 'hidden md:block'} min-w-0 flex-1 md:block`}
         >
           {activeChat ? (
-            <ChatWindow
-              key={activeChat.id}
-              chat={activeChat}
-              userId={user?.id ?? ''}
-              onBack={() => setActiveChat(null)}
-              onChatUpdated={() => void loadChats()}
-            />
+            <ErrorBoundary softReset title="Could not load this chat">
+              <ChatWindow
+                key={activeChat.id}
+                chat={activeChat}
+                userId={user?.id ?? ''}
+                onBack={() => setActiveChat(null)}
+                onChatUpdated={() => void loadChats()}
+              />
+            </ErrorBoundary>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
               <MessageSquare className="h-12 w-12" />

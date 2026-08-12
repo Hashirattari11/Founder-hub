@@ -1,182 +1,217 @@
-# FounderHub — Production Email & Notification System Report
+# FounderHub — Master Email Notification System Report
 
-**Status:** ✅ FIXED & VERIFIED (2026-08-10) · **Provider:** Brevo · **Deploy:** `dpl_AQaDKLxLHXKYmZoaNEPQC7QGairY` · **Commit:** `ae81dd1`
+**Date:** 2026-08-12  
+**Status:** ✅ Implemented & partially verified  
+**Provider:** Brevo (only)  
+**Production sender (code default):** `notification@founderhub.site` (FounderHub)
 
 ---
 
-## 1. Executive Summary
+## 1. What Was Broken
 
-FounderHub's transactional email + notification system is a production-grade, queue-backed pipeline with real-time delivery, deduplication, retries, provider logging, a signed Brevo webhook, per-user preferences, and an admin email center. Production delivery was broken (dead Brevo API key) and has been fully repaired and end-to-end verified against Brevo's SMTP relay.
+| Issue | Root cause |
+|-------|------------|
+| UI / logs could show "sent" without inbox delivery | Rows marked `sent` when Brevo **accepts** the API request; inbox delivery requires webhook `delivered` event |
+| Resend fallback masked Brevo failures | `resolve_email_provider()` preferred Resend in `auto` mode; failures could route to a different provider silently |
+| Message emails flooded inboxes | `chat.py` used per-message dedupe keys → one email per message |
+| Community events had no email | Frontend used Supabase RPC bell only (`notifyUser`) — no backend email pipeline |
+| Waitlist had no admin/confirmation email | `WaitlistModal` inserted directly to Supabase with no backend event |
+| Startup publish emailed all users | `_broadcast_startup_published` emailed every profile |
+| Application emails used generic `broadcast` template | `applications.py` did not use a dedicated application template |
+| Sender inconsistency | Code/env mixed `notifications@` vs `notification@founderhub.site` |
+| Brevo IP whitelist (historical) | HTTP 401 `unrecognised IP address` when Authorized IPs enabled in Brevo dashboard |
+
+---
+
+## 2. Architecture (after fix)
+
+```
+Platform event (API action)
+    ↓
+notification_service.notify()
+    ├─ bell notification (create_notification RPC)
+    ├─ preference check (category + email_enabled)
+    └─ email_queue_service.enqueue_email()
+           ├─ dedupe_key (SHA256 or explicit)
+           ├─ optional send_delay_seconds (message batching)
+           ├─ insert email_queue (queued)
+           └─ background send → Brevo API v3
+                  ├─ HTTP 201 + messageId → status sent + email_logs
+                  └─ failure → retry ×3 → failed
+    ↓
+POST /api/webhooks/brevo (HMAC verified)
+    └─ message_id → delivered / opened / clicked / bounced / blocked
+```
+
+**Central services:**
+- Transport: `backend/app/core/email.py` — Brevo only
+- Queue: `backend/app/services/email_queue_service.py`
+- Events: `backend/app/services/notification_service.py`
+- Templates: `backend/app/services/email_templates.py`
+- Message batching: `backend/app/services/message_email.py`
+- Community/waitlist API: `backend/app/api/community_notifications.py`
+
+---
+
+## 3. Files Changed
+
+### Backend
+- `backend/app/core/config.py` — default sender `notification@founderhub.site`, provider `brevo`
+- `backend/app/core/email.py` — Brevo-only transport (Resend fallback removed)
+- `backend/app/services/email_queue_service.py` — delayed send, message count refresh, new template mappings
+- `backend/app/services/email_templates.py` — community, waitlist, application, AI report templates; FounderHub branding
+- `backend/app/services/notification_service.py` — expanded preferences + categories + `send_delay_seconds`
+- `backend/app/services/message_email.py` — **new** message batching helper
+- `backend/app/api/community_notifications.py` — **new** follow/comment/repost/likes/mention/waitlist endpoints
+- `backend/app/api/chat.py` — batched message notify (3 min delay, 15 min dedupe window)
+- `backend/app/api/notifications.py` — batched messages; startup broadcast bell-only (no mass email)
+- `backend/app/api/applications.py` — `application_received` template
+- `backend/app/api/notification_center.py` — expanded preference keys
+- `backend/app/main.py` — register community router
+- `backend/tests/test_email_pipeline.py` — **new** unit tests (8 passing)
+- `backend/pytest.ini` — **new**
+
+### Frontend
+- `frontend/src/lib/communityNotify.ts` — **new** backend email triggers for community + waitlist
+- `frontend/src/lib/follows.ts` — follow → backend email
+- `frontend/src/components/feed/PostCard.tsx` — comment/repost/likes → backend email
+- `frontend/src/components/WaitlistModal.tsx` — waitlist signup → backend email
+- `frontend/src/lib/notifications.ts` — expanded preference types
+- `frontend/src/pages/NotificationSettings.tsx` — full preference UI
+
+---
+
+## 4. Email Events
+
+| Category | Event | Template | Trigger |
+|----------|-------|----------|---------|
+| Auth | welcome, verify_email, password_reset, password_reset_success | ✅ | Supabase/auth flows via notify |
+| Messages | message_received (batched) | ✅ | `POST /api/messages/{id}/send`, `/api/notify/message` |
+| Startup | startup_match, startup_new (bell), startup_approved | ✅ | matching + publish |
+| Applications | application_received, accepted/rejected/shortlisted | ✅ | applications API |
+| Jobs | job_application, status | ✅ | job_notifications API |
+| Meetings | invite/reminder/cancelled/rescheduled/accepted | ✅ | meetings API |
+| Investor | investor_interested, investor_match, data room | ✅ | investor/data_room APIs |
+| Community | community_follow/comment/repost/likes/mention | ✅ **new** | `/api/notify/community/*` |
+| Admin | role_request/approved/rejected, admin_alert, waitlist_admin | ✅ | admin + waitlist |
+| Waitlist | waitlist_confirmation | ✅ **new** | `/api/notify/waitlist-signup` |
+| AI | ai_report_ready | ✅ template | ⚠️ wire to AI report completion endpoint |
+| Co-founder | cofounder_request/accepted | ✅ | cofounder API |
+
+---
+
+## 5. Brevo Integration Status
 
 | Check | Result |
 |-------|--------|
-| Sender identity | `notifications@founderhub.site` (FounderHub) ✅ |
-| Brevo API request | HTTP 201 ✅ |
-| Brevo message ID captured | ✅ |
-| Logs reflect provider status | ✅ (`email_queue` + `email_logs`) |
-| Real test email delivered | ✅ → `hashirattari73@gmail.com` |
-| Webhook signature enforced | ✅ HMAC-SHA256 (401 w/o sig) |
+| Brevo API configured | ✅ `BREVO_API_KEY` present locally |
+| Brevo-only transport | ✅ Resend fallback removed from send path |
+| Real API acceptance test | ✅ HTTP **201**, messageId `<202608122301.72579235174@smtp-relay.mailin.fr>` |
+| Sender in live test | ⚠️ Env override sent from `notifications@founderhub.site` — update `EMAIL_FROM_EMAIL=notification@founderhub.site` on Vercel + local `.env` |
+| Webhook endpoint | ✅ `POST /api/webhooks/brevo` with HMAC verification |
+| Webhook registered in Brevo dashboard | ⚠️ UNVERIFIED — must be configured manually |
+| Authorized IPs disabled | ⚠️ UNVERIFIED — disable at https://app.brevo.com/security/authorised_ips for Vercel |
 
 ---
 
-## 2. Architecture Overview
+## 6. Message Batching
 
-```
-                     ┌────────────────────────┐
-   App events ──────►│ enqueue_email()        │
-   (auth, matches,   │  dedupe_hash SHA256    │
-    meetings, msgs,  │  dedupe window 600s    │
-    admin alerts…)  │  template render       │
-                     └───────────┬────────────┘
-                                 │ insert row (status=queued, max_attempts=3, provider pinned)
-                                 ▼
-                      ┌─────────────────────┐    background thread (real-time)
-                      │   email_queue table │────► _send_one() ──► Brevo API v3
-                      │  queued→sending→sent│                     (smtp/email)
-                      └──────────┬──────────┘                         │
-                                 │ email_loop / drain_pending           │ HTTP 201 + messageId
-                                 │ (crash recovery, retry failed)       ▼
-                                 ▼                              ┌──────────────────┐
-                          retry ×3 backoff                      │ email_logs table │
-                          (failed → dead-letter)                │ status, http    │
-                                                              │_status, message │
-              ┌────────────────────────────┐                 │ _id, error,     │
-              │ Brevo Transactional Webhook │◄──── events ────│ sent_at, provider│
-              │ POST /api/webhooks/brevo   │   delivered/    └──────────────────┘
-              │ HMAC-SHA256 verified       │   opened/clicked/
-              └─────────────┬──────────────┘   bounced/blocked
-                            ▼
-                  patch email_queue + email_logs
-                  by message_id → delivered/opened/…
-                            │
-                            ▼
-                  Admin Email Center (live status)
-```
-
-**Key property:** Sends happen immediately on a background thread (works on serverless), while a loop + startup drain guarantee nothing is left stranded. Brevo `messageId` is the join key between the queue, the logs, and inbound webhook events.
+- **Delay:** 180 seconds before send (collapses bursts)
+- **Dedupe window:** 900 seconds (one email per chat per window)
+- **Count refresh:** At send time, recounts messages in window → subject/body shows "You have N new messages from {name}"
+- **Deep link:** `/messages?user={sender_id}`
 
 ---
 
-## 3. Components
+## 7. Duplicate Prevention
 
-### 3.1 `email_queue` table (`backend/app/services/email_queue_service.py`)
-Persistent queue. Columns: `id`, `recipient_id`, `to_email`, `subject`, `html_body`, `text_body`, `template`, `template_data`, `dedupe_key`, `status`, `attempts`, `max_attempts` (3), `provider`, `message_id`, `error`, `created_at`, `sent_at`. Statuses: `queued → sending → sent → delivered/opened/clicked` or `→ failed/bounced/blocked`.
-
-### 3.2 `email_logs` table
-Per-send audit log: `status`, `http_status`, `message_id`, `error`, `sent_at`, `provider`. Powers the admin panel's real delivery view (not just "accepted by provider").
-
-### 3.3 Brevo transport (`backend/app/core/email.py`)
-- `resolve_email_provider()` → `"brevo"` when `BREVO_API_KEY` set (auto falls back to `resend`).
-- `send_brevo_email()` POSTs to `https://api.brevo.com/v3/smtp/email` with `api-key` header, from `notifications@founderhub.site`, captures `messageId`.
-- Resend is an automatic fallback (`RESEND_API_KEY`) so a missing/invalid Brevo key never silently kills delivery.
-
-### 3.4 Brevo webhook (`backend/app/api/brevo_webhook.py`)
-- Endpoint: `POST /api/webhooks/brevo`
-- Verifies HMAC-SHA256 signature against `X-Mailin-Signature` / `X-Brevo-Signature` using `BREVO_WEBHOOK_SECRET` (accepts base64 or hex via `hmac.compare_digest`). Returns **401** on mismatch.
-- Maps events → status: `delivered`, `opened`, `click/clicked → clicked`, `bounce/soft_bounce/hard_bounce/invalid_email/error/complaint/spam_report/unsubscribed → bounced`, `blocked`.
-- Patches both `email_queue` and `email_logs` by `message_id`. Clears `error` on positive delivery.
-
-### 3.5 Templates (`backend/app/services/email_templates.py`)
-Branded, dark, responsive, inline-CSS HTML + plain text. `render_template(name, data)` returns `{subject, html, text}`. `TEMPLATE_NAMES` enumerates all available templates.
-
-### 3.6 Email preferences
-Per-user on/off toggles; `enqueue_email` honors them. Logged-in users manage preferences in-app.
-
-### 3.7 Admin email center
-Admin panel reads `email_queue` + `email_logs` to show real provider status, message IDs, errors, retries — and to send test/broadcast emails.
+- Default: SHA256(`to|template|json_data`) within 600s window
+- Explicit keys per event: e.g. `follow:{actor}:{receiver}`, `likes:{post}:{receiver}:{hour_bucket}`
+- Message keys: `message:{chat_id}:{receiver_id}:{15min_bucket}`
 
 ---
 
-## 4. Notification Event Matrix
+## 8. Retry Behavior
 
-| `notification_type` | Template | Trigger |
-|---|---|---|
-| `welcome` | `welcome` | signup |
-| `verify` / `verify_email` | `verify_email` | email verification |
-| `password_reset` | `password_reset` | reset flow |
-| `meeting_invite` | `meeting_invite` | meeting created |
-| `meeting_reminder` | `meeting_reminder` | upcoming meeting |
-| `meeting_cancelled` | `meeting_cancelled` | meeting cancelled |
-| `meeting_rescheduled` | `meeting_rescheduled` | meeting moved |
-| `meeting_accepted` | `meeting_accepted` | invite accepted |
-| `application_accepted` | `application_accepted` | application outcome |
-| `application_rejected` | `application_rejected` | application outcome |
-| `application_shortlisted` | `application_shortlisted` | application outcome |
-| `startup_match` | `startup_match` | AI match |
-| `cofounder_request` | `cofounder_request` | cofounder invite |
-| `cofounder_accepted` | `cofounder_accepted` | cofounder accepted |
-| `data_room_viewed` | `data_room_viewed` | data room view |
-| `data_room_access_requested` | `data_room_access_requested` | access request |
-| `data_room_access_approved` | `data_room_access_approved` | access granted |
-| `investor_interested` | `investor_interested` | investor interest |
-| `investor_match` | `investor_match` | investor AI match |
-| `job_application` | `job_application` | jobs |
-| `startup_approved` | `startup_approved` | admin approval |
-| `role_approved` / `role_rejected` / `role_request` | same | role management |
-| `admin_alert` | `admin_alert` | system alerts |
-| `broadcast` | `broadcast` | admin broadcast |
-| `message_received` | `message_received` | in-app messaging |
+- `max_attempts = 3`
+- Failed rows → `failed` status with `error`, `http_status`, `last_error_at`
+- Admin retry: `POST /api/admin/email-queue/retry`
+- **Never** marks `sent` unless Brevo returns success (HTTP 2xx + acceptance)
 
 ---
 
-## 5. Dedup & Retry
+## 9. Notification Preferences
 
-- **Dedup:** `dedupe_key` = SHA256(`to_email|template|json_safe(data)`) (or caller-supplied). `_recent_row_count` blocks a new send if an identical row exists within `DEDUPE_WINDOW_SECONDS = 600` (10 min). A row older than the window no longer blocks, so recurring events (new chat message) still produce fresh emails.
-- **Retry:** `max_attempts = 3`. `_retry_later(row, error, http_status)` increments `attempts`; on final attempt the row is marked `failed` (dead-letter), otherwise re-queued with backoff. `_claim_batch` (MAX_BATCH=25, POLL_SECONDS=2) recovers `queued`/`sending` rows from crashed instances.
+| Key | Controls |
+|-----|----------|
+| `email_enabled` | Master switch |
+| `message_emails` | Messages |
+| `community_emails` | Follow, comment, repost, likes batch |
+| `startup_emails` | Startup matches |
+| `job_emails` | Job alerts/applications |
+| `meeting_emails` | Meetings |
+| `investor_emails` | Investor activity |
+| `application_emails` | Applications |
+| `data_room_emails` | Data room |
+| `ai_report_emails` | AI reports |
+| `marketing` | Product news |
+| `admin_alerts` | Admin alerts |
 
----
+**Always emailed (transactional):** password_reset, verify_email, welcome, role_approved/rejected, admin_alert
 
-## 6. Webhook Security
-
-- Secret: `BREVO_WEBHOOK_SECRET` (stored in Vercel prod env).
-- Algorithm: HMAC-SHA256 over raw request body; compared base64 **and** hex against `X-Mailin-Signature` / `X-Brevo-Signature` using `hmac.compare_digest` (timing-safe). Unsigned/invalid → **401 Invalid signature**.
-- Configure in Brevo dashboard (Transactional → Webhooks): URL `https://founder-hub-0.vercel.app/api/webhooks/brevo`, events `delivered, opened, click, bounce, blocked, complaint, unsubscribed`.
-
----
-
-## 7. What Was Broken → What Was Fixed
-
-**Broken (since 2026-08-08 18:16 UTC):** Production `BREVO_API_KEY` expired/revoked ("Key not found" from `/v3/account`). `email_logs` showed **34 failed / 27 sent**. From-address also defaulted to a personal Gmail in some code paths.
-
-**Fixed:**
-1. `backend/app/core/config.py` defaults → `email_from_name="FounderHub"`, `email_from_email="notifications@founderhub.site"`, `resend_from_email="FounderHub <notifications@founderhub.site>"`. (**Commit `ae81dd1`**, deploy `dpl_AQaDKLxLHXKYmZoaNEPQC7QGairY`.)
-2. `backend/.env` updated: `EMAIL_FROM_EMAIL`, `EMAIL_FROM_NAME=FounderHub`, `BREVO_WEBHOOK_SECRET`, and **new valid `BREVO_API_KEY` (rotated)**.
-3. Vercel prod env (REST API): added `EMAIL_FROM_EMAIL`, `EMAIL_FROM_NAME`, `BREVO_WEBHOOK_SECRET`; deleted the dead `BREVO_API_KEY`; added the new key (env id `MmJlAwkH0Pxin7kd`). Redeployed (`founder-hub-0-impe6f5vp-…`).
-4. `founderhub.site` verified in Brevo (TXT `brevo-code:4f870208de31fa31962f61b308484717`).
+UI: `/settings/notifications`
 
 ---
 
-## 8. Verification Results
+## 10. Tests Performed
 
-- **Direct send** (`send_brevo_email`) → HTTP **201**, `message_id` `<202608101320.46368094534@smtp-relay.mailin.fr>`, from `notifications@founderhub.site` → delivered to `hashirattari73@gmail.com`.
-- **Full pipeline** `enqueue_email("verify_email", dedupe_key="e2e-pipeline-test-20260810")`:
-  - `email_queue` row **`6f10a242`** → status `sent`, `message_id` `<202608101322.56795530958@smtp-relay.mailin.fr>`, http 201, provider `brevo`.
-  - `email_logs` row **`55a36cec`** → status `sent`, `sent_at` set, provider `brevo`.
-- **Prod webhook** `POST /api/webhooks/brevo` without signature → **401** (secret live). `GET /` → **200**.
-
----
-
-## 9. Environment & Key Management
-
-Vercel prod env (`founder-hub-0`), set via REST API:
-
-| Var | Value |
-|-----|-------|
-| `BREVO_API_KEY` | (rotated — stored in Vercel env, id `MmJlAwkH0Pxin7kd`) |
-| `BREVO_WEBHOOK_SECRET` | (shared HMAC secret) |
-| `EMAIL_FROM_EMAIL` | `notifications@founderhub.site` |
-| `EMAIL_FROM_NAME` | `FounderHub` |
-| `EMAIL_PROVIDER` | `brevo` (optional; auto-detects) |
-
-**To rotate the Brevo key:** generate a new key in Brevo → `https://api.brevo.com/v3/account` to verify → update `BREVO_API_KEY` in Vercel env (delete old via `DELETE /v9/projects/founder-hub-0/env/{id}`, add via `POST /v10/projects/founder-hub-0/env`, teamId `team_VajkoNE2yGmuAR89Mm13PZx3`, token from Vercel CLI auth) → redeploy. The Vercel `vercel env rm` CLI is broken ("Invalid number of arguments"); use the REST API instead.
-
-`backend/.env` mirrors the above but is **not committed** (gitignored).
+| Test | Result |
+|------|--------|
+| `pytest tests/test_email_pipeline.py` | ✅ 8 passed |
+| `python -c "from app.main import app"` | ✅ import ok |
+| Brevo live send (local) | ✅ HTTP 201 + real messageId |
+| Frontend build | ⚠️ UNVERIFIED (slow build environment) |
+| Inbox delivery confirmation | ⚠️ UNVERIFIED — check recipient inbox + Brevo dashboard |
+| Webhook delivery status update | ⚠️ UNVERIFIED — requires Brevo webhook registration |
 
 ---
 
-## 10. Known Limitations / Next Steps
+## 11. Remaining Issues / Action Required
 
-- Brevo **free plan** = 300 transactional emails/day. Monitor credit usage in the Brevo dashboard; upgrade if volume grows.
-- Brevo webhook must be registered in the Brevo dashboard (Transactional → Webhooks) for `delivered/opened/clicked/bounced/blocked` to flow back and update `email_queue`/`email_logs` statuses. If not registered, rows stay at `sent` (accepted by provider) rather than `delivered`.
-- Resend fallback path exists but is unconfigured in prod (`RESEND_API_KEY` not set) — acceptable while Brevo is healthy; set it for true provider redundancy.
-- The logo branding mission (separate) uses the exact FounderHub PNG; email templates continue to render their own branded HTML (no image swap required).
+1. **Set production sender:** Update Vercel env `EMAIL_FROM_EMAIL=notification@founderhub.site` (user spec). Currently env may still use `notifications@founderhub.site`.
+2. **Brevo Authorized IPs:** Disable IP whitelist so Vercel/serverless can send.
+3. **Brevo webhook:** Register `https://founder-hub-0.vercel.app/api/webhooks/brevo` for delivered/opened/bounced events.
+4. **Wire AI report ready:** Call `notify(..., template="ai_report_ready")` when AI Studio report completes.
+5. **Deploy:** Push changes + redeploy backend and frontend.
+6. **Rotate Brevo key:** User exposed API key in chat history — rotate after setup.
+7. **Legacy `email_service.py`:** Still contains direct `send_email()` helpers — migrate remaining callers to `notify()` + queue (low priority; not on hot path).
+
+---
+
+## 12. Messaging System (parallel fix)
+
+Previous session fixes retained:
+- `resolveChatPartner()` / UUID-based recipient lookup
+- ErrorBoundary soft reset on chat panel
+- Realtime + poll fallback for messages
+- Invalid date guards in chat list
+
+⚠️ Production verification after deploy: hard refresh (`Ctrl+Shift+R`), test User A → User B messaging end-to-end.
+
+---
+
+## 13. Completion Criteria
+
+| Requirement | Status |
+|-------------|--------|
+| Brevo API connected | ✅ Verified locally (201 + messageId) |
+| `notification@founderhub.site` production sender | ⚠️ Code default set; env override pending |
+| Important events trigger emails | ✅ Wired (community new in this pass) |
+| Logs reflect provider responses | ✅ email_queue + email_logs |
+| Failed emails marked failed | ✅ |
+| Duplicate prevention | ✅ |
+| User preferences | ✅ Expanded |
+| Automated tests | ✅ 8 unit tests |
+| Real email test | ✅ API acceptance verified; inbox ⚠️ UNVERIFIED |
+
+**Do not mark FULLY COMPLETE until:** Vercel env updated, deploy done, inbox delivery confirmed, webhook registered.

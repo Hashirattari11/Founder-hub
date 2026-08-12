@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Rocket, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { getErrorMessage } from '../lib/errors'
+import { notifyWaitlistSignup } from '../lib/communityNotify'
 
 interface WaitlistModalProps {
   isOpen: boolean
@@ -76,6 +77,11 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
         return
       }
       setSubmitted(true)
+      void notifyWaitlistSignup({
+        email: email.trim().toLowerCase(),
+        country,
+        city: city.trim(),
+      })
     } catch {
       setError('Could not join the waitlist. Please try again.')
     } finally {
