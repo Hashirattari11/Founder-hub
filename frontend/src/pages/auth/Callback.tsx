@@ -31,6 +31,8 @@ export default function Callback() {
           if (!intent && stored.intent) intent = stored.intent
           if (!next && stored.next) next = stored.next
         }
+        // Default sign-in when Supabase drops intent from the redirect URL.
+        if (!intent) intent = 'signin'
 
         if (!code) {
           setState('error')

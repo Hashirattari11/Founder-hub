@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 
 const OAUTH_INTENT_KEY = 'founderhub:oauth:intent'
 const OAUTH_NEXT_KEY = 'founderhub:oauth:next'
@@ -29,28 +29,36 @@ export function popOAuthIntent(): { intent: string | null; next: string | null }
   return { intent, next }
 }
 
-/**
- * Supabase sometimes redirects to Site URL root (`/?code=`) instead of
- * `/auth/callback?code=` when the exact redirect URL is not allowlisted.
- * Forward to the callback route on the same origin so PKCE exchange can run.
- */
-export function OAuthCodeRedirect() {
-  useEffect(() => {
-    const url = new URL(window.location.href)
-    const code = url.searchParams.get('code')
-    if (!code || url.pathname.startsWith('/auth/callback')) return
-
-    const params = new URLSearchParams(url.search)
-    if (!params.get('intent')) {
-      try {
-        const stored = sessionStorage.getItem(OAUTH_INTENT_KEY)
-        if (stored) params.set('intent', stored)
-      } catch {
-        /* ignore */
-      }
+function buildCallbackUrl(from: URL): string {
+  const params = new URLSearchParams(from.search)
+  if (!params.get('intent')) {
+    try {
+      const stored = sessionStorage.getItem(OAUTH_INTENT_KEY)
+      if (stored) params.set('intent', stored)
+    } catch {
+      /* ignore */
     }
-    window.location.replace(`/auth/callback?${params.toString()}`)
-  }, [])
+  }
+  return `/auth/callback?${params.toString()}`
+}
 
+/**
+ * Supabase may redirect to Site URL root (`/?code=`) instead of `/auth/callback`.
+ * Run synchronously before React mounts so the landing page never wins the race.
+ * Returns true when a redirect was started (caller should skip rendering).
+ */
+export function bootstrapOAuthCallbackRedirect(): boolean {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  if (!code || url.pathname.startsWith('/auth/callback')) return false
+  window.location.replace(buildCallbackUrl(url))
+  return true
+}
+
+/** React fallback if bootstrap did not run (e.g. client navigation with ?code=). */
+export function OAuthCodeRedirect() {
+  useLayoutEffect(() => {
+    bootstrapOAuthCallbackRedirect()
+  }, [])
   return null
 }
