@@ -52,6 +52,7 @@ export default function Messages() {
       const data = await getMyChats(user.id)
       if (id !== fetchIdRef.current) return undefined
       setChats(data)
+      setLoading(false)
       setActiveChat((prev) => {
         if (!prev) return prev
         const fromList = data.find((c) => c.id === prev.id)
@@ -70,11 +71,16 @@ export default function Messages() {
         }
         return fromList
       })
-      const counts = await getUnreadCounts(data.map((c) => c.id), user.id)
-      if (id !== fetchIdRef.current) return undefined
-      const activeId = activeChatIdRef.current
-      if (activeId) counts[activeId] = 0
-      setUnreadCounts(counts)
+      void getUnreadCounts(data.map((c) => c.id), user.id)
+        .then((counts) => {
+          if (id !== fetchIdRef.current) return
+          const activeId = activeChatIdRef.current
+          if (activeId) counts[activeId] = 0
+          setUnreadCounts(counts)
+        })
+        .catch(() => {
+          /* badges are best-effort */
+        })
       return data
     } catch (error) {
       if (id === fetchIdRef.current) setLoadError(getErrorMessage(error, 'generic'))

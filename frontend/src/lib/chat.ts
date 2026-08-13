@@ -152,21 +152,15 @@ export async function getChatOtherProfile(
 /** All chats for the current user, newest last_message first. */
 export async function getMyChats(userId: string): Promise<Chat[]> {
   const rows = await api.get<Chat[]>('/api/chats', { auth: true })
-  return Promise.all(
-    rows
-      .filter((row) => !isSelfChat(row))
-      .map(async (row) => {
-        const otherId = getOtherParticipantId(row, userId)
-        if (!otherId || sameUser(otherId, userId)) return row
-        const other = await getChatOtherProfile(row, userId)
-        if (!other) return row
-        return {
-          ...row,
-          other_participant_id: otherId,
-          other_participant_profile: other,
-        }
-      }),
-  )
+  return rows.filter((row) => !isSelfChat(row)).map((row) => {
+    const partner = resolveChatPartner(row, userId)
+    if (!partner) return row
+    return {
+      ...row,
+      other_participant_id: partner.id,
+      other_participant_profile: partner.profile,
+    }
+  })
 }
 
 /** Get (or create) a chat with another user via the backend. */
@@ -672,14 +666,36 @@ export async function getUnreadCount(chatId: string, userId: string): Promise<nu
   return count ?? 0
 }
 
-/** Unread counts for many chats. */
+/** Unread counts for all of the current user's chats (single backend query). */
+export async function getAllUnreadCounts(): Promise<Record<string, number>> {
+  return api.get<Record<string, number>>('/api/chats/unread', { auth: true })
+}
+
+/** Unread counts for many chats (single backend query). */
 export async function getUnreadCounts(chatIds: string[], userId: string): Promise<Record<string, number>> {
-  const entries = await Promise.all(chatIds.map((id) => getUnreadCount(id, userId)))
-  const map: Record<string, number> = {}
-  chatIds.forEach((id, i) => {
-    map[id] = entries[i]
-  })
-  return map
+  if (chatIds.length === 0) return {}
+  try {
+    const counts = await getAllUnreadCounts()
+    const map: Record<string, number> = {}
+    for (const id of chatIds) {
+      map[id] = counts[id] ?? 0
+    }
+    return map
+  } catch {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('chat_id')
+      .in('chat_id', chatIds)
+      .eq('is_read', false)
+      .neq('sender_id', userId)
+    if (error) return Object.fromEntries(chatIds.map((id) => [id, 0]))
+    const map: Record<string, number> = Object.fromEntries(chatIds.map((id) => [id, 0]))
+    for (const row of data ?? []) {
+      const cid = row.chat_id as string
+      if (cid in map) map[cid] += 1
+    }
+    return map
+  }
 }
 
 /** Subscribe to chat changes so the list stays fresh. Returns an unsubscribe fn. */

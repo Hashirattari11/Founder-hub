@@ -40,17 +40,35 @@ def _normalize_chat_profiles(user_client, chat: dict) -> dict:
     return chat
 
 
+def _profile_from_embed(raw) -> dict | None:
+    """PostgREST may return an embed as an object or a one-element array."""
+    if raw is None:
+        return None
+    if isinstance(raw, list):
+        return raw[0] if raw else None
+    return raw if isinstance(raw, dict) else None
+
+
 def _enrich_chat_for_viewer(user_client, chat: dict, viewer_id: str) -> dict:
     """Attach canonical other-participant fields for the authenticated viewer."""
-    chat = _normalize_chat_profiles(user_client, chat)
+    p1_profile = _profile_from_embed(chat.get("participant_1_profile"))
+    p2_profile = _profile_from_embed(chat.get("participant_2_profile"))
+    if not p1_profile or not p2_profile:
+        chat = _normalize_chat_profiles(user_client, chat)
+        p1_profile = chat.get("participant_1_profile")
+        p2_profile = chat.get("participant_2_profile")
+    else:
+        chat["participant_1_profile"] = p1_profile
+        chat["participant_2_profile"] = p2_profile
+
     p1 = chat.get("participant_1")
     p2 = chat.get("participant_2")
     if _uuid_eq(viewer_id, p1):
         other_id = p2
-        other_profile = chat.get("participant_2_profile")
+        other_profile = p2_profile
     elif _uuid_eq(viewer_id, p2):
         other_id = p1
-        other_profile = chat.get("participant_1_profile")
+        other_profile = p1_profile
     else:
         other_id = None
         other_profile = None
@@ -139,6 +157,38 @@ async def start_chat(
         raise HTTPException(status_code=409, detail="Could not create chat")
 
     return _fetch_chat_with_profiles(user_client, inserted.data[0]["id"], user_id)
+
+
+@router.get("/chats/unread", response_model=dict)
+async def unread_counts(
+    user_id: str = Depends(get_user_id),
+    user_client=Depends(get_user_client),
+):
+    """Unread message counts for all of the current user's chats (one query)."""
+    chats = (
+        user_client.table("chats")
+        .select("id")
+        .or_(f"participant_1.eq.{user_id},participant_2.eq.{user_id}")
+        .execute()
+    )
+    chat_ids = [row["id"] for row in (chats.data or [])]
+    counts: dict[str, int] = {cid: 0 for cid in chat_ids}
+    if not chat_ids:
+        return counts
+
+    unread = (
+        user_client.table("messages")
+        .select("chat_id")
+        .in_("chat_id", chat_ids)
+        .eq("is_read", False)
+        .neq("sender_id", user_id)
+        .execute()
+    )
+    for row in unread.data or []:
+        cid = row.get("chat_id")
+        if cid in counts:
+            counts[cid] += 1
+    return counts
 
 
 @router.get("/chats", response_model=list[ChatOut])
