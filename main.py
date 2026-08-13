@@ -18,7 +18,8 @@ _dotenv_path = os.path.join(_HERE, "backend", ".env")
 if os.path.exists(_dotenv_path):
     load_dotenv(_dotenv_path)
 
-from fastapi.responses import FileResponse, JSONResponse
+from starlette.requests import Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.main import app
@@ -53,6 +54,26 @@ for _name in (
             lambda _name=_name: FileResponse(_static_path(_name)),
             include_in_schema=False,
         )
+
+
+# Google OAuth: Supabase may redirect to Site URL root (`/?code=`) instead of
+# `/auth/callback`. Forward before SPA loads so Callback.tsx can exchange PKCE.
+@app.middleware("http")
+async def oauth_root_code_redirect(request: Request, call_next):
+    if request.method == "GET":
+        code = request.query_params.get("code")
+        path = request.url.path
+        if (
+            code
+            and path != "/auth/callback"
+            and not path.startswith("/api")
+            and path != "/health"
+        ):
+            return RedirectResponse(
+                url=f"/auth/callback?{request.url.query}",
+                status_code=302,
+            )
+    return await call_next(request)
 
 
 # SPA fallback: serve index.html for any client-side route.
