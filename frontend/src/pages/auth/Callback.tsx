@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Rocket } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase, popAuthRedirect } from '../../lib/supabase'
+import { popOAuthIntent } from '../../components/OAuthCodeRedirect'
 import { getErrorMessage } from '../../lib/errors'
 import { hasUserConsent } from '../../lib/consent'
 import { isAdminProfile } from '../../lib/admin'
@@ -22,8 +23,14 @@ export default function Callback() {
       try {
         const url = new URL(window.location.href)
         const code = url.searchParams.get('code')
-        const next = url.searchParams.get('next')
-        const intent = url.searchParams.get('intent')
+        let next = url.searchParams.get('next')
+        let intent = url.searchParams.get('intent')
+
+        if (!intent || !next) {
+          const stored = popOAuthIntent()
+          if (!intent && stored.intent) intent = stored.intent
+          if (!next && stored.next) next = stored.next
+        }
 
         if (!code) {
           setState('error')

@@ -26,6 +26,7 @@ import { FAQ } from './components/FAQ'
 import { FinalCTA } from './components/FinalCTA'
 import { PageLoader } from './components/PageLoader'
 import { ScrollToTop } from './components/ScrollToTop'
+import { OAuthCodeRedirect } from './components/OAuthCodeRedirect'
 import { Seo } from './components/Seo'
 
 const Register = lazy(() => import('./pages/auth/Register'))
@@ -175,6 +176,7 @@ function App() {
           <HelmetProvider>
         <BrowserRouter>
           <ScrollToTop />
+          <OAuthCodeRedirect />
           <ErrorBoundary>
             <Helmet>
               <title>FounderHub AI — Build your startup</title>

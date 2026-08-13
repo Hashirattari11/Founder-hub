@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase, APP_URL, stashAuthRedirect } from '../../lib/supabase'
+import { stashOAuthIntent } from '../../components/OAuthCodeRedirect'
 import { getErrorMessage } from '../../lib/errors'
 import { AuthLayout } from '../../components/AuthLayout'
 import { Field, TextInput } from '../../components/FormInput'
@@ -82,6 +83,7 @@ export default function Login() {
     setOauthLoading(true)
     try {
       stashAuthRedirect(from)
+      stashOAuthIntent('signin')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

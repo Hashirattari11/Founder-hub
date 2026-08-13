@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { CircleAlert } from 'lucide-react'
 import { supabase, APP_URL } from '../../lib/supabase'
+import { stashOAuthIntent } from '../../components/OAuthCodeRedirect'
 import { getErrorMessage } from '../../lib/errors'
 import { recordUserConsent } from '../../lib/consent'
 import { AuthLayout } from '../../components/AuthLayout'
@@ -130,6 +131,7 @@ export default function Register() {
     }
     setOauthLoading(true)
     try {
+      stashOAuthIntent('register')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
