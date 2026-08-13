@@ -21,4 +21,4 @@ dependencies = [
 ]
 
 [tool.vercel.scripts]
-build = "cd frontend && npm ci && npm run build && rm -rf node_modules"
+build = "cd frontend && npm ci && npm run build && rm -rf node_modules && test -f dist/index.html"

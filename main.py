@@ -63,6 +63,10 @@ async def spa_fallback(full_path: str):
     if not os.path.isfile(_INDEX):
         return JSONResponse(
             status_code=503,
-            content={"detail": "Frontend bundle missing. Run frontend build before deploy."},
+            content={
+                "detail": "Frontend bundle missing on this deployment.",
+                "hint": "Redeploy from the repo root so Vercel runs the frontend build (frontend/dist).",
+                "fallback_url": "https://founder-hub-0.vercel.app",
+            },
         )
     return FileResponse(_INDEX)
