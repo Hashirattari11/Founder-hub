@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from postgrest.exceptions import APIError
 from app.core.config import settings
+from app.core.runtime import is_serverless
 from app.api.health import router as health_router
 from app.api.profile import router as profile_router
 from app.api.startups import router as startups_router
@@ -43,23 +45,42 @@ from app.services.push_service import push_loop
 from app.services.email_queue_service import drain_pending, email_loop
 from app.services.presence_service import presence_loop
 
+logger = logging.getLogger("founderhub.startup")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await asyncio.to_thread(bootstrap_super_admin)
-    # Flush anything left in the email queue by a previous instance (serverless recovery).
+    serverless = is_serverless()
+    logger.info("FounderHub API starting (serverless=%s)", serverless)
+
     try:
-        await asyncio.to_thread(drain_pending)
-    except Exception:
-        pass
+        await asyncio.wait_for(asyncio.to_thread(bootstrap_super_admin), timeout=8.0)
+    except Exception as exc:
+        logger.warning("bootstrap_super_admin failed or timed out: %s", exc)
+
+    # On serverless, skip startup drain + infinite background loops — they block
+    # cold starts and are incompatible with ephemeral Vercel/Lambda instances.
+    # Emails send synchronously on enqueue; cron can call /api/cron/drain-emails.
     stop_event = asyncio.Event()
-    reminder_task = asyncio.create_task(reminder_loop(stop_event))
-    push_task = asyncio.create_task(push_loop(stop_event))
-    email_task = asyncio.create_task(email_loop(stop_event))
-    presence_task = asyncio.create_task(presence_loop(stop_event))
+    bg_tasks: list[asyncio.Task] = []
+    if not serverless:
+        try:
+            await asyncio.wait_for(asyncio.to_thread(drain_pending), timeout=5.0)
+        except Exception as exc:
+            logger.warning("startup drain_pending failed or timed out: %s", exc)
+        bg_tasks = [
+            asyncio.create_task(reminder_loop(stop_event)),
+            asyncio.create_task(push_loop(stop_event)),
+            asyncio.create_task(email_loop(stop_event)),
+            asyncio.create_task(presence_loop(stop_event)),
+        ]
+    else:
+        logger.info("Skipping background workers on serverless runtime")
+
     yield
+
     stop_event.set()
-    for task in (reminder_task, push_task, email_task, presence_task):
+    for task in bg_tasks:
         task.cancel()
         try:
             await task

@@ -13,7 +13,6 @@ import {
   getMyChats,
   getOtherParticipantId,
   getUnreadCounts,
-  markChatRead,
   markMessagesRead,
   resolveChatPartner,
   sameUser,

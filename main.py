@@ -24,15 +24,18 @@ from fastapi.staticfiles import StaticFiles
 from app.main import app
 
 _DIST = os.path.join(_HERE, "frontend", "dist")
+_ASSETS = os.path.join(_DIST, "assets")
+_INDEX = os.path.join(_DIST, "index.html")
 
 
 def _static_path(name: str) -> str:
     return os.path.join(_DIST, name)
 
 
-# Static assets (bundled JS/CSS). API routes registered in app.main are
-# matched first, so /api/* keeps working.
-app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")
+# Static assets (bundled JS/CSS). Guard the mount — a missing dist folder must
+# not crash the entire serverless function at import time.
+if os.path.isdir(_ASSETS):
+    app.mount("/assets", StaticFiles(directory=_ASSETS), name="assets")
 
 for _name in (
     "favicon.svg",
@@ -57,4 +60,9 @@ for _name in (
 async def spa_fallback(full_path: str):
     if full_path.startswith("api") or full_path == "health":
         return JSONResponse(status_code=404, content={"detail": "Not found"})
-    return FileResponse(os.path.join(_DIST, "index.html"))
+    if not os.path.isfile(_INDEX):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Frontend bundle missing. Run frontend build before deploy."},
+        )
+    return FileResponse(_INDEX)

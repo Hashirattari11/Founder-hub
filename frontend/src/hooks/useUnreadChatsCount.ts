@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '../context/AuthContext'
-import { getMyChats, getUnreadCounts, getActiveChatForRead, setActiveChatForRead, subscribeToChats, subscribeToMessages } from '../lib/chat'
+import { getMyChats, getUnreadCounts, getActiveChatForRead, subscribeToChats, subscribeToMessages } from '../lib/chat'
 
 /** Total unread message count across all chats, kept live via realtime. */
 export function useUnreadChatsCount(): number {
