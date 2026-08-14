@@ -1,8 +1,8 @@
 import { Helmet } from 'react-helmet-async'
 
-const SITE_URL = 'https://founder-hub-0.vercel.app'
+const SITE_URL = 'https://founderhub.site'
 const SITE_NAME = 'FounderHub AI'
-const DEFAULT_IMAGE = `${SITE_URL}/icons.svg`
+const DEFAULT_IMAGE = `${SITE_URL}/icon-512.png`
 
 interface SeoProps {
   title: string

@@ -47,6 +47,8 @@ for _name in (
     "icon-512.png",
     "apple-touch-icon.png",
     "manifest.webmanifest",
+    "robots.txt",
+    "sitemap.xml",
 ):
     if os.path.exists(_static_path(_name)):
         app.add_api_route(

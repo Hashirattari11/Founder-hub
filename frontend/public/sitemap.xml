@@ -2,42 +2,42 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://founder-hub-0.vercel.app/</loc>
+    <loc>https://founderhub.site/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/register</loc>
+    <loc>https://founderhub.site/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/login</loc>
+    <loc>https://founderhub.site/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/about</loc>
+    <loc>https://founderhub.site/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/contact</loc>
+    <loc>https://founderhub.site/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/privacy</loc>
+    <loc>https://founderhub.site/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/terms</loc>
+    <loc>https://founderhub.site/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://founder-hub-0.vercel.app/cookies</loc>
+    <loc>https://founderhub.site/cookies</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

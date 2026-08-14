@@ -8,4 +8,4 @@ Disallow: /settings
 Disallow: /ai-studio
 Disallow: /api/
 
-Sitemap: https://founder-hub-0.vercel.app/sitemap.xml
+Sitemap: https://founderhub.site/sitemap.xml
