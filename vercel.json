@@ -6,7 +6,7 @@
       "use": "@vercel/python",
       "config": {
         "buildCommand": "cd frontend && npm ci && npm run build && rm -rf node_modules && test -f dist/index.html",
-        "includeFiles": "frontend/dist/**"
+        "includeFiles": ["frontend/dist/**", "frontend/public/**"]
       }
     }
   ],
