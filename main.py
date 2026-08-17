@@ -50,6 +50,7 @@ if os.path.isdir(_ASSETS):
     app.mount("/assets", StaticFiles(directory=_ASSETS), name="assets")
 
 for _name in (
+    "favicon-48x48.png",
     "favicon.svg",
     "icons.svg",
     "logo.png",
@@ -101,6 +102,7 @@ _ROOT_STATIC = frozenset(
         "sitemap.xml",
         "og-image.png",
         "manifest.webmanifest",
+        "favicon-48x48.png",
         "favicon.svg",
         "icons.svg",
         "logo.png",
