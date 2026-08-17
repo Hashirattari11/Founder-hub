@@ -66,7 +66,7 @@ export default function AuthConsent() {
 
   return (
     <>
-      <Seo title="Accept Terms — FounderHub AI" description="Review and accept FounderHub Terms of Service and Privacy Policy." />
+      <Seo title="Accept Terms — FounderHub" description="Review and accept FounderHub Terms of Service and Privacy Policy." />
       <AuthLayout
         title="Before you continue"
         subtitle="New accounts must accept our Terms of Service and Privacy Policy."

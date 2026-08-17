@@ -1,7 +1,7 @@
 {
-  "name": "FounderHub AI — Startup OS",
+  "name": "FounderHub — AI Startup Platform for Founders",
   "short_name": "FounderHub",
-  "description": "From Idea to Funded Startup, All in One Place. Connect with co-founders, developers, investors, and AI tools.",
+  "description": "FounderHub is an AI-powered startup platform where founders, co-founders, developers, designers, investors, mentors and marketers connect, collaborate and build startups together.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090B",

@@ -32,7 +32,7 @@ export function HowItWorks() {
       <div className="container-x">
         <SectionHeading
           eyebrow="How it Works"
-          title="Three steps to your launch"
+          title="Connect With the Right People"
           description="From a rough idea to a funded team in record time."
         />
 

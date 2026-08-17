@@ -114,7 +114,7 @@ export default function StartupDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-dark lg:pb-0">
-        <Seo title={`${startup.name} — FounderHub AI`} description={startup.tagline || startup.description || `Explore ${startup.name} on FounderHub AI.`} />
+        <Seo title={`${startup.name} — FounderHub`} description={startup.tagline || startup.description || `Explore ${startup.name} on FounderHub.`} />
         <AppHeader title={startup.name} backTo="/explore" backLabel="Back to Explore" />
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">

@@ -41,7 +41,7 @@ export function AppHeader({ title, backTo, backLabel }: AppHeaderProps) {
           </button>
         ) : (
           <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-2">
-            <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
+            <img src="/logo.png" alt="FounderHub" width="36" height="36" className="h-9 w-auto" />
             <span className="hidden text-sm font-bold text-gray-600 sm:block dark:text-gray-400">
               Back to Dashboard
             </span>

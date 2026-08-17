@@ -99,7 +99,7 @@ export default function Login() {
 
   return (
     <>
-      <Seo title="Sign in — FounderHub AI" description="Sign in to FounderHub AI to continue building your startup." />
+      <Seo title="Sign in — FounderHub" description="Sign in to FounderHub to continue building your startup." />
       <AuthLayout
         title="Welcome back"
         subtitle="Sign in to continue building your startup."

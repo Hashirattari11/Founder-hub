@@ -63,6 +63,8 @@ function SidebarContent({
         <img
           src="/logo.png"
           alt="FounderHub"
+          width="36"
+          height="36"
           className="h-9 w-auto transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
         />
         <span className="text-xl font-bold tracking-tight">FounderHub</span>

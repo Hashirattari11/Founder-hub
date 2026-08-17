@@ -129,8 +129,8 @@ function StaticPageShell({ seoTitle, seoDescription, path, icon: Icon, eyebrow, 
 export function PrivacyPage() {
   return (
     <StaticPageShell
-      seoTitle="Privacy Policy — FounderHub AI"
-      seoDescription="How FounderHub AI collects, uses, stores and protects your personal data, including your rights and how to delete your data."
+      seoTitle="Privacy Policy — FounderHub"
+      seoDescription="How FounderHub collects, uses, stores and protects your personal data, including your rights and how to delete your data."
       path="/privacy"
       icon={Shield}
       eyebrow="Privacy"
@@ -157,8 +157,8 @@ export function PrivacyPage() {
 export function TermsPage() {
   return (
     <StaticPageShell
-      seoTitle="Terms of Service — FounderHub AI"
-      seoDescription="The terms and rules that govern your use of FounderHub AI, including accounts, content, AI features and marketplace activity."
+      seoTitle="Terms of Service — FounderHub"
+      seoDescription="The terms and rules that govern your use of FounderHub, including accounts, content, AI features and marketplace activity."
       path="/terms"
       icon={FileText}
       eyebrow="Terms"
@@ -194,8 +194,8 @@ export function TermsPage() {
 export function CookiePage() {
   return (
     <StaticPageShell
-      seoTitle="Cookie Policy — FounderHub AI"
-      seoDescription="How FounderHub AI uses cookies and browser local storage, and how to control them."
+      seoTitle="Cookie Policy — FounderHub"
+      seoDescription="How FounderHub uses cookies and browser local storage, and how to control them."
       path="/cookies"
       icon={Cookie}
       eyebrow="Cookies"
@@ -219,7 +219,7 @@ export function CookiePage() {
 export function AboutPage() {
   return (
     <StaticPageShell
-      seoTitle="About — FounderHub AI"
+      seoTitle="About — FounderHub"
       seoDescription="FounderHub is the all-in-one operating system for startups — from idea to funded."
       path="/about"
       icon={Rocket}
@@ -245,7 +245,7 @@ export function ContactPage() {
   ]
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-dark dark:text-[#FAFAFA]">
-      <Seo title="Contact — FounderHub AI" description="Get in touch with the FounderHub team — support, privacy, security and legal." path="/contact" />
+      <Seo title="Contact — FounderHub" description="Get in touch with the FounderHub team — support, privacy, security and legal." path="/contact" />
       <section className="relative overflow-hidden border-b border-gray-200 bg-gradient-to-br from-gray-50 via-white to-primary/5 px-6 py-16 dark:border-dark-300 dark:from-dark dark:via-dark dark:to-primary/10">
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative mx-auto max-w-3xl text-center">
@@ -303,7 +303,7 @@ export function ContactPage() {
 export function CommunityGuidelinesPage() {
   return (
     <StaticPageShell
-      seoTitle="Community Guidelines — FounderHub AI"
+      seoTitle="Community Guidelines — FounderHub"
       seoDescription="The rules that keep FounderHub a respectful, safe and useful place for founders, investors and talent."
       path="/community-guidelines"
       icon={Users}
@@ -333,8 +333,8 @@ export function CommunityGuidelinesPage() {
 export function AcceptableUsePage() {
   return (
     <StaticPageShell
-      seoTitle="Acceptable Use Policy — FounderHub AI"
-      seoDescription="What you may and may not do on FounderHub AI, and how violations are enforced."
+      seoTitle="Acceptable Use Policy — FounderHub"
+      seoDescription="What you may and may not do on FounderHub, and how violations are enforced."
       path="/acceptable-use"
       icon={Shield}
       eyebrow="Policy"
@@ -356,7 +356,7 @@ export function AcceptableUsePage() {
 export function IntellectualPropertyPage() {
   return (
     <StaticPageShell
-      seoTitle="Intellectual Property Policy — FounderHub AI"
+      seoTitle="Intellectual Property Policy — FounderHub"
       seoDescription="Ownership of content, startups, logos and documents on FounderHub, and how to report infringement."
       path="/intellectual-property"
       icon={Scale}
@@ -383,8 +383,8 @@ export function IntellectualPropertyPage() {
 export function SecurityPage() {
   return (
     <StaticPageShell
-      seoTitle="Security — FounderHub AI"
-      seoDescription="How FounderHub AI protects accounts and data, and how to responsibly report a security issue."
+      seoTitle="Security — FounderHub"
+      seoDescription="How FounderHub protects accounts and data, and how to responsibly report a security issue."
       path="/security"
       icon={Lock}
       eyebrow="Trust & Security"
@@ -408,7 +408,7 @@ export function SecurityPage() {
 export function DisclaimerPage() {
   return (
     <StaticPageShell
-      seoTitle="Disclaimer — FounderHub AI"
+      seoTitle="Disclaimer — FounderHub"
       seoDescription="FounderHub is a platform, not a provider of investment, legal, tax or business advice."
       path="/disclaimer"
       icon={AlertTriangle}
@@ -434,7 +434,7 @@ export function DisclaimerPage() {
 export function InvestorDisclaimerPage() {
   return (
     <StaticPageShell
-      seoTitle="Investor Disclaimer — FounderHub AI"
+      seoTitle="Investor Disclaimer — FounderHub"
       seoDescription="FounderHub does not guarantee that any startup is legitimate, successful or investable, and is not a broker-dealer or investment adviser."
       path="/investor-disclaimer"
       icon={Banknote}
@@ -461,7 +461,7 @@ export function InvestorDisclaimerPage() {
 export function RefundPolicyPage() {
   return (
     <StaticPageShell
-      seoTitle="Refund & Cancellation Policy — FounderHub AI"
+      seoTitle="Refund & Cancellation Policy — FounderHub"
       seoDescription="Cancellation, renewal and refund rules for paid FounderHub services when they are introduced."
       path="/refund-policy"
       icon={Banknote}
@@ -503,7 +503,7 @@ export function LegalCenterPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-dark dark:text-[#FAFAFA]">
       <Seo
-        title="Legal Center — FounderHub AI"
+        title="Legal Center — FounderHub"
         description="FounderHub's Legal & Trust Center — Terms, Privacy, Cookies, Security, Investor Disclaimer and other policies."
         path="/legal"
       />

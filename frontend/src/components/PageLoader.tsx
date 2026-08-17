@@ -15,7 +15,7 @@ export function PageLoader() {
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400 [animation-delay:300ms]" />
         </div>
         <p className="bg-gradient-brand bg-clip-text text-xs font-bold uppercase tracking-[0.2em] text-transparent">
-          FounderHub AI
+          FounderHub
         </p>
       </div>
     </div>

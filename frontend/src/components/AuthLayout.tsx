@@ -15,7 +15,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
         <div className="pointer-events-none absolute inset-0 bg-gradient-brand opacity-20 blur-3xl" />
         <div className="relative flex h-full flex-col justify-between p-12">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
+            <img src="/logo.png" alt="FounderHub" width="36" height="36" className="h-9 w-auto" />
             <span className="text-xl font-bold tracking-tight text-white">FounderHub</span>
           </Link>
 
@@ -35,14 +35,14 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             </div>
           </div>
 
-          <p className="text-sm text-gray-500">© {new Date().getFullYear()} FounderHub AI</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} FounderHub</p>
         </div>
       </div>
 
       <div className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
         <div className="w-full max-w-md">
           <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
+            <img src="/logo.png" alt="FounderHub" width="36" height="36" className="h-9 w-auto" />
             <span className="text-xl font-bold tracking-tight">FounderHub</span>
           </Link>
 

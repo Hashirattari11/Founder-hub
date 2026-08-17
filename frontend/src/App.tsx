@@ -147,8 +147,8 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-dark dark:text-[#FAFAFA]">
       <Seo
-        title="FounderHub AI — Startup OS"
-        description="From Idea to Funded Startup, All in One Place. Connect with co-founders, developers, investors, and AI tools."
+        title="FounderHub — AI Startup Platform for Founders"
+        description="FounderHub is an AI-powered startup platform where founders, co-founders, developers, designers, investors, mentors and marketers connect, collaborate and build startups together."
       />
       <Navbar onJoinWaitlist={openWaitlist} />
       <main>
@@ -179,8 +179,8 @@ function App() {
           <OAuthCodeRedirect />
           <ErrorBoundary>
             <Helmet>
-              <title>FounderHub AI — Build your startup</title>
-              <meta name="description" content="FounderHub AI connects founders with developers, designers, marketers and investors." />
+              <title>FounderHub — AI Startup Platform for Founders</title>
+              <meta name="description" content="FounderHub is an AI-powered startup platform where founders, co-founders, developers, designers, investors, mentors and marketers connect, collaborate and build startups together." />
             </Helmet>
             <Routes>
               <Route path="/" element={<LandingPage />} />

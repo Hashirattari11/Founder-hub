@@ -79,8 +79,8 @@ export function Features() {
       <div className="container-x relative">
         <SectionHeading
           eyebrow="Features"
-          title="Everything you need to launch"
-          description="FounderHub AI combines AI, community, and deal-making tools into one operating system for your startup."
+          title="Everything You Need to Build a Startup"
+          description="FounderHub combines AI, community, and deal-making tools into one operating system for your startup."
         />
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

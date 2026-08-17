@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import type { ReactNode } from 'react'
 import { useSession } from '../context/AuthContext'
 import { isAdminProfile } from '../lib/admin'
@@ -20,5 +21,13 @@ export function GuestRoute({ children }: { children: ReactNode }) {
     return <Navigate to={dest} replace />
   }
 
-  return <>{children}</>
+  // Login / register / password pages should not appear in search results.
+  return (
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      {children}
+    </>
+  )
 }

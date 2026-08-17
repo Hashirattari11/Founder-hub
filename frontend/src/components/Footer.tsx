@@ -60,7 +60,7 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
+              <img src="/logo.png" alt="FounderHub" width="36" height="36" className="h-9 w-auto" />
               <span className="text-xl font-bold tracking-tight">FounderHub</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-600 dark:text-gray-400">
@@ -113,7 +113,7 @@ export function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 sm:flex-row dark:border-dark-300">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            © {new Date().getFullYear()} FounderHub AI. All rights reserved.
+            © {new Date().getFullYear()} FounderHub. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/legal" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">

@@ -34,8 +34,8 @@ export function FinalCTA({ onJoinWaitlist }: { onJoinWaitlist: () => void }) {
             transition={{ duration: 0.6, delay: 0.25 }}
             className="relative mx-auto mt-8 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl"
           >
-            Ready to build your{' '}
-            <span className="bg-gradient-brand bg-clip-text text-transparent">next big thing?</span>
+            Get Started With{' '}
+            <span className="bg-gradient-brand bg-clip-text text-transparent">FounderHub</span>
           </motion.h2>
 
           <motion.p

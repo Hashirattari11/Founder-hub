@@ -126,7 +126,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
                 <h3 className="mt-6 text-2xl font-bold">You are on the list!</h3>
                 <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
                   We will reach out to <span className="font-semibold text-primary">{email}</span> as
-                  soon as FounderHub AI opens to the public. Keep building!
+                  soon as FounderHub opens to the public. Keep building!
                 </p>
               </div>
             ) : (
@@ -138,7 +138,7 @@ export function WaitlistModal({ isOpen, onClose }: WaitlistModalProps) {
                   <h3 className="text-2xl font-bold">Join the Waitlist</h3>
                 </div>
                 <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  Be first in line for FounderHub AI. Early access members get 3 months of
+                  Be first in line for FounderHub. Early access members get 3 months of
                   Pro free.
                 </p>
 

@@ -5,7 +5,7 @@ import { SectionHeading } from './SectionHeading'
 
 const faqs = [
   {
-    question: 'How does FounderHub AI match me with the right people?',
+    question: 'How does FounderHub match me with the right people?',
     answer:
       'Our matching engine analyzes your startup stage, industry, skills, and goals against every founder, developer, and investor on the platform. You get a match score plus a ranked list — so you can focus on the best-fit conversations first.',
   },

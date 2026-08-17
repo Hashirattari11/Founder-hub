@@ -206,7 +206,7 @@ export default function InvestorDashboard() {
         <div className="relative z-10">
           <h2 className="text-xl font-bold sm:text-2xl">Your next deal is one match away</h2>
           <p className="mt-2 max-w-lg text-white/80">
-            FounderHub AI surfaces startups in your sectors, sorted by fit.
+            FounderHub surfaces startups in your sectors, sorted by fit.
           </p>
           <Link
             to="/explore"

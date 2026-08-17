@@ -101,7 +101,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-5 py-6">
-        <img src="/logo.png" alt="FounderHub" className="h-9 w-auto" />
+        <img src="/logo.png" alt="FounderHub" width="36" height="36" className="h-9 w-auto" />
         <div className="min-w-0">
           <p className="text-sm font-bold tracking-tight">Admin Console</p>
           <p className="text-[11px] text-gray-400">

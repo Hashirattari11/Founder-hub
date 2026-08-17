@@ -66,8 +66,8 @@ export function Testimonials() {
     <section id="testimonials" className="bg-white py-24 dark:bg-dark-50 lg:py-32">
       <div className="container-x">
         <SectionHeading
-          eyebrow="Wall of Love"
-          title="Loved by founders and investors"
+          eyebrow="Why FounderHub?"
+          title="Why FounderHub?"
           description="Join thousands of builders who found their team, their funding, and their momentum on FounderHub."
         />
 

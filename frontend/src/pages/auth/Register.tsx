@@ -147,7 +147,7 @@ export default function Register() {
 
   return (
     <>
-      <Seo title="Create account — FounderHub AI" description="Join FounderHub AI to find co-founders, investors, and AI tools for your startup." />
+      <Seo title="Create account — FounderHub" description="Join FounderHub to find co-founders, investors, and AI tools for your startup." />
       <AuthLayout
         title="Create your account"
         subtitle="Start building your startup in minutes."

@@ -27,10 +27,21 @@ from app.main import app
 _DIST = os.path.join(_HERE, "frontend", "dist")
 _ASSETS = os.path.join(_DIST, "assets")
 _INDEX = os.path.join(_DIST, "index.html")
+_PUBLIC = os.path.join(_HERE, "frontend", "public")
 
 
 def _static_path(name: str) -> str:
-    return os.path.join(_DIST, name)
+    """Resolve a root-level static file.
+
+    Prefers the build output (frontend/dist) and falls back to the committed
+    source folder (frontend/public), which is always present in the function
+    bundle. robots.txt / sitemap.xml / og-image.png must NEVER fall through to
+    the SPA fallback.
+    """
+    dist_file = os.path.join(_DIST, name)
+    if os.path.isfile(dist_file):
+        return dist_file
+    return os.path.join(_PUBLIC, name)
 
 
 # Static assets (bundled JS/CSS). Guard the mount — a missing dist folder must
@@ -49,11 +60,13 @@ for _name in (
     "manifest.webmanifest",
     "robots.txt",
     "sitemap.xml",
+    "og-image.png",
 ):
-    if os.path.exists(_static_path(_name)):
+    _file = _static_path(_name)
+    if os.path.isfile(_file):
         app.add_api_route(
             "/" + _name,
-            lambda _name=_name: FileResponse(_static_path(_name)),
+            lambda _file=_file: FileResponse(_file),
             include_in_schema=False,
         )
 
@@ -78,10 +91,33 @@ async def oauth_root_code_redirect(request: Request, call_next):
     return await call_next(request)
 
 
+# Root-level static files that must NEVER be answered with the SPA shell.
+# They are handled by the routes above; reaching this fallback means the file
+# is missing on this deployment — return 404 instead of HTML so crawlers and
+# browsers never see the React app for /robots.txt or /sitemap.xml.
+_ROOT_STATIC = frozenset(
+    {
+        "robots.txt",
+        "sitemap.xml",
+        "og-image.png",
+        "manifest.webmanifest",
+        "favicon.svg",
+        "icons.svg",
+        "logo.png",
+        "favicon.ico",
+        "icon-192.png",
+        "icon-512.png",
+        "apple-touch-icon.png",
+    }
+)
+
+
 # SPA fallback: serve index.html for any client-side route.
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
     if full_path.startswith("api") or full_path == "health":
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    if full_path in _ROOT_STATIC:
         return JSONResponse(status_code=404, content={"detail": "Not found"})
     if not os.path.isfile(_INDEX):
         return JSONResponse(

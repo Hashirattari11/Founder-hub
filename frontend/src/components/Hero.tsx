@@ -106,7 +106,7 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary-300"
         >
           <Sparkles className="h-4 w-4" />
-          Introducing FounderHub AI — the Startup OS
+          Introducing FounderHub — the Startup OS
         </motion.div>
 
         <motion.h1
@@ -115,11 +115,11 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl"
         >
-          From Idea to{' '}
+          FounderHub —{' '}
           <span className="bg-gradient-brand bg-clip-text text-transparent">
-            Funded Startup
+            Build, Connect & Grow
           </span>{' '}
-          — All in One Place
+          Your Startup
         </motion.h1>
 
         <motion.p
@@ -204,7 +204,7 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
                   <Rocket className="h-6 w-6" />
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-white">FounderHub AI Dashboard</p>
+                  <p className="text-sm font-bold text-white">FounderHub Dashboard</p>
                   <p className="text-xs text-white/60">Your startup operating system</p>
                 </div>
               </div>

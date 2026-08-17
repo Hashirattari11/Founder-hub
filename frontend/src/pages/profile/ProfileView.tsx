@@ -103,8 +103,8 @@ export default function ProfileView() {
   return (
     <div className="min-h-screen bg-white dark:bg-dark">
       <Seo
-        title={`${profile.full_name || profile.username} — FounderHub AI`}
-        description={profile.bio || `${profile.full_name}'s profile on FounderHub AI.`}
+        title={`${profile.full_name || profile.username} — FounderHub`}
+        description={profile.bio || `${profile.full_name}'s profile on FounderHub.`}
       />
       <div className={`h-40 bg-gradient-to-r ${roleGradients[profile.role ?? 'founder']} opacity-80`} />
 

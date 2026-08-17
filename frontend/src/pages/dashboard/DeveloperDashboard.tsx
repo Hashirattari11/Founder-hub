@@ -80,7 +80,7 @@ export default function DeveloperDashboard() {
         <div className="relative z-10">
           <h2 className="text-xl font-bold sm:text-2xl">Your next project is one match away</h2>
           <p className="mt-2 max-w-lg text-white/80">
-            FounderHub AI ranks startups by your skills, experience, and location.
+            FounderHub ranks startups by your skills, experience, and location.
           </p>
           <Link
             to="/explore"

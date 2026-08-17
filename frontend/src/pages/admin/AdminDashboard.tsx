@@ -84,7 +84,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <Seo title="Admin Dashboard — FounderHub AI" />
+      <Seo title="Admin Dashboard — FounderHub" />
       <PageHeader
         title="Admin Dashboard"
         description="Platform-wide overview of users, startups, revenue and activity."

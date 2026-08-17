@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { useSession } from '../context/AuthContext'
 import type { ReactNode } from 'react'
 
@@ -28,5 +29,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  return <>{children}</>
+  // Authenticated app pages must never be indexed by search engines.
+  return (
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      {children}
+    </>
+  )
 }
