@@ -1,13 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "main.py": {
-      "runtime": "@vercel/python"
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python",
+      "config": {
+        "buildCommand": "cd frontend && npm ci && npm run build && rm -rf node_modules && test -f dist/index.html",
+        "includeFiles": "frontend/dist"
+      }
     }
-  },
+  ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/main.py" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "/main.py" }
   ]
 }
