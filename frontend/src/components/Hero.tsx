@@ -1,104 +1,29 @@
-import { useRef, useState, useEffect, Suspense, lazy } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { Play, ArrowRight, Users, Sparkles, Rocket, Handshake, LineChart, ChevronDown } from 'lucide-react'
-import { MagneticButton } from './ui/MagneticButton'
-
-const HeroScene = lazy(() => import('./three/HeroScene'))
+import { motion } from 'framer-motion'
+import { Play, ArrowRight, Users, Sparkles, Rocket, ChevronDown } from 'lucide-react'
 
 interface HeroProps {
   onJoinWaitlist: () => void
 }
 
 export function Hero({ onJoinWaitlist }: HeroProps) {
-  const sectionRef = useRef<HTMLElement>(null)
-  const mx = useMotionValue(0)
-  const my = useMotionValue(0)
-  const sx = useSpring(mx, { stiffness: 120, damping: 20 })
-  const sy = useSpring(my, { stiffness: 120, damping: 20 })
-
-  // Parallax layers: far objects move less, near objects move more.
-  const layerFarX = useTransform(sx, (v) => v * -18)
-  const layerFarY = useTransform(sy, (v) => v * -12)
-  const layerMidX = useTransform(sx, (v) => v * -30)
-  const layerMidY = useTransform(sy, (v) => v * -20)
-  const layerNearX = useTransform(sx, (v) => v * -45)
-  const layerNearY = useTransform(sy, (v) => v * -30)
-  const cardRotateX = useTransform(sy, (v) => v * -6)
-  const cardRotateY = useTransform(sx, (v) => v * 8)
-
-  const [reduced, setReduced] = useState(false)
-
-  useEffect(() => {
-    setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  }, [])
-
-  const handleMouse = (e: React.MouseEvent) => {
-    if (reduced || !sectionRef.current) return
-    const rect = sectionRef.current.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    mx.set(x)
-    my.set(y)
-  }
-
   return (
-    <section
-      id="top"
-      ref={sectionRef}
-      onMouseMove={handleMouse}
-      className="perspective-1000 relative overflow-hidden bg-dark"
-    >
+    <section id="top" className="relative overflow-hidden bg-dark">
+      {/* Subtle background decoration — pure CSS, zero JS */}
       <div className="hero-grid pointer-events-none absolute inset-0" />
-      <div className="animated-gradient pointer-events-none absolute -inset-1/2 animate-spin-slow opacity-[0.13] blur-[90px]" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-dark" />
-
-      {/* Interactive 3D WebGL scene */}
-      {!reduced && (
-        <div className="pointer-events-none absolute inset-0 opacity-70">
-          <Suspense fallback={null}>
-            <HeroScene />
-          </Suspense>
-        </div>
-      )}
-
-      {/* Floating 3D background orbs */}
-      <motion.div style={{ x: layerFarX, y: layerFarY }} className="pointer-events-none absolute inset-0">
-        <div className="animate-float absolute left-[8%] top-[18%] h-40 w-40 rounded-full bg-primary/25 blur-2xl" />
-        <div className="animate-float-slow absolute right-[10%] top-[24%] h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
-        <div className="animate-float absolute bottom-[18%] left-[42%] h-32 w-32 rounded-full bg-primary/20 blur-2xl" style={{ animationDelay: '2s' }} />
-      </motion.div>
-
-      {/* Floating glass cards (3D depth) */}
-      <motion.div
-        style={{ x: layerMidX, y: layerMidY }}
-        className="pointer-events-none absolute inset-0 hidden md:block"
-      >
-        <div className="animate-float absolute right-[12%] top-[20%]">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-brand text-white">
-              <Handshake className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-bold text-white">Co-founder matched</p>
-              <p className="text-[11px] text-white/60">94% compatibility</p>
-            </div>
-          </div>
-        </div>
-        <div className="animate-float absolute bottom-[24%] left-[8%]" style={{ animationDelay: '1.5s' }}>
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-400 text-white">
-              <LineChart className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-bold text-white">Investor interest</p>
-              <p className="text-[11px] text-white/60">3 new inbounds</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      <div className="pointer-events-none absolute -inset-1/2 animate-spin-slow opacity-[0.10] blur-[100px]">
+        <div className="animated-gradient absolute inset-0" />
+      </div>
+      {/* Soft gradient orbs — lightweight CSS */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="animate-float absolute left-[8%] top-[15%] h-64 w-64 rounded-full bg-primary/20 blur-[100px]" />
+        <div className="animate-float-slow absolute right-[10%] top-[20%] h-80 w-80 rounded-full bg-accent/15 blur-[120px]" />
+        <div className="animate-float absolute bottom-[20%] left-[45%] h-48 w-48 rounded-full bg-primary/15 blur-[90px]" style={{ animationDelay: '2s' }} />
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-dark/50 to-dark" />
 
       {/* Center content */}
-      <div className="container-x relative flex min-h-screen flex-col items-center justify-center pt-24 pb-16 text-center">
+      <div className="container-x relative flex min-h-screen flex-col items-center justify-center px-6 pt-24 pb-16 text-center">
+        {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -109,6 +34,7 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           Introducing FounderHub — the Startup OS
         </motion.div>
 
+        {/* H1 */}
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -122,6 +48,7 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           Your Startup
         </motion.h1>
 
+        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,23 +59,24 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           your startup needs.
         </motion.p>
 
+        {/* CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
           className="mt-10 flex flex-col items-center gap-4 sm:flex-row"
         >
-          <MagneticButton
+          <button
             onClick={onJoinWaitlist}
-            className="btn-primary text-base group"
+            className="btn-primary text-base group inline-flex items-center gap-2"
           >
             Start for Free
             <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-          </MagneticButton>
-          <MagneticButton className="btn-ghost border-white/20 text-white hover:border-white/50 hover:text-white">
+          </button>
+          <button className="btn-ghost inline-flex items-center gap-2 border-white/20 text-white hover:border-white/50 hover:text-white">
             <Play className="h-5 w-5" />
             Watch Demo
-          </MagneticButton>
+          </button>
         </motion.div>
 
         {/* Social proof */}
@@ -185,19 +113,14 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           </div>
         </motion.div>
 
-        {/* Interactive 3D product card at the bottom */}
+        {/* Product dashboard preview card */}
         <motion.div
-          style={{
-            rotateX: cardRotateX,
-            rotateY: cardRotateY,
-            transformStyle: 'preserve-3d',
-          }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
           className="relative mt-20 w-full max-w-3xl"
         >
-          <motion.div
-            style={{ x: layerNearX, y: layerNearY }}
-            className="relative z-10 rounded-3xl border border-white/15 bg-gradient-to-b from-white/10 to-white/5 p-6 shadow-2xl backdrop-blur-xl sm:p-8"
-          >
+          <div className="relative z-10 rounded-3xl border border-white/15 bg-gradient-to-b from-white/10 to-white/5 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-brand text-white">
@@ -227,8 +150,8 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
               <div className="h-full w-2/3 rounded-full bg-gradient-brand" />
             </div>
-          </motion.div>
-          <div className="absolute -inset-3 -z-10 rounded-[2rem] bg-gradient-brand opacity-30 blur-2xl" />
+          </div>
+          <div className="absolute -inset-3 -z-10 rounded-[2rem] bg-gradient-brand opacity-20 blur-2xl" />
         </motion.div>
       </div>
 
@@ -248,13 +171,6 @@ export function Hero({ onJoinWaitlist }: HeroProps) {
           <ChevronDown className="h-6 w-6" />
         </motion.div>
       </motion.a>
-
-      <style>{`
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-      `}</style>
     </section>
   )
 }
